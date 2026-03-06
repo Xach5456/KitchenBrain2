@@ -1,0 +1,148 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="16dp">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical">
+
+		<!-- Заголовок и другие поля рецепта -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Новый рецепт"
+			android:textSize="24sp"
+			android:textStyle="bold"
+			android:layout_gravity="center_horizontal"
+			android:layout_marginBottom="24dp" />
+
+		<!-- Название рецепта -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Название рецепта"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<EditText
+			android:id="@+id/recipeName"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="text"
+			android:background="@drawable/rounded_edittext"
+			android:padding="12dp"
+			android:layout_marginBottom="16dp" />
+
+		<!-- Описание рецепта -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Описание рецепта"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<EditText
+			android:id="@+id/recipeDescription"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="text"
+			android:background="@drawable/rounded_edittext"
+			android:padding="12dp"
+			android:layout_marginBottom="16dp" />
+
+		<!-- Время приготовления -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Время приготовления (в минутах)"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<EditText
+			android:id="@+id/cookingTime"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="number"
+			android:background="@drawable/rounded_edittext"
+			android:padding="12dp"
+			android:layout_marginBottom="16dp" />
+
+		<!-- Инструкция -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Инструкция"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<EditText
+			android:id="@+id/cookingInstructions"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:inputType="text"
+			android:background="@drawable/rounded_edittext"
+			android:padding="12dp"
+			android:layout_marginBottom="16dp" />
+
+		<!-- Кнопка для выбора ингредиентов -->
+		<Button
+			android:id="@+id/btnSelectIngredients"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:text="Ингредиенты"
+			android:layout_marginTop="16dp"/>
+
+		<!-- Контейнер для выбранных ингредиентов -->
+		<LinearLayout
+			android:id="@+id/selectedIngredientsContainer"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:layout_marginTop="8dp"/>
+
+		<!-- Загрузка изображения рецепта -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Добавить изображение рецепта"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<ImageView
+			android:id="@+id/recipeImage"
+			android:layout_width="match_parent"
+			android:layout_height="200dp"
+			android:src="@drawable/ic_placeholder"
+			android:layout_marginBottom="16dp"
+			android:contentDescription="Изображение рецепта"
+			android:scaleType="centerCrop"
+			android:background="?android:attr/selectableItemBackground" />
+
+		<!-- Загрузка видео рецепта -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Добавить видео рецепта"
+			android:textSize="14sp"
+			android:layout_marginBottom="4dp" />
+
+		<!-- Кнопка для сохранения рецепта -->
+		<VideoView
+			android:id="@+id/recipeVideo"
+			android:layout_width="match_parent"
+			android:layout_height="200dp"
+			android:layout_marginBottom="16dp"
+			android:contentDescription="Видео рецепта" />
+
+		<Button
+			android:id="@+id/btnSaveRecipe"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:text="Сохранить рецепт"
+			android:backgroundTint="?android:attr/colorAccent"
+			android:textColor="@android:color/white" />
+
+	</LinearLayout>
+</ScrollView>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:padding="16dp"
+	android:background="@color/background_primary">
+
+	<EditText
+		android:id="@+id/editTextUsername"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:hint="Enter username"
+		android:padding="12dp"
+		android:background="@drawable/rounded_edittext"
+		android:textColor="@color/text_primary"
+		android:textColorHint="@color/text_secondary_blue" />
+
+	<Button
+		android:id="@+id/buttonConfirm"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:text="Confirm"
+		android:textColor="@color/on_primary_color"
+		android:layout_marginTop="16dp"
+		android:background="@drawable/button_style" />
+
+</LinearLayout>

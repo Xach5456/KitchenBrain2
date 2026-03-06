@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read any user profile for discovery features
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      // Allow users to write only to their own profile
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow users to access chats they participate in
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid in resource.data.participants;
+      
+      // Subcollection for messages
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && 
+          request.auth.uid in resource.data.participants;
+      }
+    }
+    
+    // Allow full access for authenticated users for general app functionality
+    match /{document=**} {
+      allow read, write: if false;  // More restrictive default
+    }
+  }
+}

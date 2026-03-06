@@ -1,0 +1,116 @@
+<resources>
+    <string name="app_name">Kitchen Brain</string>
+    
+    <!-- Login Activity -->
+    <string name="login_title">Kitchen Login</string>
+    <string name="email_hint">Enter Email</string>
+    <string name="password_hint">Enter Password</string>
+    <string name="login_button">Login</string>
+    <string name="no_account_text">Don\'t have an account? Register</string>
+    <string name="guest_mode_text">Guest Mode</string>
+    
+    <!-- Register Activity -->
+    <string name="register_title">Kitchen Register</string>
+    <string name="confirm_password_hint">Confirm Password</string>
+    <string name="register_button">Register</string>
+    <string name="have_account_text">Already have an account? Login</string>
+    
+    <!-- Profile Fragment -->
+    <string name="logout_button">Log Out</string>
+    <string name="profile_title">User Profile</string>
+    
+    <!-- Home Fragment -->
+    <string name="home_welcome">Welcome to Kitchen Brain!</string>
+    <string name="home_subtitle">Find and share delicious recipes</string>
+    
+    <!-- Create Recipe Fragment -->
+    <string name="create_recipe_title">Create New Recipe</string>
+    <string name="recipe_name_hint">Recipe Name</string>
+    <string name="recipe_description_hint">Recipe Description</string>
+    <string name="cooking_time_hint">Cooking Time (in minutes)</string>
+    <string name="instructions_hint">Instructions</string>
+    <string name="choose_ingredients_button">Choose Ingredients</string>
+    <string name="add_image_text">Add Recipe Image</string>
+    <string name="add_video_text">Add Recipe Video</string>
+    <string name="save_recipe_button">Save Recipe</string>
+    
+    <!-- Main Activity -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_add_recipe">Add Recipe</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_friends">Friends</string>
+    <string name="nav_video">Video</string>
+    
+    <!-- Search Fragment -->
+    <string name="search_recipes_button">Find Recipe</string>
+    <string name="main_category">Main</string>
+    <string name="vegetables_category">Vegetables</string>
+    <string name="fruits_category">Fruits</string>
+    <string name="dairy_category">Dairy Products</string>
+    
+    <!-- Ingredients -->
+    <string name="flour">Flour</string>
+    <string name="eggs">Eggs</string>
+    <string name="sugar">Sugar</string>
+    <string name="oil">Oil</string>
+    <string name="potato">Potato</string>
+    <string name="onion">Onion</string>
+    <string name="carrot">Carrot</string>
+    <string name="pepper">Pepper</string>
+    <string name="apple">Apple</string>
+    <string name="banana">Banana</string>
+    <string name="orange_fruit">Orange</string>
+    <string name="pear">Pear</string>
+    <string name="milk">Milk</string>
+    <string name="sour_cream">Sour Cream</string>
+    <string name="cottage_cheese">Cottage Cheese</string>
+    <string name="cheese">Cheese</string>
+    
+    <!-- Buttons and Actions -->
+    <string name="confirm_button">Confirm</string>
+    <string name="delete_recipe_button">Delete Recipe</string>
+    <string name="yes_button">Yes</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="confirm_delete_message">Are you sure you want to delete this recipe?</string>
+    
+    <!-- Messages -->
+    <string name="please_fill_fields">Please fill in all fields</string>
+    <string name="valid_gmail_error">Please enter a valid Gmail address</string>
+    <string name="valid_email_error">Please enter a valid email address</string>
+    <string name="password_length_error">Password must be at least 6 characters</string>
+    <string name="password_match_error">Passwords do not match</string>
+    <string name="login_success">Login successful</string>
+    <string name="verification_sent">Verification email sent</string>
+    <string name="recipe_saved">Recipe saved successfully!</string>
+    <string name="recipe_deleted">Recipe deleted</string>
+    <string name="error_deleting">Error deleting recipe</string>
+    <string name="error_loading_user">Failed to load user data</string>
+    <string name="error_saving_profile">Error saving profile</string>
+    <string name="enter_username">Please enter a username</string>
+    <string name="username_updated">Username updated successfully!</string>
+    
+    <!-- Profile Setup -->
+    <string name="setup_profile_title">Set Up Your Profile</string>
+    <string name="username_hint">Enter Username</string>
+    <string name="confirm_username_button">Confirm</string>
+    
+    <!-- Waiting for Confirmation -->
+    <string name="confirmation_title">Verify Your Email</string>
+    <string name="confirmation_message">We\'ve sent a verification email to your inbox.\nPlease check your email and click the verification link.</string>
+    <string name="resend_email_button">Resend Email</string>
+    <string name="back_to_register_button">Back to Register</string>
+    <string name="verification_resend_success">Verification email resent</string>
+    <string name="verification_resend_error">Error resending verification email</string>
+    <string name="account_delete_error">Failed to delete account</string>
+    
+    <!-- Additional error messages for improved authentication -->
+    <string name="error_sending_verification">Error sending verification email</string>
+    <string name="weak_password_error">Password is too weak. Please use at least 6 characters with a mix of letters and numbers.</string>
+    <string name="invalid_credentials_error">Invalid email or password. Please check your credentials.</string>
+    <string name="user_exists_error">An account with this email already exists.</string>
+    <string name="user_not_found_error">No account found with this email. Please register first.</string>
+    <string name="verify_email_before_login">Please verify your email before logging in.</string>
+    <string name="guest_mode_activated">Guest Mode activated</string>
+</resources>

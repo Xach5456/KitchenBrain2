@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Online Status -->
+    <TextView
+        android:id="@+id/textViewOnlineStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:text="Online"
+        android:textAlignment="center"
+        android:background="@color/primary_color"
+        android:textColor="@color/on_primary_color"
+        android:textSize="14sp" />
+
+    <!-- Messages RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewMessages"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+    <!-- Input Area -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/surface_color"
+        android:elevation="4dp">
+
+        <EditText
+            android:id="@+id/editTextMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Type a message..."
+            android:maxLines="4"
+            android:inputType="textMultiLine|textCapSentences"
+            android:background="@drawable/rounded_edittext"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp" />
+
+        <ImageButton
+            android:id="@+id/buttonMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_menu"
+            android:background="@drawable/rounded_button"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="Menu" />
+
+        <ImageButton
+            android:id="@+id/buttonSend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_send"
+            android:background="@drawable/rounded_button"
+            android:padding="12dp"
+            android:contentDescription="Send message" />
+
+    </LinearLayout>
+
+</LinearLayout>

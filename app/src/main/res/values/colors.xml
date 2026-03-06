@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Primary Colors -->
+    <color name="primary_blue">#0366EE</color> <!-- Main blue accent -->
+    <color name="primary_green">#28A745</color> <!-- Main green accent -->
+    <color name="primary_blue_light">#E6F0FF</color> <!-- Light blue background -->
+    <color name="primary_green_light">#E6F5EA</color> <!-- Light green background -->
+    
+    <!-- Blue Variants -->
+    <color name="blue_50">#E6F0FF</color>
+    <color name="blue_100">#CCE2FF</color>
+    <color name="blue_200">#99C7FF</color>
+    <color name="blue_300">#66ABFF</color>
+    <color name="blue_400">#338FFF</color>
+    <color name="blue_500">#0366EE</color>
+    <color name="blue_600">#0252BD</color>
+    <color name="blue_700">#024199</color>
+    <color name="blue_800">#013175</color>
+    
+    <!-- Green Variants -->
+    <color name="green_50">#E6F5EA</color>
+    <color name="green_100">#CCEBDB</color>
+    <color name="green_200">#99D7B7</color>
+    <color name="green_300">#66C293</color>
+    <color name="green_400">#40B075</color>
+    <color name="green_500">#28A745</color>
+    <color name="green_600">#1E8436</color>
+    <color name="green_700">#156B2C</color>
+    <color name="green_800">#0D5222</color>
+    
+    <!-- Background Colors -->
+    <color name="background_primary">#FFFFFF</color> <!-- Pure white background -->
+    <color name="background_secondary">#F8F9FA</color> <!-- Light grayish white -->
+    <color name="background_tertiary">#F1F3F4</color> <!-- Slightly darker white -->
+    
+    <!-- Surface Colors -->
+    <color name="surface_color">#FFFFFF</color>
+    <color name="surface_variant">#F8F9FA</color>
+    
+    <!-- Primary and Secondary Colors for Material Theme -->
+    <color name="primary_color">#0366EE</color> <!-- Blue primary -->
+    <color name="primary_variant_color">#0252BD</color> <!-- Darker blue -->
+    <color name="secondary_color">#28A745</color> <!-- Green secondary -->
+    <color name="secondary_variant_color">#1E8436</color> <!-- Darker green -->
+    
+    <!-- Text and Icon Colors -->
+    <color name="on_primary_color">#FFFFFF</color>
+    <color name="on_secondary_color">#FFFFFF</color>
+    <color name="on_surface_color">#212529</color>
+    <color name="on_background_color">#495057</color>
+    <color name="text_primary">#212529</color> <!-- Dark text -->
+    <color name="text_secondary">#6C757D</color> <!-- Medium gray text -->
+    <color name="text_secondary_blue">#5A8DEE</color> <!-- Blue secondary text -->
+    <color name="text_disabled">#ADB5BD</color> <!-- Light gray for disabled text -->
+    <color name="text_link">#0366EE</color> <!-- Blue link text -->
+    
+    <!-- Status Colors -->
+    <color name="success_color">#28A745</color> <!-- Green success -->
+    <color name="error_color">#DC3545</color> <!-- Red error -->
+    <color name="warning_color">#FFC107</color> <!-- Yellow warning -->
+    <color name="info_color">#17A2B8</color> <!-- Teal info -->
+    
+    <!-- Button Colors -->
+    <color name="button_primary_normal">#0366EE</color>
+    <color name="button_primary_pressed">#0252BD</color>
+    <color name="button_primary_disabled">#CED4DA</color>
+    <color name="button_secondary_normal">#FFFFFF</color>
+    <color name="button_secondary_pressed">#F8F9FA</color>
+    <color name="button_secondary_disabled">#F8F9FA</color>
+    <color name="button_secondary_border">#0366EE</color>
+    <color name="button_success_normal">#28A745</color>
+    <color name="button_success_pressed">#1E8436</color>
+    <color name="button_success_disabled">#D4EDDA</color>
+</resources>

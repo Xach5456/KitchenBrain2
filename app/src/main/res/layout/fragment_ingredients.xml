@@ -1,0 +1,188 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/background_primary">
+
+	<!-- Scroll for categories -->
+	<ScrollView
+		android:id="@+id/scrollView"
+		android:layout_width="0dp"
+		android:layout_height="0dp"
+		android:layout_margin="16dp"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintBottom_toTopOf="@id/confirmIngredientsButton"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent">
+
+		<LinearLayout
+			android:orientation="vertical"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content">
+
+			<!-- Main Category -->
+			<LinearLayout
+				android:id="@+id/mainCategoryLayout"
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/category_background"
+				android:padding="16dp"
+				android:clickable="true"
+				android:focusable="true"
+				android:layout_marginTop="8dp">
+
+				<TextView
+					android:id="@+id/mainCategoryTitle"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:text="@string/main_category"
+					android:textSize="18sp"
+					android:textStyle="bold"
+					android:textColor="@color/text_primary"
+					android:padding="16dp" />
+
+				<LinearLayout
+					android:id="@+id/mainIngredientsContainer"
+					android:orientation="vertical"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:visibility="gone"
+					android:paddingTop="8dp">
+
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/flour" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/eggs" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/sugar" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/oil" android:textColor="@color/text_primary" />
+				</LinearLayout>
+			</LinearLayout>
+
+			<!-- Vegetables Category -->
+			<LinearLayout
+				android:id="@+id/vegetableCategoryLayout"
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/category_background"
+				android:padding="16dp"
+				android:clickable="true"
+				android:focusable="true"
+				android:layout_marginTop="16dp">
+
+				<TextView
+					android:id="@+id/vegetableCategoryTitle"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:text="@string/vegetables_category"
+					android:textSize="18sp"
+					android:textStyle="bold"
+					android:textColor="@color/text_primary"
+					android:padding="16dp" />
+
+				<LinearLayout
+					android:id="@+id/vegetableCategoryCheckBoxContainer"
+					android:orientation="vertical"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:visibility="gone"
+					android:paddingTop="8dp">
+
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/potato" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/onion" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/carrot" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/pepper" android:textColor="@color/text_primary" />
+				</LinearLayout>
+			</LinearLayout>
+
+			<!-- Fruits Category -->
+			<LinearLayout
+				android:id="@+id/fruitCategoryLayout"
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/category_background"
+				android:padding="16dp"
+				android:clickable="true"
+				android:focusable="true"
+				android:layout_marginTop="16dp">
+
+				<TextView
+					android:id="@+id/fruitCategoryTitle"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:text="@string/fruits_category"
+					android:textSize="18sp"
+					android:textStyle="bold"
+					android:textColor="@color/text_primary"
+					android:padding="16dp" />
+
+				<LinearLayout
+					android:id="@+id/fruitCategoryCheckBoxContainer"
+					android:orientation="vertical"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:visibility="gone"
+					android:paddingTop="8dp">
+
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/apple" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/banana" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/orange_fruit" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/pear" android:textColor="@color/text_primary" />
+				</LinearLayout>
+			</LinearLayout>
+
+			<!-- Dairy Products Category -->
+			<LinearLayout
+				android:id="@+id/dairyCategoryLayout"
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:background="@drawable/category_background"
+				android:padding="16dp"
+				android:clickable="true"
+				android:focusable="true"
+				android:layout_marginTop="16dp">
+
+				<TextView
+					android:id="@+id/dairyCategoryTitle"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:text="@string/dairy_category"
+					android:textSize="18sp"
+					android:textStyle="bold"
+					android:textColor="@color/text_primary"
+					android:padding="16dp" />
+
+				<LinearLayout
+					android:id="@+id/dairyCategoryCheckBoxContainer"
+					android:orientation="vertical"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:visibility="gone"
+					android:paddingTop="8dp">
+
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/milk" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/sour_cream" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cottage_cheese" android:textColor="@color/text_primary" />
+					<CheckBox android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cheese" android:textColor="@color/text_primary" />
+				</LinearLayout>
+			</LinearLayout>
+
+		</LinearLayout>
+	</ScrollView>
+
+	<!-- Confirm Button -->
+	<Button
+		android:id="@+id/confirmIngredientsButton"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:text="@string/confirm_button"
+		android:textSize="18sp"
+		android:textColor="@color/on_primary_color"
+		android:background="@drawable/rounded_button_with_shadow"
+		android:layout_margin="16dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

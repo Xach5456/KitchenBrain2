@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/background_primary"
+	android:padding="20dp">
+
+	<TextView
+		android:id="@+id/textWaiting"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="Please verify your email to complete the registration"
+		android:textSize="18sp"
+		android:textColor="@color/text_primary"
+		android:layout_centerHorizontal="true"
+		android:layout_marginTop="150dp"
+		android:textAlignment="center" />
+
+	<Button
+		android:id="@+id/resendEmailButton"
+		android:layout_width="250dp"
+		android:layout_height="50dp"
+		android:text="Resend Verification Email"
+		android:layout_below="@id/textWaiting"
+		android:layout_centerHorizontal="true"
+		android:layout_marginTop="20dp"
+		android:background="@drawable/button_style"
+		android:textColor="@color/on_primary_color"
+		android:textSize="16sp"
+		android:padding="10dp" />
+
+	<Button
+		android:id="@+id/backToRegisterButton"
+		android:layout_width="250dp"
+		android:layout_height="50dp"
+		android:text="Back to Registration"
+		android:layout_below="@id/resendEmailButton"
+		android:layout_centerHorizontal="true"
+		android:layout_marginTop="20dp"
+		android:background="@drawable/button_style"
+		android:textColor="@color/on_primary_color"
+		android:textSize="16sp"
+		android:padding="10dp" />
+
+</RelativeLayout>

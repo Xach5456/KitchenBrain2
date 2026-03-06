@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- User Info Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/rounded_container"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:id="@+id/imageViewAvatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_default_avatar"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="User Avatar" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textViewUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Username"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/on_surface_color" />
+
+            <TextView
+                android:id="@+id/textViewRecipesCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recipes: 0"
+                android:textSize="14sp"
+                android:textColor="@color/on_surface_color"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/buttonFollow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Follow"
+            android:background="@drawable/button_style"
+            android:textColor="@color/on_primary_color"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+
+    </LinearLayout>
+
+    <!-- Recipes Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recipes"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_color"
+        android:layout_marginBottom="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewRecipes"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+</LinearLayout>
