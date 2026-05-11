@@ -51,7 +51,23 @@
                 app:layout_collapseMode="pin"
                 app:navigationIcon="@drawable/ic_arrow_back"
                 app:navigationIconTint="@color/white"
-                app:titleTextColor="@color/white" />
+                app:titleTextColor="@color/white">
+                
+                <!-- Delete Button in Toolbar -->
+                <ImageButton
+                    android:id="@+id/btnDeleteRecipe"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="8dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/delete_recipe_button"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_delete"
+                    android:visibility="gone"
+                    app:tint="@color/white" />
+
+            </androidx.appcompat.widget.Toolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
@@ -75,22 +91,83 @@
                 android:id="@+id/recipeAuthor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="8dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="by John Doe"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
+
+            <!-- Recipe Name (hidden, for compatibility) -->
+            <TextView
+                android:id="@+id/recipeName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
 
             <!-- Recipe Description -->
             <TextView
                 android:id="@+id/recipeDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="16dp"
                 android:fontFamily="sans-serif"
                 android:text="Creamy Italian pasta dish with eggs, cheese, pancetta, and black pepper. Authentic Roman recipe that's rich and satisfying."
                 android:textColor="@color/text_secondary"
                 android:textSize="16sp" />
+
+            <!-- Video Tutorial Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardVideoLink"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_variant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/primary_blue"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Video Tutorial"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/textVideoUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/primary_blue"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="4dp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnWatchVideo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Watch Video"
+                        android:textAllCaps="false"
+                        app:icon="@android:drawable/ic_media_play"
+                        app:iconGravity="textStart"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Recipe Info Cards -->
             <LinearLayout
@@ -276,6 +353,13 @@
                         android:paddingBottom="16dp"
                         android:visibility="gone">
 
+                        <!-- Placeholder for compatibility -->
+                        <TextView
+                            android:id="@+id/recipeIngredients"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+
                     </LinearLayout>
 
                 </LinearLayout>
@@ -340,6 +424,13 @@
                         android:paddingEnd="16dp"
                         android:paddingBottom="16dp"
                         android:visibility="gone">
+
+                        <!-- Placeholder for compatibility -->
+                        <TextView
+                            android:id="@+id/recipeInstructions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
 
                     </LinearLayout>
 

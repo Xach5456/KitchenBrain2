@@ -1,234 +1,309 @@
 package com.example.kitchenbrain;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import com.example.kitchenbrain.viewmodel.SharedViewModel;
+import com.example.kitchenbrain.manager.FollowGraphRepository;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private FirebaseAuth mAuth;
-    private BottomNavigationView bottomNavigationView;
     private boolean isGuestMode = false;
+    private SharedViewModel sharedViewModel;
+    private FloatingActionButton fabAddRecipe;
     
-    public boolean isGuestMode() {
-        return isGuestMode;
-    }
+    private String lastOpenedChatUserId = null;
+    private long lastChatOpenTime = 0;
+    private static final long CHAT_OPEN_COOLDOWN_MS = 500;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Check Google Play Services availability early
-        if (!GooglePlayServicesHelper.isGooglePlayServicesAvailable(this)) {
-            Log.w(TAG, "Google Play Services not available. App may have limited functionality.");
-            Toast.makeText(this, "Google Play Services unavailable. Some features may not work properly.", 
-                          Toast.LENGTH_LONG).show();
-        }
-
-        mAuth = FirebaseAuth.getInstance();
         
-        // Check if launched in guest mode
+        mAuth = FirebaseAuth.getInstance();
         isGuestMode = getIntent().getBooleanExtra("is_guest_mode", false);
-
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
-        // Initialize BottomNavigationView and show it immediately
-        bottomNavigationView = findViewById(R.id.bottom_navigation);
-        bottomNavigationView.setVisibility(View.VISIBLE); // Show menu immediately
-
-        // Check if we should show profile setup directly
-        boolean showProfileSetup = getIntent().getBooleanExtra("show_profile_setup", false);
+        setupNavigation();
         
-        // If not guest mode and no current user, redirect to login screen
-        if (!isGuestMode && (currentUser == null || !currentUser.isEmailVerified())) {
-            if (currentUser != null) {
-                currentUser.reload().addOnCompleteListener(task -> {
-                    FirebaseUser updatedUser = mAuth.getCurrentUser();
-                    if (updatedUser == null || !updatedUser.isEmailVerified()) {
-                        // If not verified, redirect to WaitingForConfirmationActivity
-                        startActivity(new Intent(MainActivity.this, WaitingForConfirmationActivity.class));
-                        finish();
-                    } else {
-                        // If verified, continue with app
-                        initializeApp(updatedUser, showProfileSetup);
-                    }
-                });
+        if (!isGuestMode && currentUser != null) {
+            sharedViewModel = new ViewModelProvider(this).get(SharedViewModel.class);
+            FollowGraphRepository.getInstance().initialize(currentUser.getUid());
+            observeMutualFollowEvents();
+        }
+
+        if (savedInstanceState == null) {
+            if (getIntent().getBooleanExtra("show_profile_setup", false) && currentUser != null) {
+                showFragment(new ProfileSetupFragment(), "profile_setup");
+            } else if (!isGuestMode && currentUser != null) {
+                checkProfileSetup(currentUser.getUid());
             } else {
-                startActivity(new Intent(this, LoginActivity.class));
-                finish();
-                return;
-            }
-        } else {
-            // Either guest mode or user is authenticated
-            if (isGuestMode) {
-                // User is in guest mode, continue with app
-                initializeApp(null, false);
-            } else {
-                // User is authenticated, continue with app
-                initializeApp(currentUser, showProfileSetup);
+                // Load original HomeFragment by default
+                showFragment(new HomeFragment(), "home");
+                updateBottomNavigationSelection(R.id.nav_home);
             }
         }
     }
 
-    private void initializeApp(FirebaseUser currentUser, boolean showProfileSetup) {
-        // Initialize Toolbar
+    public boolean isGuestMode() {
+        return isGuestMode;
+    }
+
+    private void setupNavigation() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Set listener for navigation
-        bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
-            // Use if-else instead of switch
-            if (item.getItemId() == R.id.nav_home) {
-                selectedFragment = new HomeFragment();
-            } else if (item.getItemId() == R.id.nav_search) {
-                selectedFragment = new SearchFragment();
-            } else if (item.getItemId() == R.id.nav_profile) {
-                if (isGuestMode) {
-                    // In guest mode, show a different profile fragment or alert
-                    selectedFragment = new GuestProfileFragment();
-                } else {
-                    selectedFragment = new ProfileFragment();
-                }
-            } else if (item.getItemId() == R.id.nav_friends) {
-                if (isGuestMode) {
-                    // In guest mode, show a message or disable this feature
-                    showGuestRestrictionMessage();
-                    return false;
-                } else {
-                    selectedFragment = new FriendListFragment();
-                }
-            } else if (item.getItemId() == R.id.nav_add_recipe) {
-                if (isGuestMode) {
-                    // In guest mode, show a message or disable this feature
-                    showGuestRestrictionMessage();
-                    return false;
-                } else {
-                    selectedFragment = new AddRecipeFragment();
-                }
-            } else if (item.getItemId() == R.id.nav_chat) {
-                if (isGuestMode) {
-                    // In guest mode, show a message or disable this feature
-                    showGuestRestrictionMessage();
-                    return false;
-                } else {
-                    selectedFragment = new ChatListFragment();
-                }
-            }
+        fabAddRecipe = findViewById(R.id.fabAddRecipe);
 
-            if (selectedFragment != null) {
-                loadFragment(selectedFragment);
-                return true;
+        setupCustomBottomNavigation();
+        setupFragmentVisibilityListener();
+        setupFabClickListener();
+    }
+    
+    private void setupCustomBottomNavigation() {
+        // Navigation items based on new 6-item layout
+        View navHome = findViewById(R.id.nav_home);
+        View navSearch = findViewById(R.id.nav_search);
+        View navAdd = findViewById(R.id.nav_add_recipe);
+        View navFriends = findViewById(R.id.nav_friends);
+        View navChat = findViewById(R.id.nav_chat);
+        View navProfile = findViewById(R.id.nav_profile);
+
+        if (navHome != null) navHome.setOnClickListener(v -> {
+            showFragment(new HomeFragment(), "home");
+            updateBottomNavigationSelection(R.id.nav_home);
+        });
+        
+        if (navSearch != null) navSearch.setOnClickListener(v -> {
+            showFragment(new SearchFragment(), "search");
+            updateBottomNavigationSelection(R.id.nav_search);
+        });
+        
+        if (navAdd != null) navAdd.setOnClickListener(v -> {
+            if (isGuestMode) {
+                Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+                return;
             }
-            return false;
+            showFragment(new AddRecipeFragment(), "add_recipe");
+            updateBottomNavigationSelection(R.id.nav_add_recipe);
         });
 
-        // Continue with initial fragment loading if not guest mode
-        if (!isGuestMode) {
-            if (currentUser != null && currentUser.isEmailVerified()) {
-                if (showProfileSetup) {
-                    // If coming from registration, show profile setup directly
-                    showProfileSetupFragment();
-                } else {
-                    checkProfileSetup(currentUser.getUid());
+        if (navFriends != null) navFriends.setOnClickListener(v -> {
+            if (isGuestMode) {
+                Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showFragment(new FriendsFragment(), "friends");
+            updateBottomNavigationSelection(R.id.nav_friends);
+        });
+        
+        if (navChat != null) navChat.setOnClickListener(v -> {
+            if (isGuestMode) {
+                Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showFragment(new ChatListFragment(), "chat");
+            updateBottomNavigationSelection(R.id.nav_chat);
+        });
+        
+        if (navProfile != null) navProfile.setOnClickListener(v -> {
+            if (isGuestMode) {
+                showFragment(new GuestProfileFragment(), "guest_profile");
+            } else {
+                showFragment(new ProfileFragment(), "profile");
+            }
+            updateBottomNavigationSelection(R.id.nav_profile);
+        });
+    }
+
+    private void updateBottomNavigationSelection(int selectedId) {
+        int[] navIds = {R.id.nav_home, R.id.nav_search, R.id.nav_add_recipe, R.id.nav_friends, R.id.nav_chat, R.id.nav_profile};
+        
+        int selectedColor = ContextCompat.getColor(this, R.color.text_primary);
+        int unselectedColor = ContextCompat.getColor(this, R.color.text_secondary);
+        int accentColor = ContextCompat.getColor(this, R.color.primary_blue);
+
+        for (int id : navIds) {
+            View view = findViewById(id);
+            if (view == null) continue;
+            
+            boolean isSelected = (id == selectedId);
+            
+            // We removed the hard background selection, using scaling and tinting instead
+            view.setBackgroundResource(0); 
+            
+            if (view instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) view;
+                for (int i = 0; i < group.getChildCount(); i++) {
+                    View child = group.getChildAt(i);
+                    if (child instanceof ImageView) {
+                        ImageView icon = (ImageView) child;
+                        
+                        // Special handling for Add button accent
+                        int color = isSelected ? selectedColor : unselectedColor;
+                        if (id == R.id.nav_add_recipe && !isSelected) color = accentColor;
+                        else if (id == R.id.nav_add_recipe && isSelected) color = accentColor;
+
+                        icon.setImageTintList(ColorStateList.valueOf(color));
+                        
+                        // 🔥 ANIMATION: Pop scale effect
+                        float scale = isSelected ? 1.2f : 1.0f;
+                        icon.animate()
+                            .scaleX(scale)
+                            .scaleY(scale)
+                            .setDuration(200)
+                            .setInterpolator(new OvershootInterpolator())
+                            .start();
+                            
+                    } else if (child instanceof TextView) {
+                        TextView label = (TextView) child;
+                        label.setTextColor(isSelected ? selectedColor : unselectedColor);
+                        label.setTypeface(null, isSelected ? Typeface.BOLD : Typeface.NORMAL);
+                    }
                 }
             }
+        }
+    }
+    
+    private void setupFragmentVisibilityListener() {
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+            
+            boolean isAddRecipeFragment = f instanceof AddRecipeFragment;
+            
+            if (fabAddRecipe != null) {
+                fabAddRecipe.setVisibility(isAddRecipeFragment ? View.VISIBLE : View.GONE);
+            }
+            
+            boolean isFullPage = f instanceof ChatFragment || f instanceof ProfileSetupFragment || f instanceof CreateRecipeFragment;
+            
+            View bottomNav = findViewById(R.id.bottom_navigation_container);
+            if (bottomNav != null) {
+                bottomNav.setVisibility(isFullPage ? View.GONE : View.VISIBLE);
+            }
+        });
+    }
+
+    public void showFragment(Fragment fragment, String tag) {
+        Fragment existingFragment = getSupportFragmentManager().findFragmentByTag(tag);
+        
+        if (existingFragment == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment, tag)
+                    .addToBackStack(null)
+                    .commit();
         } else {
-            // For guest mode, load the home fragment by default
-            loadFragment(new HomeFragment());
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, existingFragment, tag)
+                    .commit();
+        }
+        
+        updateFabVisibility(tag);
+    }
+
+    public void navigateToFragment(Fragment fragment, boolean addToBackStack) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment);
+        
+        if (addToBackStack) {
+            transaction.addToBackStack(null);
+        }
+        
+        transaction.commit();
+    }
+
+    private void updateFabVisibility(String fragmentTag) {
+        if (fabAddRecipe == null) return;
+        
+        if (fragmentTag != null && fragmentTag.equals("add_recipe")) {
+            fabAddRecipe.setVisibility(View.VISIBLE);
+        } else {
+            fabAddRecipe.setVisibility(View.GONE);
         }
     }
 
-    private void showGuestRestrictionMessage() {
-        // Show a toast message indicating that the feature is not available in guest mode
-        android.widget.Toast.makeText(this, "This feature requires login. Please sign in to access.", android.widget.Toast.LENGTH_LONG).show();
+    private void setupFabClickListener() {
+        if (fabAddRecipe != null) {
+            fabAddRecipe.setOnClickListener(v -> {
+                if (isGuestMode) {
+                    Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showFragment(new CreateRecipeFragment(), "create_recipe");
+            });
+        }
     }
 
-    // Method to show profile setup fragment directly
-    private void showProfileSetupFragment() {
-        // Hide BottomNavigationView when showing profile setup
-        bottomNavigationView.setVisibility(View.GONE);
-        loadFragment(new ProfileSetupFragment());
+    public void openChat(String otherUserId, String username) {
+        if (otherUserId == null || otherUserId.isEmpty()) return;
+        
+        long currentTime = System.currentTimeMillis();
+        if (otherUserId.equals(lastOpenedChatUserId) && (currentTime - lastChatOpenTime) < CHAT_OPEN_COOLDOWN_MS) return;
+        
+        lastOpenedChatUserId = otherUserId;
+        lastChatOpenTime = currentTime;
+
+        ChatFragment chatFragment = ChatFragment.newInstance(otherUserId);
+        if (username != null) {
+            Bundle args = chatFragment.getArguments();
+            if (args != null) args.putString("other_username", username);
+        }
+        
+        getSupportFragmentManager().beginTransaction()
+            .replace(R.id.fragment_container, chatFragment)
+            .addToBackStack("chat_" + otherUserId)
+            .commit();
     }
 
-    // Check profile setup
+    private void observeMutualFollowEvents() {
+        sharedViewModel.getOpenChatUserId().observe(this, userId -> {
+            if (userId != null && !userId.isEmpty()) {
+                openChat(userId, null);
+                sharedViewModel.emitOpenChatEvent(null);
+            }
+        });
+    }
+
     public void checkProfileSetup(String userId) {
-        FirebaseFirestore.getInstance().collection("users").document(userId)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (!document.exists() || !document.contains("username")) {
-                        // If profile is not set up, hide BottomNavigationView and show ProfileSetupFragment
-                        bottomNavigationView.setVisibility(View.GONE);
-                        loadFragment(new ProfileSetupFragment());
+        if (userId == null) return;
+        FirebaseFirestore.getInstance().collection("users").document(userId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists() && documentSnapshot.getString("username") != null 
+                            && !documentSnapshot.getString("username").trim().isEmpty()) {
+                        showFragment(new HomeFragment(), "home");
+                        updateBottomNavigationSelection(R.id.nav_home);
                     } else {
-                        // If profile is set up, show HomeFragment and BottomNavigationView
-                        bottomNavigationView.setVisibility(View.VISIBLE);
-                        loadFragment(new HomeFragment());
+                        showFragment(new ProfileSetupFragment(), "profile_setup");
                     }
                 })
                 .addOnFailureListener(e -> {
-                    // In case of error immediately show main screen and BottomNavigationView
-                    bottomNavigationView.setVisibility(View.VISIBLE);
-                    loadFragment(new HomeFragment());
+                    Log.e(TAG, "Error checking profile setup: " + e.getMessage());
+                    showFragment(new HomeFragment(), "home");
+                    updateBottomNavigationSelection(R.id.nav_home);
                 });
-    }
-    
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Update user's online status when app comes to foreground (only if not guest)
-        if (!isGuestMode) {
-            updateOnlineStatus(true);
-        }
-    }
-    
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Update user's online status when app goes to background (only if not guest)
-        if (!isGuestMode) {
-            updateOnlineStatus(false);
-        }
-    }
-    
-    private void updateOnlineStatus(boolean isOnline) {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            FirebaseFirestore.getInstance().collection("users").document(userId)
-                    .update("online", isOnline, "lastSeen", com.google.firebase.Timestamp.now());
-        }
-    }
-
-    // Load fragments
-    private void loadFragment(Fragment fragment) {
-        if (fragment != null && !isFinishing() && !isDestroyed()) {
-            try {
-                FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.fragment_container, fragment);
-                // Only add to back stack if it's not a bottom navigation item
-                if (!(fragment instanceof HomeFragment) && !(fragment instanceof SearchFragment) && 
-                    !(fragment instanceof ProfileFragment) && !(fragment instanceof AddRecipeFragment) && 
-                    !(fragment instanceof ChatFragment)) {
-                    transaction.addToBackStack(null);
-                }
-                transaction.commitAllowingStateLoss();
-            } catch (Exception e) {
-                // Silent catch to prevent crashes
-            }
-        }
     }
 }

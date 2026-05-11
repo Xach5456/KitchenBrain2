@@ -20,23 +20,36 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.Timestamp;
+import com.example.kitchenbrain.provider.ChatIdProvider;
+
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ChatListFragment extends Fragment {
 
+    private static final String TAG = "ChatListFragment";
     private RecyclerView recyclerViewChatList;
     private ChatListAdapter chatListAdapter;
-    private List<User> userList;
+    private List<User> userList = new ArrayList<>();
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private FirebaseUser currentUser;
     private String currentUserId;
     private FriendManager friendManager;
+    private Context context;
+
+    // 🔥 CRITICAL: Track Fragment lifecycle for async operations
+    private volatile boolean isViewDestroyed = false;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d("CHAT_DEBUG", "=== ChatListFragment opened ===");
+        // 🔥 RESET FLAG: When returning from backstack, the fragment instance is reused
+        isViewDestroyed = false;
+
         View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
 
         initViews(view);
@@ -89,17 +102,36 @@ public class ChatListFragment extends Fragment {
     private void setupRecyclerView() {
         userList = new ArrayList<>();
         chatListAdapter = new ChatListAdapter(userList, user -> {
-            // Navigate to chat with selected user
-            ChatFragment chatFragment = new ChatFragment();
-            Bundle args = new Bundle();
-            args.putString("other_user_id", user.getUserId());
-            chatFragment.setArguments(args);
+            // 🔥 Navigate to chat with centralized chatId
+            Log.d("CHAT_DEBUG", "=== ChatListFragment: User clicked - " + user.getUserId() + " ===");
             
-            if (getParentFragmentManager() != null) {
-                getParentFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, chatFragment)
-                        .addToBackStack("chat")
-                        .commit();
+            try {
+                // Use ChatIdProvider - single source of truth
+                String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                String chatId = ChatIdProvider.getChatId(currentUserId, user.getUserId());
+                
+                ChatFragment chatFragment = new ChatFragment();
+                Bundle args = new Bundle();
+                args.putString("other_user_id", user.getUserId());
+                args.putString("chat_room_id", chatId);
+                chatFragment.setArguments(args);
+                
+                Log.d("CHAT_DEBUG", "🔑 Bundle created with ChatIdProvider:");
+                Log.d("CHAT_DEBUG", "  - other_user_id: " + user.getUserId());
+                Log.d("CHAT_DEBUG", "  - chat_room_id: " + chatId);
+                
+                if (getParentFragmentManager() != null) {
+                    getParentFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, chatFragment)
+                            .addToBackStack(null)
+                            .commit();
+                } else {
+                    Log.e("CHAT_DEBUG", "❌ ParentFragmentManager is null!");
+                }
+                
+            } catch (IllegalArgumentException e) {
+                Log.e("CHAT_DEBUG", "❌ Failed to generate chatId: " + e.getMessage());
+                Toast.makeText(getContext(), "Error: Cannot create chat", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -148,8 +180,20 @@ public class ChatListFragment extends Fragment {
                                             // Check if all requests have been processed
                                             processedCount[0]++;
                                             if (processedCount[0] >= followingList.size()) {
+                                                // 🔥 CRITICAL FIX: Check Fragment lifecycle before UI update
+                                                if (isViewDestroyed || !isAdded() || getActivity() == null) {
+                                                    Log.w("ChatListFragment", "❌ Fragment not attached or view destroyed, skipping UI update");
+                                                    return;
+                                                }
+                                                
                                                 // Update UI after all requests complete
                                                 getActivity().runOnUiThread(() -> {
+                                                    // 🔥 DOUBLE CHECK: Fragment still attached?
+                                                    if (!isAdded()) {
+                                                        Log.w("ChatListFragment", "❌ Fragment detached during UI update");
+                                                        return;
+                                                    }
+                                                    
                                                     userList.clear();
                                                     userList.addAll(tempUserList);
                                                     chatListAdapter.notifyDataSetChanged();
@@ -159,8 +203,20 @@ public class ChatListFragment extends Fragment {
                                         .addOnFailureListener(error -> {
                                             processedCount[0]++;
                                             if (processedCount[0] >= followingList.size()) {
+                                                // 🔥 CRITICAL FIX: Check Fragment lifecycle before UI update
+                                                if (isViewDestroyed || !isAdded() || getActivity() == null) {
+                                                    Log.w("ChatListFragment", "❌ Fragment not attached or view destroyed in failure callback, skipping UI update");
+                                                    return;
+                                                }
+                                                
                                                 // Update UI after all requests complete
                                                 getActivity().runOnUiThread(() -> {
+                                                    // 🔥 DOUBLE CHECK: Fragment still attached?
+                                                    if (!isAdded()) {
+                                                        Log.w("ChatListFragment", "❌ Fragment detached during failure UI update");
+                                                        return;
+                                                    }
+                                                    
                                                     userList.clear();
                                                     userList.addAll(tempUserList);
                                                     chatListAdapter.notifyDataSetChanged();
@@ -190,6 +246,11 @@ public class ChatListFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        Log.d("ChatListFragment", "🧹 ChatListFragment cleaned up");
+        
+        // 🔥 CRITICAL: Mark view as destroyed for async operations
+        isViewDestroyed = true;
+        
         // Clean up FriendManager resources
         if (friendManager != null) {
             friendManager.cleanup();
@@ -224,6 +285,7 @@ public class ChatListFragment extends Fragment {
             holder.textViewUsername.setText(user.getUsername() != null ? user.getUsername() : "Unknown User");
             
             holder.itemView.setOnClickListener(v -> {
+                Log.d("CHAT_DEBUG", "CLICK ON CHAT ITEM - User: " + user.getUsername());
                 if (listener != null) {
                     listener.onUserSelected(user);
                 }

@@ -1,449 +1,369 @@
 package com.example.kitchenbrain;
 
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.example.kitchenbrain.adapter.FeedPostAdapter;
+import com.example.kitchenbrain.model.FeedItem;
+import com.example.kitchenbrain.social.LikeManager;
+import com.example.kitchenbrain.social.CommentsManager;
+import com.example.kitchenbrain.ui.CommentsBottomSheet;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentChange;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.Timestamp;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Home Fragment - Instagram-style Food Feed (Powered by Spoonacular Recipes)
+ */
 public class HomeFragment extends Fragment {
 
-    private RecyclerView recyclerViewUsers;
-    private RecyclerView recyclerViewRecipes; // New RecyclerView for recipes
-    private UserListAdapter userListAdapter;
-    private RecipeSuggestionsAdapter recipeSuggestionsAdapter; // New adapter for recipes
-    private List<User> userList;
-    private List<Recipe> recipeList; // New list for recipes
-    private FirebaseFirestore db;
+    private static final String TAG = "HomeFragment";
+
+    private RecyclerView recyclerViewFeed;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private LinearLayout layoutLoading;
+    private LinearLayout layoutError;
+    private LinearLayout layoutEmpty;
+
+    private HomeFeedViewModel viewModel;
+    private FeedPostAdapter feedAdapter;
+    
+    // Instagram-style social features
+    private LikeManager likeManager;
+    private CommentsManager commentsManager;
     private FirebaseAuth auth;
     private String currentUserId;
-    private FriendManager friendManager;
-    private EditText editTextSearch;
-    private Button buttonSearch;
-    private Button buttonToggleRecipes; // Button to toggle showing other users' recipes
+    
+    // Auto-refresh
+    private Handler autoRefreshHandler;
+    private static final int AUTO_REFRESH_INTERVAL = 60000; // 1 minute
+    
+    // 🔥 CRITICAL: Debounce protection for like clicks
+    private boolean isLiking = false;
+    
+    // 🔴 CRITICAL: API error handling
+    private boolean isApiError = false;
+    private int lastErrorCode = 0;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        return inflater.inflate(R.layout.fragment_home, container, false);
+    }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        Log.d(TAG, "🚀 HomeFragment - Instagram-style Edition");
+
+        initSocialFeatures();
         initViews(view);
-        // Only continue if initialization was successful
-        if (currentUserId != null && friendManager != null) {
-            setupRecyclerView();
-            loadUsers();
-            loadRecipes(); // New method to load recipes
-            setupSearchFunctionality();
-            setupRecipeToggleFunctionality(); // New method to toggle recipe visibility
-        }
+        setupViewModel();
+        setupRecyclerView();
+        setupSwipeRefresh();
+        setupAutoRefresh();
+        observeViewModel();
+        
+        // Initial load
+        viewModel.loadFeed();
+    }
 
-        return view;
+    private void initSocialFeatures() {
+        Log.d(TAG, "🔥 Initializing Instagram-style social features");
+        
+        // Firebase Auth
+        auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            currentUserId = auth.getCurrentUser().getUid();
+            Log.d(TAG, "✅ User authenticated: " + currentUserId);
+        } else {
+            Log.w(TAG, "⚠️ User not authenticated");
+            currentUserId = "anonymous";
+        }
+        
+        // Social managers
+        likeManager = new LikeManager();
+        commentsManager = new CommentsManager();
+        
+        // Auto-refresh handler
+        autoRefreshHandler = new Handler(Looper.getMainLooper());
+        
+        Log.d(TAG, "✅ Social features initialized");
     }
 
     private void initViews(View view) {
-        recyclerViewUsers = view.findViewById(R.id.recyclerViewUsers);
-        recyclerViewRecipes = view.findViewById(R.id.recyclerViewRecipes); // New RecyclerView
-        editTextSearch = view.findViewById(R.id.editTextSearch);
-        buttonSearch = view.findViewById(R.id.buttonSearch);
-        buttonToggleRecipes = view.findViewById(R.id.buttonToggleRecipes); // New button
+        recyclerViewFeed = view.findViewById(R.id.recyclerViewFeed);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        layoutLoading = view.findViewById(R.id.layoutLoading);
+        layoutError = view.findViewById(R.id.layoutError);
+        layoutEmpty = view.findViewById(R.id.layoutEmpty);
+    }
 
-        db = FirebaseFirestore.getInstance();
-        auth = FirebaseAuth.getInstance();
-        
-        FirebaseUser currentUser = auth.getCurrentUser();
-        
-        // Check if we're in guest mode by seeing if there's no current user
-        if (currentUser != null) {
-            // Regular authenticated user
-            currentUserId = currentUser.getUid();
-            friendManager = new FriendManager(db, currentUserId);
-        } else {
-            // Check if we're in guest mode by checking if we're in MainActivity and it's in guest mode
-            if (getActivity() instanceof MainActivity) {
-                MainActivity mainActivity = (MainActivity) getActivity();
-                if (mainActivity.isGuestMode()) {
-                    // In guest mode - create a placeholder ID or handle differently
-                    currentUserId = "guest_" + System.currentTimeMillis();
-                    // Don't initialize FriendManager for guest mode
-                    // Show message about guest mode limitations
-                    if (getContext() != null) {
-                        Toast.makeText(getContext(), "Guest mode: Following features are limited", Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    // Not authenticated and not in guest mode - redirect to login
-                    Toast.makeText(getContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
-                    if (getActivity() != null) {
-                        startActivity(new Intent(getActivity(), LoginActivity.class));
-                        getActivity().finish();
-                    }
-                    return;
-                }
-            }
-        }
+    private void setupViewModel() {
+        viewModel = new ViewModelProvider(this).get(HomeFeedViewModel.class);
     }
 
     private void setupRecyclerView() {
-        userList = new ArrayList<>();
-        recipeList = new ArrayList<>(); // Initialize recipe list
-        
-        // Pass friendManager if available, otherwise pass null for guest mode
-        userListAdapter = new UserListAdapter(userList, friendManager, new UserListAdapter.OnUserClickListener() {
+        feedAdapter = new FeedPostAdapter(getContext());
+        feedAdapter.setOnFeedInteractionListener(new FeedPostAdapter.OnFeedInteractionListener() {
             @Override
-            public void onUserClick(User user) {
-                // Navigate to other user profile fragment
-                if (getContext() != null && getContext() instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) getContext();
-                    
-                    // Create bundle with user ID
-                    Bundle args = new Bundle();
-                    args.putString("target_user_id", user.getUserId());
-                    
-                    // Create and show fragment
-                    OtherUserProfileFragment fragment = new OtherUserProfileFragment();
-                    fragment.setArguments(args);
-                    
-                    activity.getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, fragment)
-                            .addToBackStack("other_user_profile")
-                            .commit();
-                }
+            public void onLikeClick(FeedItem item, int position) {
+                handleLikeClick(item, position);
+            }
+
+            @Override
+            public void onCommentClick(FeedItem item, int position) {
+                handleCommentClick(item, position);
+            }
+
+            @Override
+            public void onSaveClick(FeedItem item, int position) {
+                viewModel.toggleSave(item.getStableId());
+                feedAdapter.updateItem(item);
+            }
+
+            @Override
+            public void onShareClick(FeedItem item, int position) {
+                shareRecipe(item.getRecipe());
+            }
+
+            @Override
+            public void onArticleClick(FeedItem item, int position) {
+                openRecipeDetail(item.getRecipe());
             }
         });
-        recyclerViewUsers.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerViewUsers.setAdapter(userListAdapter);
         
-        // Setup recipe suggestions adapter
-        recipeSuggestionsAdapter = new RecipeSuggestionsAdapter(recipeList, new RecipeSuggestionsAdapter.OnRecipeClickListener() {
-            @Override
-            public void onDeleteRecipe(Recipe recipe) {
-                // Handle recipe deletion (only for user's own recipes)
-                deleteRecipe(recipe);
-            }
+        recyclerViewFeed.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewFeed.setAdapter(feedAdapter);
+        recyclerViewFeed.setHasFixedSize(true);
+    }
 
-            @Override
-            public void onHideRecipe(Recipe recipe) {
-                // Hide recipe for current user
-                if (recipe != null && recipe.getId() != null) {
-                    recipeSuggestionsAdapter.hideRecipe(recipe.getId());
-                    Toast.makeText(getContext(), "Recipe hidden from your view", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onRecipeClick(Recipe recipe) {
-                // Navigate to recipe details
-                if (getContext() != null && getContext() instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) getContext();
-                    
-                    // Create bundle with recipe ID
-                    Bundle args = new Bundle();
-                    args.putString("recipe_id", recipe.getId());
-                    
-                    // Create and show recipe details fragment
-                    // Assuming there's a recipe details fragment
-                    // RecipeDetailFragment fragment = new RecipeDetailFragment();
-                    // fragment.setArguments(args);
-                    // 
-                    // activity.getSupportFragmentManager()
-                    //         .beginTransaction()
-                    //         .replace(R.id.fragment_container, fragment)
-                    //         .addToBackStack("recipe_detail")
-                    //         .commit();
-                }
-            }
+    private void setupSwipeRefresh() {
+        Log.d(TAG, "🔄 Setting up SwipeRefreshLayout");
+        
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            Log.d(TAG, "🔄 Swipe refresh triggered");
+            viewModel.refreshFeed();
         });
-        recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)); // Horizontal scrolling for recipe suggestions
-        recyclerViewRecipes.setAdapter(recipeSuggestionsAdapter);
-    }
-
-    private void loadUsers() {
-        // Load all users except the current user
-        if (db == null || currentUserId == null) {
-            Toast.makeText(getContext(), "Database or user not initialized", Toast.LENGTH_SHORT).show();
-            return;
-        }
         
-        db.collection("users")
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        Toast.makeText(getContext(), "Error loading users: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    if (value != null) {
-                        getActivity().runOnUiThread(() -> {
-                            userList.clear();
-                            for (DocumentChange dc : value.getDocumentChanges()) {
-                                User user = dc.getDocument().toObject(User.class);
-                                String userId = dc.getDocument().getId();
-                                
-                                // Check if user exists and is not deleted (has username field)
-                                if (user != null && 
-                                    !currentUserId.equals(userId) &&  // Don't show current user
-                                    user.getUsername() != null &&     // Filter out deleted users (no username)
-                                    !user.getUsername().isEmpty()) {  // Filter out deleted users (empty username)
-                                    
-                                    user.setUserId(userId);
-                                    userList.add(user);
-                                }
-                            }
-                            userListAdapter.notifyDataSetChanged();
-                        });
-                    }
-                });
-    }
-    
-    private void loadRecipes() {
-        // Load recipes from all users except the current user
-        if (db == null || currentUserId == null) {
-            Toast.makeText(getContext(), "Database or user not initialized", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        swipeRefreshLayout.setColorSchemeResources(
+            android.R.color.holo_blue_bright,
+            android.R.color.holo_green_light,
+            android.R.color.holo_orange_light,
+            android.R.color.holo_red_light
+        );
         
-        db.collection("recipes")
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        Toast.makeText(getContext(), "Error loading recipes: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    if (value != null) {
-                        getActivity().runOnUiThread(() -> {
-                            recipeList.clear();
-                            for (DocumentChange dc : value.getDocumentChanges()) {
-                                Recipe recipe = dc.getDocument().toObject(Recipe.class);
-                                String recipeId = dc.getDocument().getId();
-                                
-                                // Check if recipe exists and is not deleted
-                                if (recipe != null && recipe.getName() != null && !recipe.getName().isEmpty()) {
-                                    recipe.setId(recipeId);
-                                    recipeList.add(recipe);
-                                }
-                            }
-                            
-                            // Load user's hidden recipes to filter them out
-                            recipeSuggestionsAdapter.loadHiddenRecipes();
-                            recipeSuggestionsAdapter.updateRecipes(recipeList);
-                        });
-                    }
-                });
+        Log.d(TAG, "✅ SwipeRefreshLayout setup complete");
     }
     
-    private void setupRecipeToggleFunctionality() {
-        if (buttonToggleRecipes != null) {
-            buttonToggleRecipes.setOnClickListener(v -> {
-                if (recipeSuggestionsAdapter != null) {
-                    boolean currentlyShowing = recipeSuggestionsAdapter.areOtherUsersRecipesShown();
-                    recipeSuggestionsAdapter.setShowOtherUsersRecipes(!currentlyShowing);
-                    buttonToggleRecipes.setText(!currentlyShowing ? "Hide Other Recipes" : "Show Other Recipes");
+    private void setupAutoRefresh() {
+        Log.d(TAG, "⏰ Setting up auto-refresh every " + AUTO_REFRESH_INTERVAL + "ms");
+        
+        Runnable refreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // 🔴 CRITICAL: Stop auto-refresh on API error
+                if (isApiError && lastErrorCode == 402) {
+                    Log.d(TAG, "🚫 Auto-refresh stopped due to API 402 error");
+                    return;
                 }
-            });
-        }
-    }
-
-    private void setupSearchFunctionality() {
-        buttonSearch.setOnClickListener(v -> {
-            if (db == null || currentUserId == null) {
-                Toast.makeText(getContext(), "Database or user not initialized", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            String searchTerm = editTextSearch.getText().toString().trim();
-            if (!searchTerm.isEmpty()) {
-                // Search for users by username
-                db.collection("users")
-                        .whereGreaterThanOrEqualTo("username", searchTerm.toLowerCase())
-                        .whereLessThanOrEqualTo("username", searchTerm.toLowerCase() + "\uf8ff")
-                        .addSnapshotListener((value, error) -> {
-                            if (error != null) {
-                                Toast.makeText(getContext(), "Error searching users: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-
-                            if (value != null) {
-                                getActivity().runOnUiThread(() -> {
-                                    userList.clear();
-                                    for (DocumentChange dc : value.getDocumentChanges()) {
-                                        User user = dc.getDocument().toObject(User.class);
-                                        String userId = dc.getDocument().getId();
-                                        
-                                        // Check if user exists and is not deleted
-                                        if (user != null && 
-                                            !currentUserId.equals(userId) &&  // Don't show current user
-                                            user.getUsername() != null &&     // Filter out deleted users (no username)
-                                            !user.getUsername().isEmpty()) {  // Filter out deleted users (empty username)
-                                            
-                                            user.setUserId(userId);
-                                            userList.add(user);
-                                        }
-                                    }
-                                    userListAdapter.notifyDataSetChanged();
-                                });
-                            }
-                        });
-            } else {
-                // Load all users if search term is empty
-                loadUsers();
-            }
-        });
-    }
-    
-    private void deleteRecipe(Recipe recipe) {
-        if (recipe != null && recipe.getId() != null && db != null) {
-            // Only allow deletion of user's own recipes
-            if (currentUserId != null && currentUserId.equals(recipe.getAuthorId())) {
-                db.collection("recipes").document(recipe.getId())
-                        .delete()
-                        .addOnSuccessListener(aVoid -> {
-                            Toast.makeText(getContext(), "Recipe deleted", Toast.LENGTH_SHORT).show();
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(getContext(), "Error deleting recipe: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        });
-            } else {
-                Toast.makeText(getContext(), "You can only delete your own recipes", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    // Adapter for the user list
-    public static class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.UserListViewHolder> {
-        private List<User> userList;
-        private FriendManager friendManager;
-        private OnUserClickListener listener;
-
-        public interface OnUserClickListener {
-            void onUserClick(User user);
-        }
-
-        public UserListAdapter(List<User> userList, FriendManager friendManager, OnUserClickListener listener) {
-            this.userList = userList;
-            this.friendManager = friendManager;
-            this.listener = listener;
-        }
-
-        @NonNull
-        @Override
-        public UserListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_user, parent, false);
-            return new UserListViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull UserListViewHolder holder, int position) {
-            User user = userList.get(position);
-            holder.textViewUsername.setText(user.getUsername() != null ? user.getUsername() : "Unknown User");
-            
-            // Update button status based on follow status
-            holder.updateButtonStatus(user.getUserId(), friendManager);
-            
-            // Set click listener to view user profile
-            holder.itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onUserClick(user);
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return userList != null ? userList.size() : 0;
-        }
-
-        static class UserListViewHolder extends RecyclerView.ViewHolder {
-            TextView textViewUsername;
-            Button buttonFollow;
-
-            public UserListViewHolder(@NonNull View itemView) {
-                super(itemView);
                 
-                textViewUsername = itemView.findViewById(R.id.textViewUsername);
-                buttonFollow = itemView.findViewById(R.id.buttonFollow);
-            }
-            
-            public void updateButtonStatus(String userId, FriendManager friendManager) {
-                // Check if the current user follows this user
-                if (friendManager != null) {
-                    friendManager.isFollowing(userId)
-                            .addOnSuccessListener(isFollowing -> {
-                                if (isFollowing) {
-                                    buttonFollow.setText("Unfollow");
-                                    buttonFollow.setBackgroundResource(R.drawable.button_style); // Use a different style if desired
-                                } else {
-                                    buttonFollow.setText("Follow");
-                                    buttonFollow.setBackgroundResource(R.drawable.button_style);
-                                }
-                                
-                                buttonFollow.setEnabled(true);
-                                buttonFollow.setOnClickListener(v -> {
-                                    buttonFollow.setEnabled(false); // Prevent multiple clicks
-                                    
-                                    if (isFollowing) {
-                                        // Unfollow the user
-                                        friendManager.unfollowUser(userId)
-                                                .addOnSuccessListener(aVoid -> {
-                                                    buttonFollow.setText("Follow");
-                                                    Toast.makeText(itemView.getContext(), "Unfollowed user", Toast.LENGTH_SHORT).show();
-                                                })
-                                                .addOnFailureListener(e -> {
-                                                    Toast.makeText(itemView.getContext(), "Error unfollowing: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                                    buttonFollow.setEnabled(true); // Re-enable on error
-                                                });
-                                    } else {
-                                        // Follow the user
-                                        friendManager.followUser(userId)
-                                                .addOnSuccessListener(aVoid -> {
-                                                    buttonFollow.setText("Unfollow");
-                                                    Toast.makeText(itemView.getContext(), "Followed user", Toast.LENGTH_SHORT).show();
-                                                })
-                                                .addOnFailureListener(e -> {
-                                                    Toast.makeText(itemView.getContext(), "Error following: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                                    buttonFollow.setEnabled(true); // Re-enable on error
-                                                });
-                                    }
-                                });
-                            })
-                            .addOnFailureListener(e -> {
-                                buttonFollow.setText("Follow");
-                                buttonFollow.setEnabled(true);
-                            });
-                } else {
-                    // Handle null friend manager
-                    buttonFollow.setText("Follow");
-                    buttonFollow.setEnabled(false);
+                if (isAdded() && !isDetached()) {
+                    Log.d(TAG, "⏰ Auto-refresh triggered");
+                    viewModel.refreshFeed();
+                    autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
                 }
             }
-        }
+        };
+        
+        // Start auto-refresh after initial delay
+        autoRefreshHandler.postDelayed(refreshRunnable, AUTO_REFRESH_INTERVAL);
+        
+        Log.d(TAG, "✅ Auto-refresh setup complete");
+    }
+
+    private void observeViewModel() {
+        viewModel.getSingleUiState().observe(getViewLifecycleOwner(), this::render);
+            
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
+            if (error != null && !error.isEmpty()) {
+                Log.e(TAG, "🔍 [ERROR_LOG] " + error);
+            }
+        });
     }
     
+    private void render(HomeUiState state) {
+        Log.d(TAG, "🎯 [RENDER] State: " + state.getStatus());
+            
+        switch (state.getStatus()) {
+            case LOADING:
+                showLoading();
+                break;
+                    
+            case SUCCESS:
+                if (state.getData() != null) {
+                    feedAdapter.setFeedItems(state.getData());
+                }
+                showContent();
+                // 🔴 CRITICAL: Reset API error state on success
+                if (isApiError) {
+                    isApiError = false;
+                    lastErrorCode = 0;
+                    Log.d(TAG, "✅ API error state reset");
+                }
+                break;
+                    
+            case EMPTY:
+                showEmpty();
+                break;
+                    
+            case ERROR:
+                // 🔴 CRITICAL: Check for 402 error
+                String errorMessage = state.getErrorMessage() != null ? state.getErrorMessage() : "Unknown Error";
+                if (errorMessage.contains("402")) {
+                    isApiError = true;
+                    lastErrorCode = 402;
+                    Log.d(TAG, "🚫 API 402 error detected, stopping auto-refresh");
+                }
+                showError(errorMessage);
+                break;
+        }
+    }
+
+    private void showLoading() {
+        if (layoutLoading != null) layoutLoading.setVisibility(View.VISIBLE);
+        if (layoutError != null) layoutError.setVisibility(View.GONE);
+        if (layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
+        if (recyclerViewFeed != null) recyclerViewFeed.setVisibility(View.GONE);
+    }
+
+    private void showContent() {
+        if (layoutLoading != null) layoutLoading.setVisibility(View.GONE);
+        if (layoutError != null) layoutError.setVisibility(View.GONE);
+        if (layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
+        if (recyclerViewFeed != null) recyclerViewFeed.setVisibility(View.VISIBLE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+    }
+
+    private void showEmpty() {
+        if (layoutLoading != null) layoutLoading.setVisibility(View.GONE);
+        if (layoutError != null) layoutError.setVisibility(View.GONE);
+        if (layoutEmpty != null) layoutEmpty.setVisibility(View.VISIBLE);
+        if (recyclerViewFeed != null) recyclerViewFeed.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+    }
+
+    private void showError(String message) {
+        if (layoutLoading != null) layoutLoading.setVisibility(View.GONE);
+        if (layoutError != null) layoutError.setVisibility(View.VISIBLE);
+        if (layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
+        if (recyclerViewFeed != null) recyclerViewFeed.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+        if (message != null && getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareRecipe(com.example.kitchenbrain.Recipe recipe) {
+        if (recipe != null) {
+            String shareText = "Check out this recipe: " + recipe.getName() + "\n" + recipe.getVideoUrl();
+            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, shareText);
+            startActivity(android.content.Intent.createChooser(shareIntent, "Share via"));
+        }
+    }
+
+    private void openRecipeDetail(com.example.kitchenbrain.Recipe recipe) {
+        if (recipe != null) {
+            RecipeDetailFragment fragment = RecipeDetailFragment.newInstance(recipe);
+            getParentFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+        }
+    }
+
+    private void handleLikeClick(FeedItem item, int position) {
+        Log.d(TAG, "❤️ Like clicked: position=" + position);
+        
+        // 🔥 CRITICAL: Debounce protection
+        if (isLiking) {
+            Log.d(TAG, "⏳ Like already in progress, ignoring click");
+            return;
+        }
+        
+        String postId = generatePostId(item);
+        isLiking = true;
+        
+        likeManager.toggleLike(postId, currentUserId, new LikeManager.LikeCallback() {
+            @Override
+            public void onSuccess(LikeManager.LikeResult result) {
+                Log.d(TAG, "✅ Like toggle success: " + result.toString());
+                // Update UI through ViewModel
+                viewModel.toggleLike(item.getStableId());
+                isLiking = false; // Reset debounce
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Like toggle failed: " + error);
+                isLiking = false; // Reset debounce on error
+                Toast.makeText(getContext(), "Like failed: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void handleCommentClick(FeedItem item, int position) {
+        Log.d(TAG, "💬 Comment clicked: position=" + position);
+        
+        String postId = generatePostId(item);
+        String postTitle = item.getRecipe() != null ? item.getRecipe().getName() : "Recipe";
+        
+        // Open Instagram-style comments bottom sheet
+        CommentsBottomSheet commentsSheet = CommentsBottomSheet.newInstance(postId, postTitle);
+        commentsSheet.show(getChildFragmentManager(), "CommentsBottomSheet");
+    }
+
+    private String generatePostId(FeedItem item) {
+        if (item != null && item.getRecipe() != null) {
+            return "recipe_" + item.getRecipe().getId();
+        }
+        return "unknown_post";
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Clean up FriendManager resources
-        if (friendManager != null) {
-            friendManager.cleanup();
+        if (feedAdapter != null) feedAdapter.clear();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        
+        // Stop auto-refresh
+        if (autoRefreshHandler != null) {
+            autoRefreshHandler.removeCallbacksAndMessages(null);
         }
+        
+        viewModel = null;
+        likeManager = null;
+        commentsManager = null;
+        
+        Log.d(TAG, "🏳️ HomeFragment destroyed - social features cleaned up");
     }
 }

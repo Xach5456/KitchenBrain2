@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.activity.OnBackPressedCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.kitchenbrain.MainActivity;
 import com.google.firebase.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,7 @@ public class ProfileSetupFragment extends Fragment {
 
             // Update user profile in Firestore
             Map<String, Object> userProfile = new HashMap<>();
+            userProfile.put("userId", userId); // ✅ CRITICAL: Ensure userId field is set
             userProfile.put("username", username);
             userProfile.put("email", FirebaseAuth.getInstance().getCurrentUser().getEmail());
             userProfile.put("avatarUrl", ""); // Default avatar

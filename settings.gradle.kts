@@ -22,6 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Kitchen Brain"
+rootProject.name = "KitchenBrain"
 include(":app")
- 

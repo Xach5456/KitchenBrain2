@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.kitchenbrain.repository.FollowRepository;
+import com.example.kitchenbrain.manager.FollowGraphRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -38,7 +40,8 @@ public class OtherUserProfileFragment extends Fragment {
     private FirebaseAuth auth;
     private String targetUserId;
     private String currentUserId;
-    private FriendManager friendManager;
+    private FollowRepository followRepository;
+    private FollowGraphRepository followGraph;
 
     public static OtherUserProfileFragment newInstance(String userId) {
         OtherUserProfileFragment fragment = new OtherUserProfileFragment();
@@ -79,7 +82,8 @@ public class OtherUserProfileFragment extends Fragment {
         currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
         
         if (currentUserId != null) {
-            friendManager = new FriendManager(db, currentUserId);
+            followRepository = new FollowRepository();
+            followGraph = FollowGraphRepository.getInstance();
         }
     }
 
@@ -91,11 +95,6 @@ public class OtherUserProfileFragment extends Fragment {
             @Override
             public void onDeleteRecipe(Recipe recipe) {
                 // Empty implementation - no deletion allowed for other user's recipes
-            }
-            
-            @Override
-            public void onHideRecipe(Recipe recipe) {
-                // Empty implementation - no hide functionality for other user's recipes
             }
             
             @Override
@@ -129,6 +128,8 @@ public class OtherUserProfileFragment extends Fragment {
         db.collection("users").document(targetUserId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
+                    if (!isAdded() || getContext() == null) return;
+                    
                     if (documentSnapshot.exists()) {
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
@@ -148,11 +149,15 @@ public class OtherUserProfileFragment extends Fragment {
                             
                             // Load user's recipes
                             loadUserRecipes();
+                            
+                            // Check follow status and update button
+                            checkFollowStatus();
                         }
+
                     }
                 })
                 .addOnFailureListener(e -> {
-                    if (getContext() != null) {
+                    if (isAdded() && getContext() != null) {
                         Toast.makeText(getContext(), "Error loading user data", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -169,6 +174,8 @@ public class OtherUserProfileFragment extends Fragment {
                 .whereEqualTo("authorId", targetUserId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!isAdded() || getContext() == null) return;
+                    
                     recipeList.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Recipe recipe = document.toObject(Recipe.class);
@@ -176,51 +183,71 @@ public class OtherUserProfileFragment extends Fragment {
                         recipeList.add(recipe);
                     }
                     recipeAdapter.updateRecipes(recipeList);
-                    textViewRecipesCount.setText("Recipes: " + recipeList.size());
+                    if (textViewRecipesCount != null) {
+                        textViewRecipesCount.setText("Recipes: " + recipeList.size());
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    if (getContext() != null) {
+                    if (isAdded() && getContext() != null) {
                         Toast.makeText(getContext(), "Error loading recipes", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
+    private void checkFollowStatus() {
+        if (followGraph != null && targetUserId != null) {
+            // Use instant cache check instead of Firestore query
+            boolean isFollowing = followGraph.isFollowing(targetUserId);
+            
+            if (!isAdded() || getContext() == null) return;
+            
+            if (isFollowing) {
+                buttonFollow.setText(R.string.following);
+            } else {
+                buttonFollow.setText(R.string.follow);
+            }
+        }
+    }
+
     private void setupClickListeners() {
         if (buttonFollow != null) {
             buttonFollow.setOnClickListener(v -> {
-                if (currentUserId == null || targetUserId == null) {
-                    Toast.makeText(getContext(), "Unable to follow user", Toast.LENGTH_SHORT).show();
+                if (currentUserId == null || targetUserId == null || !isAdded()) {
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "Unable to follow user", Toast.LENGTH_SHORT).show();
+                    }
                     return;
                 }
                 
-                if (friendManager != null) {
-                    friendManager.isFollowing(targetUserId)
-                            .addOnSuccessListener(isFollowing -> {
-                                if (isFollowing) {
-                                    // Unfollow
-                                    friendManager.unfollowUser(targetUserId)
-                                            .addOnSuccessListener(aVoid -> {
-                                                buttonFollow.setText("Follow");
-                                                Toast.makeText(getContext(), "Unfollowed user", Toast.LENGTH_SHORT).show();
-                                            })
-                                            .addOnFailureListener(e -> {
-                                                Toast.makeText(getContext(), "Error unfollowing user", Toast.LENGTH_SHORT).show();
-                                            });
-                                } else {
-                                    // Follow
-                                    friendManager.followUser(targetUserId)
-                                            .addOnSuccessListener(aVoid -> {
-                                                buttonFollow.setText("Unfollow");
-                                                Toast.makeText(getContext(), "Followed user", Toast.LENGTH_SHORT).show();
-                                            })
-                                            .addOnFailureListener(e -> {
-                                                Toast.makeText(getContext(), "Error following user", Toast.LENGTH_SHORT).show();
-                                            });
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(getContext(), "Error checking follow status", Toast.LENGTH_SHORT).show();
-                            });
+                if (followRepository != null) {
+                    // Check current status from cache
+                    boolean isFollowing = followGraph.isFollowing(targetUserId);
+                    
+                    if (isFollowing) {
+                        // Unfollow
+                        followRepository.unfollowUser(currentUserId, targetUserId, (success, error) -> {
+                            if (!isAdded() || getContext() == null) return;
+                            
+                            if (success) {
+                                buttonFollow.setText(R.string.follow);
+                                Toast.makeText(getContext(), "Unfollowed user", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } else {
+                        // Follow
+                        followRepository.followUser(currentUserId, targetUserId, (success, error) -> {
+                            if (!isAdded() || getContext() == null) return;
+                            
+                            if (success) {
+                                buttonFollow.setText(R.string.following);
+                                Toast.makeText(getContext(), "Followed user", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 }
             });
         }
@@ -229,8 +256,6 @@ public class OtherUserProfileFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (friendManager != null) {
-            friendManager.cleanup();
-        }
+        // FollowGraphRepository is singleton - no cleanup needed here
     }
 }

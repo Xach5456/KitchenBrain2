@@ -12,12 +12,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FieldValue;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggestionsAdapter.RecipeViewHolder> {
 
@@ -29,11 +26,9 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private String currentUserId;
-    private Set<String> hiddenRecipeIds; // Track hidden recipes for current user
 
     public interface OnRecipeClickListener {
         void onDeleteRecipe(Recipe recipe);
-        void onHideRecipe(Recipe recipe);
         void onRecipeClick(Recipe recipe);
     }
 
@@ -49,7 +44,6 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
         this.showOtherUsersRecipes = true; // By default, show other users' recipes
         this.auth = FirebaseAuth.getInstance();
         this.db = FirebaseFirestore.getInstance();
-        this.hiddenRecipeIds = new HashSet<>();
         this.currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
         updateFilteredRecipes(); // Initialize filtered list
     }
@@ -104,7 +98,6 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
     // Helper method to determine if a recipe should be included in the filtered list
     private boolean shouldIncludeRecipe(Recipe recipe) {
         if (recipe == null) return false;
-        if (hiddenRecipeIds.contains(recipe.getId())) return false; // Skip hidden recipes
 
         // If showing other users' recipes is disabled, only show current user's recipes
         if (!showOtherUsersRecipes && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
@@ -114,53 +107,11 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
         return true;
     }
 
-    // Method to hide a recipe for the current user only
-    public void hideRecipe(String recipeId) {
-        if (recipeId != null) {
-            hiddenRecipeIds.add(recipeId);
-            updateFilteredRecipes(); // Refresh the list
-            
-            // Update user's hidden recipes in Firestore (so it persists across sessions)
-            if (currentUserId != null && db != null) {
-                db.collection("users").document(currentUserId)
-                    .update("hiddenRecipes", FieldValue.arrayUnion(recipeId))
-                    .addOnFailureListener(e -> {
-                        // If update fails, remove from local set and retry
-                        hiddenRecipeIds.remove(recipeId);
-                        if (listener != null) {
-                            Toast.makeText(null, "Failed to hide recipe", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-            }
-        }
-    }
-
-    // Method to load user's hidden recipes from Firestore
-    public void loadHiddenRecipes() {
-        if (currentUserId != null && db != null) {
-            db.collection("users").document(currentUserId)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        List<String> userHiddenRecipes = (List<String>) document.get("hiddenRecipes");
-                        if (userHiddenRecipes != null) {
-                            hiddenRecipeIds.addAll(userHiddenRecipes);
-                            updateFilteredRecipes();
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // Continue without loading hidden recipes
-                });
-        }
-    }
-
     static class RecipeViewHolder extends RecyclerView.ViewHolder {
         private TextView recipeNameTextView;
         private TextView recipeTimeTextView;
         private TextView recipeAuthorTextView; // View for author name
         private ImageButton btnDeleteRecipe;
-        private ImageButton btnHideRecipe; // Button to hide recipe
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -169,7 +120,6 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
             recipeTimeTextView = itemView.findViewById(R.id.recipeTime);
             recipeAuthorTextView = itemView.findViewById(R.id.recipeAuthor);
             btnDeleteRecipe = itemView.findViewById(R.id.btnDeleteRecipe);
-            btnHideRecipe = itemView.findViewById(R.id.btnHideRecipe);
         }
 
         public void bind(Recipe recipe, OnRecipeClickListener listener, FirebaseAuth auth, boolean allowEditing, String currentUserId) {
@@ -181,34 +131,40 @@ public class RecipeSuggestionsAdapter extends RecyclerView.Adapter<RecipeSuggest
                 // Show author name if available
                 if (recipeAuthorTextView != null && recipe.getUsername() != null) {
                     recipeAuthorTextView.setText("by " + recipe.getUsername());
+                    recipeAuthorTextView.setVisibility(View.VISIBLE);
+                } else {
+                    recipeAuthorTextView.setVisibility(View.GONE);
                 }
             }
 
-            // Only show delete button if editing is allowed and it's the user's own recipe
+            // CRITICAL FIX: Show delete button if editing is allowed OR if it's the user's own recipe
             String recipeAuthorId = recipe != null ? recipe.getAuthorId() : null;
-            if (allowEditing && recipe != null && currentUserId != null && recipeAuthorId != null && 
-                currentUserId.equals(recipeAuthorId)) {
+            boolean isOwnRecipe = (currentUserId != null && recipeAuthorId != null &&
+                                   currentUserId.equals(recipeAuthorId));
+                        
+            android.util.Log.d("RecipeAdapter", "Bind recipe: " + (recipe != null ? recipe.getName() : "null"));
+            android.util.Log.d("RecipeAdapter", "  AuthorId: " + recipeAuthorId);
+            android.util.Log.d("RecipeAdapter", "  CurrentUser: " + currentUserId);
+            android.util.Log.d("RecipeAdapter", "  IsOwnRecipe: " + isOwnRecipe);
+            android.util.Log.d("RecipeAdapter", "  AllowEditing: " + allowEditing);
+                        
+            // FIXED: Show delete button if allowEditing is true OR if it's own recipe
+            if ((allowEditing || isOwnRecipe) && recipe != null) {
+                android.util.Log.d("RecipeAdapter", "  Showing DELETE button (allowEditing=" + allowEditing + " OR isOwnRecipe=" + isOwnRecipe + ")");
                 btnDeleteRecipe.setVisibility(View.VISIBLE);
                 btnDeleteRecipe.setOnClickListener(v -> {
+                    android.util.Log.d("RecipeAdapter", "  DELETE button clicked for recipe: " + recipe.getId());
                     if (listener != null) {
                         listener.onDeleteRecipe(recipe);
+                    } else {
+                        android.util.Log.e("RecipeAdapter", "  ERROR: Listener is null!");
                     }
                 });
             } else {
+                // ALWAYS hide delete button for other users' recipes
+                android.util.Log.d("RecipeAdapter", "  Hiding delete button (allowEditing=" + allowEditing + ", isOwnRecipe=" + isOwnRecipe + ")");
                 btnDeleteRecipe.setVisibility(View.GONE);
-            }
-
-            // Show hide button for other users' recipes (but not for current user's own recipes)
-            if (recipe != null && currentUserId != null && recipeAuthorId != null &&
-                !currentUserId.equals(recipeAuthorId)) { // Only show hide button for other users' recipes
-                btnHideRecipe.setVisibility(View.VISIBLE);
-                btnHideRecipe.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onHideRecipe(recipe);
-                    }
-                });
-            } else {
-                btnHideRecipe.setVisibility(View.GONE);
+                btnDeleteRecipe.setOnClickListener(null); // Clear any click listener
             }
 
             // Set click listener for recipe item

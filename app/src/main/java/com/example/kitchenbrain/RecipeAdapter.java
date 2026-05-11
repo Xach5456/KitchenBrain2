@@ -1,5 +1,6 @@
 package com.example.kitchenbrain;
 
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,16 +9,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FieldValue;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
 
@@ -26,14 +25,15 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     private OnRecipeClickListener listener;
     private boolean allowEditing;
     private boolean showOtherUsersRecipes; // New property to control showing other users' recipes
+    private boolean requireMutualFollow; // New property to require mutual follow for viewing recipes
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private String currentUserId;
-    private Set<String> hiddenRecipeIds; // Track hidden recipes for current user
+    private List<String> myFollowingList; // List of user IDs that current user follows
+    private List<String> myFollowersList; // List of user IDs that follow current user
 
     public interface OnRecipeClickListener {
         void onDeleteRecipe(Recipe recipe);
-        void onHideRecipe(Recipe recipe);
         void onRecipeClick(Recipe recipe);
     }
 
@@ -47,9 +47,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         this.listener = listener;
         this.allowEditing = allowEditing;
         this.showOtherUsersRecipes = true; // By default, show other users' recipes
+        this.requireMutualFollow = false; // By default, don't require mutual follow (backward compatible)
+        this.myFollowingList = new ArrayList<>();
+        this.myFollowersList = new ArrayList<>();
         this.auth = FirebaseAuth.getInstance();
         this.db = FirebaseFirestore.getInstance();
-        this.hiddenRecipeIds = new HashSet<>();
         this.currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
         updateFilteredRecipes(); // Initialize filtered list
     }
@@ -59,6 +61,16 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_recipe, parent, false);
+        // Horizontal strip on Home: fixed card width so multiple recipes peek on screen.
+        if (parent instanceof RecyclerView) {
+            RecyclerView.LayoutManager lm = ((RecyclerView) parent).getLayoutManager();
+            if (lm instanceof LinearLayoutManager
+                    && ((LinearLayoutManager) lm).getOrientation() == LinearLayoutManager.HORIZONTAL) {
+                int widthPx = (int) TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, 280, parent.getResources().getDisplayMetrics());
+                view.setLayoutParams(new RecyclerView.LayoutParams(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+        }
         return new RecipeViewHolder(view);
     }
 
@@ -84,6 +96,39 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         updateFilteredRecipes();
     }
     
+    // Method to enable/disable mutual follow requirement
+    public void setRequireMutualFollow(boolean require) {
+        this.requireMutualFollow = require;
+        updateFilteredRecipes();
+    }
+    
+    // Method to set the list of users that current user follows
+    public void setMyFollowingList(List<String> followingList) {
+        this.myFollowingList = followingList != null ? new ArrayList<>(followingList) : new ArrayList<>();
+        updateFilteredRecipes();
+    }
+    
+    // Method to set the list of users that follow current user
+    public void setMyFollowersList(List<String> followersList) {
+        this.myFollowersList = followersList != null ? new ArrayList<>(followersList) : new ArrayList<>();
+        updateFilteredRecipes();
+    }
+    
+    // Method to check if a specific user is being followed by current user
+    public boolean amIFollowingUser(String userId) {
+        return myFollowingList != null && myFollowingList.contains(userId);
+    }
+    
+    // Method to check if a specific user follows current user
+    public boolean isUserFollowingMe(String userId) {
+        return myFollowersList != null && myFollowersList.contains(userId);
+    }
+    
+    // Method to check if there's a mutual follow relationship with a specific user
+    public boolean hasMutualFollowWithUser(String userId) {
+        return amIFollowingUser(userId) && isUserFollowingMe(userId);
+    }
+    
     // Getter to check if other users' recipes are being shown
     public boolean areOtherUsersRecipesShown() {
         return this.showOtherUsersRecipes;
@@ -104,55 +149,27 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     // Helper method to determine if a recipe should be included in the filtered list
     private boolean shouldIncludeRecipe(Recipe recipe) {
         if (recipe == null) return false;
-        if (hiddenRecipeIds.contains(recipe.getId())) return false; // Skip hidden recipes
 
         // If showing other users' recipes is disabled, only show current user's recipes
         if (!showOtherUsersRecipes && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
             return false;
         }
-
-        return true;
-    }
-
-    // Method to hide a recipe for the current user only
-    public void hideRecipe(String recipeId) {
-        if (recipeId != null) {
-            hiddenRecipeIds.add(recipeId);
-            updateFilteredRecipes(); // Refresh the list
+        
+        // If mutual follow is required, check if there's a mutual relationship
+        if (requireMutualFollow && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
+            String recipeAuthorId = recipe.getAuthorId();
             
-            // Update user's hidden recipes in Firestore (so it persists across sessions)
-            if (currentUserId != null && db != null) {
-                db.collection("users").document(currentUserId)
-                    .update("hiddenRecipes", FieldValue.arrayUnion(recipeId))
-                    .addOnFailureListener(e -> {
-                        // If update fails, remove from local set and retry
-                        hiddenRecipeIds.remove(recipeId);
-                        if (listener != null) {
-                            Toast.makeText(null, "Failed to hide recipe", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            // Check if current user follows the recipe author AND recipe author follows current user
+            boolean iFollowAuthor = myFollowingList != null && myFollowingList.contains(recipeAuthorId);
+            boolean authorFollowsMe = myFollowersList != null && myFollowersList.contains(recipeAuthorId);
+            
+            // Only show recipe if there's mutual follow
+            if (!iFollowAuthor || !authorFollowsMe) {
+                return false;
             }
         }
-    }
 
-    // Method to load user's hidden recipes from Firestore
-    public void loadHiddenRecipes() {
-        if (currentUserId != null && db != null) {
-            db.collection("users").document(currentUserId)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        List<String> userHiddenRecipes = (List<String>) document.get("hiddenRecipes");
-                        if (userHiddenRecipes != null) {
-                            hiddenRecipeIds.addAll(userHiddenRecipes);
-                            updateFilteredRecipes();
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // Continue without loading hidden recipes
-                });
-        }
+        return true;
     }
 
     static class RecipeViewHolder extends RecyclerView.ViewHolder {
@@ -160,7 +177,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         private TextView recipeTimeTextView;
         private TextView recipeAuthorTextView; // View for author name
         private ImageButton btnDeleteRecipe;
-        private ImageButton btnHideRecipe; // Button to hide recipe
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -169,7 +185,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             recipeTimeTextView = itemView.findViewById(R.id.recipeTime);
             recipeAuthorTextView = itemView.findViewById(R.id.recipeAuthor);
             btnDeleteRecipe = itemView.findViewById(R.id.btnDeleteRecipe);
-            btnHideRecipe = itemView.findViewById(R.id.btnHideRecipe);
         }
 
         public void bind(Recipe recipe, OnRecipeClickListener listener, FirebaseAuth auth, boolean allowEditing, String currentUserId) {
@@ -181,13 +196,19 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 // Show author name if available
                 if (recipeAuthorTextView != null && recipe.getUsername() != null) {
                     recipeAuthorTextView.setText("by " + recipe.getUsername());
+                    recipeAuthorTextView.setVisibility(View.VISIBLE);
+                } else {
+                    recipeAuthorTextView.setVisibility(View.GONE);
                 }
             }
 
-            // Only show delete button if editing is allowed and it's the user's own recipe
+            // CRITICAL FIX: Show delete button if editing is allowed OR if it's the user's own recipe
             String recipeAuthorId = recipe != null ? recipe.getAuthorId() : null;
-            if (allowEditing && recipe != null && currentUserId != null && recipeAuthorId != null && 
-                currentUserId.equals(recipeAuthorId)) {
+            boolean isOwnRecipe = (currentUserId != null && recipeAuthorId != null &&
+                                   currentUserId.equals(recipeAuthorId));
+                        
+            // FIXED: Show delete button if allowEditing is true OR if it's own recipe
+            if ((allowEditing || isOwnRecipe) && recipe != null) {
                 btnDeleteRecipe.setVisibility(View.VISIBLE);
                 btnDeleteRecipe.setOnClickListener(v -> {
                     if (listener != null) {
@@ -195,20 +216,9 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                     }
                 });
             } else {
+                // ALWAYS hide delete button for other users' recipes
                 btnDeleteRecipe.setVisibility(View.GONE);
-            }
-
-            // Show hide button for other users' recipes (but not for current user's own recipes)
-            if (recipe != null && currentUserId != null && recipeAuthorId != null &&
-                !currentUserId.equals(recipeAuthorId)) { // Only show hide button for other users' recipes
-                btnHideRecipe.setVisibility(View.VISIBLE);
-                btnHideRecipe.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onHideRecipe(recipe);
-                    }
-                });
-            } else {
-                btnHideRecipe.setVisibility(View.GONE);
+                btnDeleteRecipe.setOnClickListener(null); // Clear any click listener
             }
 
             // Set click listener for recipe item

@@ -1,112 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_primary">
+    android:fillViewport="true">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Recipe Name -->
-        <TextView
-            android:id="@+id/recipeName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Recipe Name"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Author -->
-        <TextView
-            android:id="@+id/recipeAuthor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Created by: Username"
-            android:textSize="16sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Cooking Time -->
-        <TextView
-            android:id="@+id/recipeTime"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Cooking time: XX minutes"
-            android:textSize="16sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginBottom="16dp" />
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <!-- Recipe Image -->
         <ImageView
-            android:id="@+id/recipeImage"
+            android:id="@+id/imgRecipeDetail"
             android:layout_width="match_parent"
             android:layout_height="200dp"
             android:scaleType="centerCrop"
-            android:layout_marginBottom="16dp"
-            android:visibility="visible" />
+            android:background="@drawable/ic_launcher_background" />
 
-        <!-- Recipe Video -->
-        <VideoView
-            android:id="@+id/recipeVideo"
+        <!-- Title -->
+        <TextView
+            android:id="@+id/txtTitleDetail"
             android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:layout_marginBottom="16dp"
-            android:visibility="visible" />
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Info Chips -->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/txtTimeDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_category_tag"
+                android:padding="8dp"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:drawableStart="@android:drawable/ic_menu_recent_history"
+                android:drawablePadding="4dp" />
+
+            <TextView
+                android:id="@+id/txtDifficultyDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_category_tag"
+                android:padding="8dp"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:layout_marginStart="8dp"
+                android:drawableStart="@android:drawable/ic_menu_info_details"
+                android:drawablePadding="4dp" />
+
+            <TextView
+                android:id="@+id/txtServingsDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_category_tag"
+                android:padding="8dp"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:layout_marginStart="8dp"
+                android:drawableStart="@android:drawable/ic_menu_share"
+                android:drawablePadding="4dp" />
+
+        </LinearLayout>
 
         <!-- Description -->
         <TextView
-            android:id="@+id/recipeDescription"
+            android:id="@+id/txtDescriptionDetail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Recipe description goes here..."
             android:textSize="16sp"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="16dp" />
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="16dp"
+            android:lineSpacingExtra="4dp" />
 
-        <!-- Ingredients Header -->
+        <!-- Ingredients Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Ingredients"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="@android:color/black"
             android:layout_marginBottom="8dp" />
 
-        <!-- Ingredients List -->
         <TextView
-            android:id="@+id/recipeIngredients"
+            android:id="@+id/txtIngredientsDetail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ingredients list goes here..."
-            android:textSize="16sp"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="16dp" />
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:background="@drawable/bg_input_field"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:lineSpacingExtra="2dp" />
 
-        <!-- Instructions Header -->
+        <!-- Instructions Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cooking Instructions"
+            android:text="Instructions"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@color/text_primary"
+            android:textColor="@android:color/black"
             android:layout_marginBottom="8dp" />
 
-        <!-- Instructions -->
         <TextView
-            android:id="@+id/recipeInstructions"
+            android:id="@+id/txtInstructionsDetail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cooking instructions go here..."
-            android:textSize="16sp"
-            android:textColor="@color/text_primary"
-            android:layout_marginBottom="16dp" />
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:background="@drawable/bg_input_field"
+            android:padding="12dp"
+            android:lineSpacingExtra="2dp" />
+
+        <!-- Category -->
+        <TextView
+            android:id="@+id/txtCategoryDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_difficulty_easy"
+            android:padding="8dp"
+            android:textSize="12sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="16dp" />
 
     </LinearLayout>
 

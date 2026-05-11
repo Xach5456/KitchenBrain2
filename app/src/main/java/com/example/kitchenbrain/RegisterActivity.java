@@ -2,12 +2,14 @@ package com.example.kitchenbrain;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -19,6 +21,8 @@ import com.google.firebase.Timestamp;
 
 public class RegisterActivity extends AppCompatActivity {
 
+    private static final String TAG = "RegisterActivity";
+
     private EditText editTextEmail, editTextPassword, editTextConfirmPassword;
     private Button registerButton;
     private TextView textLoginLink;
@@ -27,14 +31,17 @@ public class RegisterActivity extends AppCompatActivity {
     private FirebaseFirestore db;
 
     @Override
-    public void onBackPressed() {
-        // Blocking back button
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+        // Block back button using OnBackPressedDispatcher
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Do nothing - block back button
+            }
+        });
 
         // Initialize UI elements
         editTextEmail = findViewById(R.id.editTextEmail);
@@ -42,7 +49,7 @@ public class RegisterActivity extends AppCompatActivity {
         editTextConfirmPassword = findViewById(R.id.editTextConfirmPassword);
         registerButton = findViewById(R.id.registerButton);
         textLoginLink = findViewById(R.id.textLoginLink);
-        progressBar = findViewById(R.id.progressBar); // Assuming there's a progress bar in layout
+        progressBar = findViewById(R.id.progressBar);
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
@@ -52,21 +59,11 @@ public class RegisterActivity extends AppCompatActivity {
             progressBar.setVisibility(View.GONE);
         }
 
-        // Registration button handler
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                registerUser();
-            }
-        });
+        // Registration button handler - lambda expression
+        registerButton.setOnClickListener(v -> registerUser());
 
-        // Login link handler
-        textLoginLink.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-            }
-        });
+        // Login link handler - lambda expression
+        textLoginLink.setOnClickListener(v -> startActivity(new Intent(RegisterActivity.this, LoginActivity.class)));
     }
 
     private void registerUser() {
@@ -146,8 +143,14 @@ public class RegisterActivity extends AppCompatActivity {
                         }
                     } else {
                         // Handle specific error types
+                        Exception exception = task.getException();
+                        if (exception == null) {
+                            Toast.makeText(RegisterActivity.this, "Registration failed: Unknown error", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        
                         try {
-                            throw task.getException();
+                            throw exception;
                         } catch (FirebaseAuthWeakPasswordException e) {
                             Toast.makeText(RegisterActivity.this, getString(R.string.weak_password_error), Toast.LENGTH_LONG).show();
                         } catch (FirebaseAuthInvalidCredentialsException e) {
@@ -164,6 +167,7 @@ public class RegisterActivity extends AppCompatActivity {
     private void storeUserData(String userId, String email) {
         // Create a User object with initial data
         User userData = new User();
+        userData.setUserId(userId); // ✅ CRITICAL: Set userId field for Firestore queries
         userData.setEmail(email);
         userData.setAvatarUrl(""); // Default avatar
         userData.setCreatedAt(Timestamp.now()); // Current timestamp
@@ -175,10 +179,11 @@ public class RegisterActivity extends AppCompatActivity {
         db.collection("users").document(userId)
                 .set(userData)
                 .addOnSuccessListener(aVoid -> {
-                    // Successfully stored user data
+                    Log.d(TAG, "User data stored successfully for userId: " + userId);
                 })
                 .addOnFailureListener(e -> {
                     // Handle failure to store user data
+                    Log.e(TAG, "Error storing user data: " + e.getMessage(), e);
                     Toast.makeText(RegisterActivity.this, "Error storing user data: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }

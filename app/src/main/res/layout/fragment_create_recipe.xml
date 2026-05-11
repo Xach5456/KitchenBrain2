@@ -3,182 +3,291 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_color"
-    android:padding="16dp">
+    android:background="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"
-            android:text="@string/create_recipe_title"
-            android:textColor="@color/text_primary"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:text="Create Recipe"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            android:layout_marginBottom="24dp" />
 
-        <!-- Recipe Name -->
+        <!-- Recipe Image -->
+        <ImageView
+            android:id="@+id/recipeImage"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_placeholder"
+            android:background="?attr/selectableItemBackground"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Recipe Title -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Recipe Title"
             android:layout_marginBottom="16dp"
-            android:textColorHint="@color/text_primary"
-            app:hintTextColor="@color/text_primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/recipeName"
+                android:id="@+id/titleEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/recipe_name_hint"
-                android:inputType="text"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_primary" />
-
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Recipe Description -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Description"
             android:layout_marginBottom="16dp"
-            android:textColorHint="@color/text_primary"
-            app:hintTextColor="@color/text_primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/recipeDescription"
+                android:id="@+id/descriptionEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/recipe_description_hint"
                 android:inputType="textMultiLine"
                 android:minLines="3"
-                android:maxLines="6"
-                android:scrollbars="vertical"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_primary" />
-
+                android:maxLines="5" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Cooking Time -->
+        <!-- Recipe Instructions -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:textColorHint="@color/text_primary"
-            app:hintTextColor="@color/text_primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/cookingTime"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/cooking_time_hint"
-                android:inputType="number"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_primary" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Instructions -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:textColorHint="@color/text_primary"
-            app:hintTextColor="@color/text_primary"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
+            android:hint="Instructions"
+            android:layout_marginBottom="12dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/cookingInstructions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/instructions_hint"
                 android:inputType="textMultiLine"
-                android:minLines="4"
-                android:maxLines="8"
-                android:scrollbars="vertical"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_primary" />
-
+                android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Ingredients Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnIngredients"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="@string/choose_ingredients_button"
-            android:textAllCaps="false"
-            app:cornerRadius="8dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-        <!-- Add Recipe Image -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:text="Select Ingredients"
             android:layout_marginBottom="8dp"
-            android:text="@string/add_image_text"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp" />
+            style="@style/Widget.Material3.Button.TonalButton" />
 
-        <androidx.cardview.widget.CardView
+        <TextView
+            android:id="@+id/textSelectedIngredients"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
+            android:text="No ingredients selected"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            android:padding="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
 
             <ImageView
-                android:id="@+id/recipeImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@string/add_image_text"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_placeholder" />
+                android:id="@+id/recipeVideo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
+                android:src="@drawable/ic_video"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/colorPrimary" />
 
-        </androidx.cardview.widget.CardView>
+            <TextView
+                android:id="@+id/textVideoUrl"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="No video selected"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall" />
+        </LinearLayout>
 
-        <!-- Add Recipe Video -->
+        <!-- Ingredients Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="@string/add_video_text"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp" />
+            android:text="Ingredients"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Add ingredient"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/ingredientsEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/addIngredientButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Add"
+                style="@style/Widget.Material3.Button.TextButton" />
+
+        </LinearLayout>
+
+        <!-- Ingredients Chips -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/ingredientsChipGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Steps Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Steps"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/stepsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:nestedScrollingEnabled="false" />
+
+        <Button
+            android:id="@+id/addStepButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            android:text="Add Step"
+            style="@style/Widget.Material3.Button.OutlinedButton" />
 
-            <VideoView
-                android:id="@+id/recipeVideo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@string/add_video_text" />
+        <!-- Recipe Details -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
 
-        </androidx.cardview.widget.CardView>
+            <!-- Difficulty -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="Difficulty:"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_gravity="center_vertical" />
 
-        <!-- Save Recipe Button -->
+            <Spinner
+                android:id="@+id/difficultySpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Cook Time -->
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/cookTimeEditText"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:hint="Min"
+                android:inputType="number"
+                android:background="@drawable/category_background"
+                android:padding="8dp" />
+
+        </LinearLayout>
+
+        <!-- Servings and Calories -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/servingsEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Servings"
+                android:inputType="number"
+                android:background="@drawable/category_background"
+                android:padding="8dp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/caloriesEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Calories"
+                android:inputType="number"
+                android:background="@drawable/category_background"
+                android:padding="8dp" />
+
+        </LinearLayout>
+
+        <!-- Tags -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Tags"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/tagsChipGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Save Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveRecipe"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/save_recipe_button"
-            android:textAllCaps="false"
-            app:cornerRadius="8dp"
-            style="@style/Widget.MaterialComponents.Button" />
+            android:text="Save Recipe"
+            android:layout_marginBottom="8dp"
+            style="@style/Widget.Material3.Button.TonalButton" />
+
+        <!-- Publish Button -->
+        <Button
+            android:id="@+id/publishButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Publish Recipe"
+            android:textSize="16sp"
+            android:padding="12dp"
+            style="@style/Widget.Material3.Button" />
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
 
     </LinearLayout>
-
 </ScrollView>

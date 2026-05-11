@@ -1,293 +1,159 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/background_primary">
 
-    <!-- Top section: Categories and Search Button -->
-    <LinearLayout
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:background="@color/background_primary"
+        app:elevation="0dp">
 
-        <!-- Scroll for categories -->
-        <ScrollView
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_margin="16dp">
+            android:layout_height="?attr/actionBarSize"
+            app:title="Search"
+            app:titleTextColor="@color/text_primary"
+            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge">
 
             <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="8dp">
 
-                <!-- Main Category -->
-                <LinearLayout
-                    android:id="@+id/mainCategoryLayout"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/category_background"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginTop="8dp">
+                <!-- Notifications Button with Circle Ripple -->
+                <ImageButton
+                    android:id="@+id/buttonNotifications"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_ripple"
+                    android:src="@drawable/ic_notifications"
+                    android:padding="10dp"
+                    app:tint="@color/text_primary"
+                    android:contentDescription="Notifications" />
 
-                    <TextView
-                        android:id="@+id/mainCategoryTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/main_category"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
+                <Space
+                    android:layout_width="8dp"
+                    android:layout_height="wrap_content" />
 
-                    <LinearLayout
-                        android:id="@+id/mainIngredientsContainer"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:paddingTop="8dp">
-
-                        <CheckBox
-                            android:id="@+id/checkbox_flour"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/flour"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_eggs"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/eggs"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_sugar"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/sugar"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_oil"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/oil"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Vegetables Category -->
-                <LinearLayout
-                    android:id="@+id/vegetableCategoryLayout"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/category_background"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginTop="16dp">
-
-                    <TextView
-                        android:id="@+id/vegetableCategoryTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/vegetables_category"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:padding="16dp" />
-
-                    <LinearLayout
-                        android:id="@+id/vegetableCategoryCheckBoxContainer"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:paddingTop="8dp">
-
-                        <CheckBox
-                            android:id="@+id/checkbox_potato"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/potato"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_onion"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/onion"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_carrot"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/carrot"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_pepper"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/pepper"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Fruits Category -->
-                <LinearLayout
-                    android:id="@+id/fruitCategoryLayout"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/category_background"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginTop="16dp">
-
-                    <TextView
-                        android:id="@+id/fruitCategoryTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/fruits_category"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:padding="16dp" />
-
-                    <LinearLayout
-                        android:id="@+id/fruitCategoryCheckBoxContainer"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:paddingTop="8dp">
-
-                        <CheckBox
-                            android:id="@+id/checkbox_apple"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/apple"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_banana"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/banana"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_orange"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/orange_fruit"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_pear"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/pear"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Dairy Products Category -->
-                <LinearLayout
-                    android:id="@+id/dairyCategoryLayout"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/category_background"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginTop="16dp">
-
-                    <TextView
-                        android:id="@+id/dairyCategoryTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/dairy_category"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:padding="16dp" />
-
-                    <LinearLayout
-                        android:id="@+id/dairyCategoryCheckBoxContainer"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:paddingTop="8dp">
-
-                        <CheckBox
-                            android:id="@+id/checkbox_milk"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/milk"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_sour_cream"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/sour_cream"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_cottage_cheese"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cottage_cheese"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                        <CheckBox
-                            android:id="@+id/checkbox_cheese"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cheese"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginBottom="8dp" />
-                    </LinearLayout>
-                </LinearLayout>
+                <!-- User Search Button (Primary Accent) -->
+                <ImageButton
+                    android:id="@+id/buttonUserSearch"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_ripple"
+                    android:src="@drawable/ic_person_search"
+                    android:padding="10dp"
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="Search users" />
 
             </LinearLayout>
-        </ScrollView>
 
-        <!-- Find Recipe Button -->
-        <Button
-            android:id="@+id/searchRecipeButton"
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Main Content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:text="@string/search_recipes_button"
-            android:textSize="18sp"
-            android:textColor="@color/on_primary_color"
-            android:background="@drawable/rounded_button_with_shadow" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-    </LinearLayout>
+            <!-- Selected Ingredients Chips (Horizontal) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewSelectedIngredients"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="12dp" />
 
-    <!-- RecyclerView for displaying search results -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewRecipes"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_margin="16dp" />
+            <!-- Search Bar for Ingredients -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
 
-</LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Search ingredients..."
+                    app:startIconDrawable="@drawable/ic_search"
+                    app:endIconMode="clear_text">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextSearchProducts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageButton
+                    android:id="@+id/buttonClearSearch"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_close"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:visibility="gone"
+                    app:tint="@color/text_secondary"
+                    android:contentDescription="Clear search" />
+            </LinearLayout>
+
+            <!-- Selection Status (Compact) -->
+            <TextView
+                android:id="@+id/textSelectedCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 selected"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Ingredients Grid (Compact - Limited to 20 items) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Recipes Header -->
+            <TextView
+                android:id="@+id/textRecipeCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 recipes"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Recipes List -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewRecipes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

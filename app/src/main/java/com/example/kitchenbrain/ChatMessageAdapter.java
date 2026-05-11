@@ -20,11 +20,20 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private List<ChatMessage> messages;
     private String currentUserId;
     private SimpleDateFormat dateFormat;
+    private OnMessageClickListener listener;
+
+    public interface OnMessageClickListener {
+        void onMessageClick(ChatMessage message, int position);
+    }
 
     public ChatMessageAdapter(List<ChatMessage> messages, String currentUserId) {
         this.messages = messages != null ? messages : new ArrayList<>();
         this.currentUserId = currentUserId;
         this.dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+    }
+
+    public void setOnMessageClickListener(OnMessageClickListener listener) {
+        this.listener = listener;
     }
 
     @NonNull
@@ -41,6 +50,11 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
+        // 🔍 DEBUG: Track bind calls
+        if (position == 0) {
+            android.util.Log.d("ADAPTER_DEBUG", "🔍 Bind position: " + position + ", list size: " + (messages != null ? messages.size() : 0));
+        }
+        
         if (messages == null || position < 0 || position >= messages.size()) {
             return;
         }
@@ -120,7 +134,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         }
     }
 
-    static class MessageViewHolder extends RecyclerView.ViewHolder {
+    class MessageViewHolder extends RecyclerView.ViewHolder {
         TextView textViewMessage;
         TextView textViewTimestamp;
         TextView textViewStatus;
@@ -129,7 +143,17 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             super(itemView);
             textViewMessage = itemView.findViewById(R.id.textViewMessage);
             textViewTimestamp = itemView.findViewById(R.id.textViewTimestamp);
-            textViewStatus = itemView.findViewById(R.id.textViewStatus); // This may be null for incoming messages
+            textViewStatus = itemView.findViewById(R.id.textViewStatus);
+            
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (listener != null && position != RecyclerView.NO_POSITION && messages != null && position < messages.size()) {
+                    ChatMessage message = messages.get(position);
+                    if (message != null) {
+                        listener.onMessageClick(message, position);
+                    }
+                }
+            });
         }
     }
 }

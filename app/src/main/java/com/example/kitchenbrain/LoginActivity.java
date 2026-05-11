@@ -1,8 +1,10 @@
 package com.example.kitchenbrain;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -21,6 +23,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView textRegisterLink, textGuestMode;
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;
+    private boolean navigated = false; // Защита от rapidActivityLaunch
 
     @Override
     public void onBackPressed() {
@@ -53,8 +56,7 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.isEmailVerified()) {
             // If user is already signed in and verified, redirect to MainActivity immediately
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish(); // Close LoginActivity
+            goToMain();
         }
 
         loginButton.setOnClickListener(new View.OnClickListener() {
@@ -84,10 +86,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Toast.makeText(LoginActivity.this, getString(R.string.guest_mode_activated), Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                intent.putExtra("is_guest_mode", true);
-                startActivity(intent);
-                finish();
+                goToMainGuestMode();
             }
         });
     }
@@ -137,9 +136,18 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null && user.isEmailVerified()) {
+                            // 🔥 CRITICAL FIX: Сохраняем токен для стабильной авторизации
+                            String token = user.getUid();
+                            long tokenExpiresAt = System.currentTimeMillis() + (24 * 60 * 60 * 1000); // 24 часа
+                            getSharedPreferences("auth_prefs", MODE_PRIVATE)
+                                .edit()
+                                .putString("auth_token", token)
+                                .putLong("token_expires_at", tokenExpiresAt)
+                                .apply();
+                            
+                            Log.d("LOGIN_DEBUG", "✅ Token saved: " + token + ", expires at: " + tokenExpiresAt);
                             Toast.makeText(LoginActivity.this, getString(R.string.login_success), Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                            finish();
+                            goToMain();
                         } else if (user != null) {
                             Toast.makeText(LoginActivity.this, getString(R.string.verify_email_before_login), Toast.LENGTH_LONG).show();
                         }
@@ -156,5 +164,29 @@ public class LoginActivity extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    // Безопасная навигация с защитой от rapidActivityLaunch
+    private void goToMain() {
+        if (navigated) return;
+        navigated = true;
+
+        Log.d("AUTH_FLOW", "Login → Navigating to MainActivity with clear flags");
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+        finishAffinity();
+    }
+
+    private void goToMainGuestMode() {
+        if (navigated) return;
+        navigated = true;
+
+        Log.d("LOGIN_DEBUG", "✅ Guest mode activated - navigating to MainActivity");
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("is_guest_mode", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+        finish();
     }
 }

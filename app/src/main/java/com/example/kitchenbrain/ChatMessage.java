@@ -9,6 +9,7 @@ public class ChatMessage {
     private String text;
     private Timestamp timestamp;
     private String messageStatus; // sent, delivered, read
+    private String messageType;   // text, image, file
 
     public ChatMessage() {
         // Default constructor required for Firebase
@@ -21,6 +22,7 @@ public class ChatMessage {
         this.text = text;
         this.timestamp = timestamp;
         this.messageStatus = messageStatus;
+        this.messageType = "text"; // Default to text
     }
 
     // Getters and setters
@@ -41,4 +43,7 @@ public class ChatMessage {
 
     public String getMessageStatus() { return messageStatus; }
     public void setMessageStatus(String messageStatus) { this.messageStatus = messageStatus; }
+
+    public String getMessageType() { return messageType; }
+    public void setMessageType(String messageType) { this.messageType = messageType; }
 }

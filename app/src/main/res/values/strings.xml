@@ -19,10 +19,39 @@
     <string name="logout_button">Log Out</string>
     <string name="profile_title">User Profile</string>
     
+    <!-- Social Graph - Follow System -->
+    <string name="follow">Follow</string>
+    <string name="following">Following</string>
+    <string name="unfollowing">Unfollowing…</string>
+    <string name="requested">Requested</string>
+    <string name="follow_back">Follow Back</string>
+    <string name="mutual">✓ Mutual</string>
+    <string name="message">Message</string>
+    <string name="chat_not_available">Chat Not Available</string>
+    <string name="chat_mutual_required">You can only chat with mutual friends. Both users must follow each other.</string>
+    <string name="go_back">Go Back</string>
+    <string name="close_chat">Close Chat</string>
+    <string name="chat_no_longer_available">Chat No Longer Available</string>
+    <string name="mutual_relationship_broken">You can no longer chat with this user because the mutual follow relationship was broken.</string>
+    <string name="failed_to_unfollow">Failed to unfollow</string>
+    <string name="failed_to_follow">Failed to follow: %1$s</string>
+    
     <!-- Home Fragment -->
     <string name="home_welcome">Welcome to Kitchen Brain!</string>
     <string name="home_subtitle">Find and share delicious recipes</string>
+    <string name="loading_recipes">Loading fresh recipes…</string>
+    <string name="no_recipes_found">No recipes found</string>
+    <string name="pull_to_discover">Pull down to discover new culinary ideas</string>
+    <string name="failed_to_load_recipes">Failed to load recipes</string>
+    <string name="retry">Retry</string>
     
+    <!-- Search Fragment -->
+    <string name="recipes_found_format">%d recipes found</string>
+    <string name="ingredients_selected_format">%d ingredients selected</string>
+    <string name="recipes_count_format">%d recipes</string>
+    <string name="recipes_matching_format">%d recipes matching</string>
+    <string name="selection_cleared">Selection cleared</string>
+
     <!-- Create Recipe Fragment -->
     <string name="create_recipe_title">Create New Recipe</string>
     <string name="recipe_name_hint">Recipe Name</string>
@@ -39,9 +68,10 @@
     <string name="nav_search">Search</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_add_recipe">Add Recipe</string>
-    <string name="nav_chat">Chat</string>
+    <string name="nav_favorites">Favorites</string>
     <string name="nav_friends">Friends</string>
     <string name="nav_video">Video</string>
+    <string name="nav_chat">Chat</string>
     
     <!-- Search Fragment -->
     <string name="search_recipes_button">Find Recipe</string>
@@ -83,7 +113,6 @@
     <string name="password_match_error">Passwords do not match</string>
     <string name="login_success">Login successful</string>
     <string name="verification_sent">Verification email sent</string>
-    <string name="recipe_saved">Recipe saved successfully!</string>
     <string name="recipe_deleted">Recipe deleted</string>
     <string name="error_deleting">Error deleting recipe</string>
     <string name="error_loading_user">Failed to load user data</string>
@@ -113,4 +142,76 @@
     <string name="user_not_found_error">No account found with this email. Please register first.</string>
     <string name="verify_email_before_login">Please verify your email before logging in.</string>
     <string name="guest_mode_activated">Guest Mode activated</string>
+
+    <!-- Recipe detail (RecipeDetailActivity) -->
+    <string name="recipe_detail_title">Recipe</string>
+    <string name="recipe_detail_missing">Recipe data is missing. Closing screen.</string>
+    <string name="recipe_image_content_description">Recipe photo</string>
+    <string name="recipe_section_description">Description</string>
+    <string name="recipe_section_ingredients">Ingredients</string>
+    <string name="recipe_section_instructions">Instructions</string>
+    <string name="recipe_add_favorite">Add to favorites</string>
+    <string name="recipe_start_cooking">Start cooking</string>
+    <string name="recipe_time_minutes">%1$d min</string>
+    <string name="recipe_time_unknown">Time not specified</string>
+    <string name="recipe_servings">%1$d servings</string>
+    <string name="recipe_no_ingredients">No ingredients listed.</string>
+    <string name="recipe_ingredient_bullet">• %1$s</string>
+    <string name="recipe_favorite_stub">Favorites will be available in a future update.</string>
+    <string name="recipe_start_cooking_stub">Cooking mode will be available in a future update.</string>
+    <string name="home_featured_recipes">Featured recipes</string>
+    <string name="recipe_article_instructions">Read the full story in your browser:\n%1$s\n\nTip: use the system Back key to return to the app.</string>
+    <string name="recipe_article_no_link">No direct link for this item. Check the source name above or try a web search.</string>
+
+    <string name="recipe_by_author">by %1$s</string>
+    <string name="recipe_author_unknown">by Community</string>
+    <string name="recipe_likes_count">%1$d likes</string>
+    <string name="recipe_comments_count">%1$d comments</string>
+    <string name="recipe_no_steps">No preparation steps yet.</string>
+    <string name="recipe_section_steps">Step-by-step</string>
+    <string name="recipe_section_similar">You may also like</string>
+    <string name="recipe_section_nutrition">Nutrition</string>
+    <string name="recipe_section_chef_tips">Chef\'s tips</string>
+    <string name="recipe_action_save">Save</string>
+    <string name="recipe_action_share">Share</string>
+    <string name="recipe_action_cook">Cook</string>
+    <string name="recipe_difficulty_article">Article</string>
+    <string name="recipe_news_chef_tip">Skim the intro, then jump to the method — food writers often hide timings in the body copy.</string>
+    <string name="recipe_news_nutrition_placeholder">Nutrition data not available for news articles. Open the original source for details.</string>
+
+    <!-- Privacy & Access -->
+    <string name="recipe_privacy_title">Recipe not available</string>
+    <string name="recipe_privacy_message">This recipe is available only to mutual subscribers. Follow each other to unlock.</string>
+    <string name="recipe_privacy_ok">OK</string>
+
+    <!-- Video -->
+    <string name="recipe_section_video">Video</string>
+    <string name="recipe_watch_video">Watch Video</string>
+
+    <!-- Rating -->
+    <string name="recipe_rate_this">Rate this recipe</string>
+    <string name="recipe_rating_submitted">Rating submitted! Thank you.</string>
+    <string name="recipe_rating_error">Failed to submit rating.</string>
+
+    <!-- Save / Unsave -->
+    <string name="recipe_saved">Recipe saved</string>
+    <string name="recipe_unsaved">Recipe unsaved</string>
+    <string name="recipe_save_error">Failed to save recipe.</string>
+
+    <!-- Cooking Timer -->
+    <string name="recipe_cooking_timer">Cooking timer</string>
+    <string name="recipe_timer_started">Timer started for %1$d minutes</string>
+    <string name="recipe_timer_complete">Cooking time is up!</string>
+
+    <!-- Similar recipes -->
+    <string name="recipe_no_similar">No similar recipes found</string>
+
+    <!-- Chat Screen -->
+    <string name="user_status_online">online</string>
+    <string name="more_options_desc">More options</string>
+    <string name="attach_desc">Attach</string>
+    <string name="message_hint">Message</string>
+    <string name="emoji_desc">Emoji</string>
+    <string name="send_desc">Send</string>
+    <string name="back_desc">Back</string>
 </resources>

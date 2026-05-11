@@ -32,6 +32,46 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 
+# Keep Firestore model classes - DO NOT OBFUSCATE OR REMOVE
+# These classes require no-argument constructors for Firestore deserialization
+-keep class com.example.kitchenbrain.model.Recipe { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.Category { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.FoodProduct { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.NewsItem { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.CulinaryNewsItem { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.ChatMessage { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.model.ChatUser { 
+    public <init>();
+    *;
+}
+-keep class com.example.kitchenbrain.User { 
+    public <init>();
+    *;
+}
+
 # Keep app classes
 -keep class com.example.kitchenbrain.** { *; }
 -keep class * extends java.lang.annotation.Annotation { *; }
+
+# Kotlin coroutine runtime (state machines reference kotlin.coroutines.jvm.internal.* e.g. SpillingKt)
+-keep class kotlin.coroutines.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+-dontwarn kotlinx.coroutines.**

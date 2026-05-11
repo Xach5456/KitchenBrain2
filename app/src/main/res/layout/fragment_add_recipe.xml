@@ -30,15 +30,16 @@
         android:padding="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <!-- Add recipe button -->
+    <!-- Floating Action Button for adding recipes -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddRecipe"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Add recipe"
         android:src="@drawable/ic_add"
-        app:tint="@color/on_primary_color" />
+        app:tint="@color/on_primary_color"
+        app:backgroundTint="@color/primary_blue"
+        app:fabSize="normal" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

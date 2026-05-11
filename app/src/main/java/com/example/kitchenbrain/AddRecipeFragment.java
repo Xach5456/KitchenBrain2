@@ -1,6 +1,7 @@
 package com.example.kitchenbrain;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,11 +67,9 @@ public class AddRecipeFragment extends Fragment {
                     }
                 }
                 
-                getParentFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new CreateRecipeFragment())
-                        .addToBackStack(null)
-                        .commitAllowingStateLoss();
+                if (getActivity() != null) {
+                    ((MainActivity) getActivity()).showFragment(new CreateRecipeFragment(), "create_recipe");
+                }
             });
         }
     }
@@ -82,10 +81,15 @@ public class AddRecipeFragment extends Fragment {
             if (task.isSuccessful()) {
                 recipeList.clear();
                 for (QueryDocumentSnapshot doc : task.getResult()) {
-                    Recipe recipe = doc.toObject(Recipe.class);
-                    if (recipe != null) {
-                        recipe.setId(doc.getId());
-                        recipeList.add(recipe);
+                    try {
+                        Recipe recipe = doc.toObject(Recipe.class);
+                        if (recipe != null) {
+                            recipe.setId(doc.getId());
+                            recipeList.add(recipe);
+                        }
+                    } catch (Exception e) {
+                        Log.e("AddRecipeFragment", "Error deserializing recipe: " + doc.getId(), e);
+                        // Skip this recipe and continue loading others
                     }
                 }
                 updateRecipeList();
@@ -114,12 +118,6 @@ public class AddRecipeFragment extends Fragment {
                                     Toast.makeText(getContext(), "Error deleting recipe", Toast.LENGTH_SHORT).show();
                                 });
                     }
-                }
-                
-                @Override 
-                public void onHideRecipe(Recipe recipe) {
-                    // Empty implementation for AddRecipeFragment - hide functionality not applicable here
-                    // This fragment displays all recipes, not suggestions to hide
                 }
                 
                 @Override 

@@ -7,15 +7,19 @@ import java.util.List;
 public class User {
     private String userId;
     private String username;
+    private String usernameLower;  // 🔥 NEW: For case-insensitive search
     private String email;
     private String avatarUrl;
     private Timestamp createdAt;
     private int recipesCount;
+    private int followersCount;  // ✅ NEW: Follower count
+    private int followingCount;  // ✅ NEW: Following count
     private List<String> followers;
     private List<String> following;
     private Boolean isOnline;
     private Object lastSeen; // Can be Long (from DB) or Timestamp (for flexibility)
     private Boolean isGuest;
+    private Boolean messagingEnabled;
     
     // Fields for Firestore mapping compatibility
     private Boolean online;
@@ -29,6 +33,7 @@ public class User {
         this.online = false; // Default value
         this.lastSeenAsDate = null;
         this.lastSeenAsTimestamp = null;
+        this.messagingEnabled = true; // Default: messaging enabled
     }
 
     // Constructor with username
@@ -41,6 +46,7 @@ public class User {
         this.online = false; // Default value
         this.lastSeenAsDate = null;
         this.lastSeenAsTimestamp = null;
+        this.messagingEnabled = true; // Default: messaging enabled
     }
 
     // Full constructor
@@ -55,6 +61,7 @@ public class User {
         this.online = false; // Default value
         this.lastSeenAsDate = null;
         this.lastSeenAsTimestamp = null;
+        this.messagingEnabled = true; // Default: messaging enabled
     }
 
 
@@ -68,14 +75,36 @@ public class User {
         this.hiddenRecipes = hiddenRecipes;
     }
 
+    // Document ID field for Firestore compatibility
+    private String id;
+
+    public String getId() {
+        return id != null ? id : userId;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+        // 🔥 CRITICAL FIX: Ensure userId is synced with Firestore document ID
+        if (this.userId == null) {
+            this.userId = id;
+        }
+    }
+
+    public String getDisplayId() {
+        return id != null ? id : userId;
+    }
+
 
     // Getters and Setters
     public String getUserId() {
-        return userId;
+        return userId != null ? userId : id;
     }
 
     public void setUserId(String userId) {
         this.userId = userId;
+        if (this.id == null) {
+            this.id = userId;
+        }
     }
 
     public String getUsername() {
@@ -84,6 +113,10 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+        // 🔥 AUTO-UPDATE: Set usernameLower when username changes
+        if (username != null) {
+            this.usernameLower = username.toLowerCase().trim();
+        }
     }
 
     public String getEmail() {
@@ -116,6 +149,23 @@ public class User {
 
     public void setRecipesCount(int recipesCount) {
         this.recipesCount = recipesCount;
+    }
+
+    // ✅ NEW: Getters and Setters for follower/following counts
+    public int getFollowersCount() {
+        return followersCount;
+    }
+
+    public void setFollowersCount(int followersCount) {
+        this.followersCount = followersCount;
+    }
+
+    public int getFollowingCount() {
+        return followingCount;
+    }
+
+    public void setFollowingCount(int followingCount) {
+        this.followingCount = followingCount;
     }
 
     public List<String> getFollowers() {
@@ -158,6 +208,14 @@ public class User {
     
     public void setIsGuest(Boolean isGuest) {
         this.isGuest = isGuest;
+    }
+    
+    public Boolean getMessagingEnabled() {
+        return messagingEnabled;
+    }
+    
+    public void setMessagingEnabled(Boolean messagingEnabled) {
+        this.messagingEnabled = messagingEnabled;
     }
     
     // Convenience method to get last seen as Timestamp
@@ -208,6 +266,15 @@ public class User {
         } else {
             this.lastSeen = null;
         }
+    }
+    
+    // 🔥 NEW: usernameLower getters/setters
+    public String getUsernameLower() {
+        return usernameLower;
+    }
+    
+    public void setUsernameLower(String usernameLower) {
+        this.usernameLower = usernameLower;
     }
     
     // Getters and setters for the additional fields to resolve Firestore warnings

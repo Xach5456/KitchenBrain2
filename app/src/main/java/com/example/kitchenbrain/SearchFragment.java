@@ -1,308 +1,404 @@
 package com.example.kitchenbrain;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.SavedStateViewModelFactory;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.kitchenbrain.adapter.ProductChipAdapter;
+import com.example.kitchenbrain.adapter.RecipeAdapter;
+import com.example.kitchenbrain.data.ProductDatabase;
+import com.example.kitchenbrain.model.FoodProduct;
+import com.example.kitchenbrain.viewmodel.SearchViewModel;
+import com.example.kitchenbrain.model.Recipe;
+import com.example.kitchenbrain.ui.UserSearchBottomSheet;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class SearchFragment extends Fragment {
+/**
+ * Fragment для поиска рецептов по ингредиентам.
+ * Состояние ингредиентов сохраняется во ViewModel (Activity Scope).
+ */
+public class SearchFragment extends Fragment implements ProductChipAdapter.OnProductSelectionListener {
 
-    private EditText editTextSearch;
-    private RecyclerView recyclerView;
+    private static final String TAG = "SearchFragment";
+    
+    private SearchViewModel viewModel;
+    
+    private RecyclerView recyclerViewSelectedIngredients;
+    private RecyclerView recyclerViewIngredients;
+    private TextView textSelectedCount;
+    private EditText editTextSearchProducts;
+    private ImageButton buttonClearSearch;
+    private ImageButton buttonNotifications;
+    private RecyclerView recyclerViewRecipes;
+    private TextView textRecipeCount;
+    
+    private ProductChipAdapter selectedIngredientsAdapter;
+    private ProductChipAdapter ingredientAdapter;
     private RecipeAdapter recipeAdapter;
-    private List<Recipe> allRecipes;
-    private List<Recipe> filteredRecipes;
+    
     private FirebaseFirestore db;
-
-    // Ingredient checkboxes
-    private CheckBox checkboxFlour, checkboxEggs, checkboxSugar, checkboxOil;
-    private CheckBox checkboxPotato, checkboxOnion, checkboxCarrot, checkboxPepper;
-    private CheckBox checkboxApple, checkboxBanana, checkboxOrange, checkboxPear;
-    private CheckBox checkboxMilk, checkboxSourCream, checkboxCottageCheese, checkboxCheese;
+    private ExecutorService backgroundExecutor;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private volatile boolean isFragmentActive = true;
     
-    // Layout containers to show/hide ingredient categories
-    private LinearLayout mainIngredientsContainer, vegetableCategoryCheckBoxContainer;
-    private LinearLayout fruitCategoryCheckBoxContainer, dairyCategoryCheckBoxContainer;
+    private final Handler searchDebounceHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+    private static final long SEARCH_DEBOUNCE_DELAY_MS = 300;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        initExecutor();
+        
+        // Получаем ViewModel, привязанную к Activity, чтобы состояние сохранялось при навигации
+        viewModel = new ViewModelProvider(requireActivity(), 
+                new SavedStateViewModelFactory(requireActivity().getApplication(), requireActivity())).get(SearchViewModel.class);
+    }
+
+    private void initExecutor() {
+        if (backgroundExecutor == null || backgroundExecutor.isShutdown()) {
+            backgroundExecutor = Executors.newFixedThreadPool(4);
+            Log.d(TAG, "🚀 Background executor initialized");
+        }
+    }
     
-    // Selected ingredients
-    private List<String> selectedIngredients;
-
-    public SearchFragment() {}
-
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_search, container, false);
-
-        initViews(view);
-        setupClickListeners(view);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        isFragmentActive = true;
+        initExecutor(); // Ensure executor is ready even if fragment instance was reused
         
-        allRecipes = new ArrayList<>();
-        filteredRecipes = new ArrayList<>();
-        selectedIngredients = new ArrayList<>();
-        db = FirebaseFirestore.getInstance();
-
-        loadAllRecipes();
-
+        View view = inflater.inflate(R.layout.fragment_search, container, false);
+        
+        initViews(view);
+        setupAdapters();
+        setupListeners();
+        initFirebase();
+        observeViewModel();
+        
+        // Загружаем данные только если они еще не в памяти
+        if (!viewModel.isDataLoaded()) {
+            loadInitialData();
+        } else {
+            // Если данные есть, просто загружаем список всех продуктов для выбора
+            loadIngredients();
+        }
+        
         return view;
     }
-
+    
     private void initViews(View view) {
-        editTextSearch = view.findViewById(R.id.editTextSearch);
-        recyclerView = view.findViewById(R.id.recyclerViewRecipes);
-        if (recyclerView != null && getContext() != null) {
-            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewSelectedIngredients = view.findViewById(R.id.recyclerViewSelectedIngredients);
+        recyclerViewIngredients = view.findViewById(R.id.recyclerViewProducts);
+        textSelectedCount = view.findViewById(R.id.textSelectedCount);
+        editTextSearchProducts = view.findViewById(R.id.editTextSearchProducts);
+        buttonClearSearch = view.findViewById(R.id.buttonClearSearch);
+        buttonNotifications = view.findViewById(R.id.buttonNotifications);
+        recyclerViewRecipes = view.findViewById(R.id.recyclerViewRecipes);
+        textRecipeCount = view.findViewById(R.id.textRecipeCount);
+        
+        // Скрываем лишние переключатели, если они есть в XML
+        View chipGroup = view.findViewById(R.id.chipGroupSearchType);
+        if (chipGroup != null) chipGroup.setVisibility(View.GONE);
+        
+        View searchHeader = view.findViewById(R.id.buttonUserSearch);
+        if (searchHeader != null) {
+            searchHeader.setOnClickListener(v -> openUserSearchScreen());
         }
 
-        // Initialize ingredient checkboxes
-        checkboxFlour = view.findViewById(R.id.checkbox_flour);
-        checkboxEggs = view.findViewById(R.id.checkbox_eggs);
-        checkboxSugar = view.findViewById(R.id.checkbox_sugar);
-        checkboxOil = view.findViewById(R.id.checkbox_oil);
-        
-        checkboxPotato = view.findViewById(R.id.checkbox_potato);
-        checkboxOnion = view.findViewById(R.id.checkbox_onion);
-        checkboxCarrot = view.findViewById(R.id.checkbox_carrot);
-        checkboxPepper = view.findViewById(R.id.checkbox_pepper);
-        
-        checkboxApple = view.findViewById(R.id.checkbox_apple);
-        checkboxBanana = view.findViewById(R.id.checkbox_banana);
-        checkboxOrange = view.findViewById(R.id.checkbox_orange);
-        checkboxPear = view.findViewById(R.id.checkbox_pear);
-        
-        checkboxMilk = view.findViewById(R.id.checkbox_milk);
-        checkboxSourCream = view.findViewById(R.id.checkbox_sour_cream);
-        checkboxCottageCheese = view.findViewById(R.id.checkbox_cottage_cheese);
-        checkboxCheese = view.findViewById(R.id.checkbox_cheese);
-        
-        // Initialize category containers
-        mainIngredientsContainer = view.findViewById(R.id.mainIngredientsContainer);
-        vegetableCategoryCheckBoxContainer = view.findViewById(R.id.vegetableCategoryCheckBoxContainer);
-        fruitCategoryCheckBoxContainer = view.findViewById(R.id.fruitCategoryCheckBoxContainer);
-        dairyCategoryCheckBoxContainer = view.findViewById(R.id.dairyCategoryCheckBoxContainer);
-    }
-
-    private void setupClickListeners(View view) {
-        // Set click listeners for category titles to expand/collapse ingredient lists
-        View mainCategoryLayout = view.findViewById(R.id.mainCategoryLayout);
-        View vegetableCategoryLayout = view.findViewById(R.id.vegetableCategoryLayout);
-        View fruitCategoryLayout = view.findViewById(R.id.fruitCategoryLayout);
-        View dairyCategoryLayout = view.findViewById(R.id.dairyCategoryLayout);
-        
-        if (mainCategoryLayout != null) {
-            mainCategoryLayout.setOnClickListener(v -> toggleCategory(mainIngredientsContainer));
-        }
-        if (vegetableCategoryLayout != null) {
-            vegetableCategoryLayout.setOnClickListener(v -> toggleCategory(vegetableCategoryCheckBoxContainer));
-        }
-        if (fruitCategoryLayout != null) {
-            fruitCategoryLayout.setOnClickListener(v -> toggleCategory(fruitCategoryCheckBoxContainer));
-        }
-        if (dairyCategoryLayout != null) {
-            dairyCategoryLayout.setOnClickListener(v -> toggleCategory(dairyCategoryCheckBoxContainer));
-        }
-
-        // Set listeners for ingredient checkboxes
-        setupCheckboxListener(checkboxFlour, "flour");
-        setupCheckboxListener(checkboxEggs, "eggs");
-        setupCheckboxListener(checkboxSugar, "sugar");
-        setupCheckboxListener(checkboxOil, "oil");
-        
-        setupCheckboxListener(checkboxPotato, "potato");
-        setupCheckboxListener(checkboxOnion, "onion");
-        setupCheckboxListener(checkboxCarrot, "carrot");
-        setupCheckboxListener(checkboxPepper, "pepper");
-        
-        setupCheckboxListener(checkboxApple, "apple");
-        setupCheckboxListener(checkboxBanana, "banana");
-        setupCheckboxListener(checkboxOrange, "orange");
-        setupCheckboxListener(checkboxPear, "pear");
-        
-        setupCheckboxListener(checkboxMilk, "milk");
-        setupCheckboxListener(checkboxSourCream, "sour cream");
-        setupCheckboxListener(checkboxCottageCheese, "cottage cheese");
-        setupCheckboxListener(checkboxCheese, "cheese");
-
-        // Set search text listener
-        if (editTextSearch != null) {
-            editTextSearch.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    filterRecipes();
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
-        }
-
-        // Set up search button click listener
-        View searchButton = view.findViewById(R.id.searchRecipeButton);
-        if (searchButton != null) {
-            searchButton.setOnClickListener(v -> filterRecipes());
+        if (buttonNotifications != null) {
+            buttonNotifications.setOnClickListener(v -> openNotificationsScreen());
         }
     }
-
-    private void setupCheckboxListener(CheckBox checkBox, String ingredientName) {
-        if (checkBox != null) {
-            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    if (!selectedIngredients.contains(ingredientName)) {
-                        selectedIngredients.add(ingredientName);
-                    }
-                } else {
-                    selectedIngredients.remove(ingredientName);
+    
+    private void setupAdapters() {
+        // Selected ingredients - Horizontal RecyclerView
+        selectedIngredientsAdapter = new ProductChipAdapter(getContext(), (product, isSelected) -> {
+            if (!isSelected) {
+                viewModel.removeIngredient(product.getDisplayName());
+            }
+        });
+        recyclerViewSelectedIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        recyclerViewSelectedIngredients.setAdapter(selectedIngredientsAdapter);
+        
+        // All ingredients - Grid RecyclerView
+        ingredientAdapter = new ProductChipAdapter(getContext(), this);
+        recyclerViewIngredients.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        recyclerViewIngredients.setAdapter(ingredientAdapter);
+        
+        recipeAdapter = new RecipeAdapter(new ArrayList<>(), getContext(), new RecipeAdapter.OnRecipeClickListener() {
+            @Override
+            public void onRecipeClick(com.example.kitchenbrain.model.Recipe recipe, int position) {
+                // TODO: Open recipe detail
+            }
+            
+            @Override
+            public void onFavoriteClick(com.example.kitchenbrain.model.Recipe recipe, int position) {
+                // Handle favorite
+            }
+        });
+        recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewRecipes.setAdapter(recipeAdapter);
+    }
+    
+    private void setupListeners() {
+        editTextSearchProducts.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().trim();
+                if (searchRunnable != null) searchDebounceHandler.removeCallbacks(searchRunnable);
+                searchRunnable = () -> filterIngredients(query);
+                searchDebounceHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_DELAY_MS);
+                
+                if (buttonClearSearch != null) {
+                    buttonClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
                 }
-                filterRecipes(); // Filter recipes whenever an ingredient is selected/deselected
+            }
+            
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+        
+        if (buttonClearSearch != null) {
+            buttonClearSearch.setOnClickListener(v -> {
+                viewModel.clearIngredients();
+                editTextSearchProducts.setText("");
+                Toast.makeText(getContext(), R.string.selection_cleared, Toast.LENGTH_SHORT).show();
             });
         }
     }
-
-    private void toggleCategory(LinearLayout container) {
-        if (container != null) {
-            if (container.getVisibility() == View.GONE) {
-                container.setVisibility(View.VISIBLE);
-            } else {
-                container.setVisibility(View.GONE);
+    
+    private void initFirebase() {
+        db = FirebaseFirestore.getInstance();
+    }
+    
+    private void observeViewModel() {
+        viewModel.getSelectedIngredients().observe(getViewLifecycleOwner(), ingredients -> {
+            if (selectedIngredientsAdapter != null) {
+                selectedIngredientsAdapter.setSelectedNames(ingredients);
+                selectedIngredientsAdapter.setOnlyShowSelected(true);
             }
+            if (ingredientAdapter != null) {
+                ingredientAdapter.setSelectedNames(ingredients);
+            }
+            textSelectedCount.setText(getString(R.string.ingredients_selected_format, ingredients.size()));
+            updateMatchingRecipes();
+        });
+        
+        viewModel.getAllRecipes().observe(getViewLifecycleOwner(), recipes -> updateMatchingRecipes());
+    }
+
+    @Override
+    public void onProductToggle(FoodProduct product, boolean isSelected) {
+        if (isSelected) {
+            viewModel.addIngredient(product.getDisplayName());
+        } else {
+            viewModel.removeIngredient(product.getDisplayName());
         }
     }
 
-    private void loadAllRecipes() {
-        if (db == null) return;
-        db.collection("recipes").get().addOnCompleteListener(task -> {
-            if (!isAdded() || getContext() == null) return;
-            if (task.isSuccessful()) {
-                allRecipes.clear();
-                for (QueryDocumentSnapshot doc : task.getResult()) {
-                    Recipe recipe = doc.toObject(Recipe.class);
-                    if (recipe != null) {
-                        recipe.setId(doc.getId());
-                        allRecipes.add(recipe);
-                    }
+    /**
+     * Выполняет поиск по всей базе, но отображает только ТОП-10 результатов
+     * для чистоты интерфейса и лучшего UX.
+     * Реализована сортировка по релевантности (Instagram-style).
+     */
+    private void filterIngredients(String query) {
+        if (query.isEmpty()) {
+            loadIngredients();
+            return;
+        }
+
+        initExecutor();
+        backgroundExecutor.execute(() -> {
+            // 1. Ищем по ВСЕЙ базе данных (Global Scope)
+            List<FoodProduct> results = ProductDatabase.searchProducts(query);
+            
+            // 2. Сортировка по релевантности
+            String lowerQuery = query.toLowerCase().trim();
+            results.sort((a, b) -> {
+                String nameA = a.getName().toLowerCase();
+                String nameB = b.getName().toLowerCase();
+                
+                boolean startsA = nameA.startsWith(lowerQuery);
+                boolean startsB = nameB.startsWith(lowerQuery);
+                
+                if (startsA != startsB) {
+                    return startsA ? -1 : 1;
                 }
-                filterRecipes();
-            } else {
-                Toast.makeText(getContext(), "Error loading recipes", Toast.LENGTH_SHORT).show();
-            }
+                
+                if (startsA) {
+                    // Оба начинаются с запроса, тогда более короткое название выше
+                    return Integer.compare(nameA.length(), nameB.length());
+                }
+                
+                return nameA.compareTo(nameB);
+            });
+
+            // 3. Ограничиваем выдачу в UI до 10 наиболее релевантных элементов
+            List<FoodProduct> displayList = results.size() > 10 ? results.subList(0, 10) : results;
+            
+            mainHandler.post(() -> {
+                if (isFragmentActive && ingredientAdapter != null) {
+                    ingredientAdapter.setProducts(displayList);
+                    // Прокручиваем в начало, чтобы пользователь сразу видел топ совпадений
+                    recyclerViewIngredients.scrollToPosition(0);
+                }
+            });
         });
     }
 
-    private void filterRecipes() {
-        if (allRecipes == null) {
-            filteredRecipes = new ArrayList<>();
-        } else {
-            filteredRecipes = new ArrayList<>();
-            
-            String searchQuery = editTextSearch != null ? editTextSearch.getText().toString().trim().toLowerCase() : "";
-            
-            for (Recipe recipe : allRecipes) {
-                boolean matchesSearch = true;
-                boolean matchesIngredients = true;
-                
-                // Check if recipe matches search query (name or description)
-                if (!searchQuery.isEmpty()) {
-                    matchesSearch = (recipe.getName() != null && recipe.getName().toLowerCase().contains(searchQuery)) ||
-                                   (recipe.getDescription() != null && recipe.getDescription().toLowerCase().contains(searchQuery));
-                }
-                
-                // Check if recipe contains all selected ingredients
-                if (!selectedIngredients.isEmpty()) {
-                    matchesIngredients = recipe.containsIngredients(selectedIngredients);
-                }
-                
-                if (matchesSearch && matchesIngredients) {
-                    filteredRecipes.add(recipe);
-                }
-            }
-        }
-        updateRecipeList();
+    private void loadInitialData() {
+        loadIngredients();
+        loadRecipesFromFirestore();
     }
-
-    private void updateRecipeList() {
-        if (recyclerView == null || getContext() == null) return;
-        if (recipeAdapter == null) {
-            recipeAdapter = new RecipeAdapter(filteredRecipes != null ? filteredRecipes : new ArrayList<>(), new RecipeAdapter.OnRecipeClickListener() {
-                @Override 
-                public void onDeleteRecipe(Recipe recipe) {
-                    // Empty implementation for SearchFragment - deletion not allowed from search
-                }
-                
-                @Override 
-                public void onHideRecipe(Recipe recipe) {
-                    // Empty implementation for SearchFragment - hide functionality not applicable here
-                }
-                
-                @Override 
-                public void onRecipeClick(Recipe recipe) {
-                    // Handle recipe click from search results - show recipe details
-                    showRecipeDetails(recipe);
+    
+    /**
+     * Загружает начальный список ингредиентов (ограничено 10 для чистоты экрана).
+     */
+    private void loadIngredients() {
+        initExecutor();
+        backgroundExecutor.execute(() -> {
+            List<FoodProduct> products = ProductDatabase.getAllProducts();
+            // Показываем только ТОП-10 ингредиентов по умолчанию
+            List<FoodProduct> top10 = products.size() > 10 ? products.subList(0, 10) : products;
+            
+            mainHandler.post(() -> {
+                if (isFragmentActive && ingredientAdapter != null) {
+                    ingredientAdapter.setProducts(top10);
                 }
             });
-            recyclerView.setAdapter(recipeAdapter);
-        } else {
-            recipeAdapter.updateRecipes(filteredRecipes != null ? new ArrayList<>(filteredRecipes) : new ArrayList<>());
-        }
+        });
     }
     
-    private void showRecipeDetails(Recipe recipe) {
-        // Navigate to recipe detail fragment
-        if (getActivity() != null && isAdded()) {
-            RecipeDetailFragment detailFragment = RecipeDetailFragment.newInstance(recipe);
-            
-            // Validate activity state
-            android.app.Activity activity = getActivity();
-            if (activity == null || activity.isFinishing() || isActivityDestroyed(activity)) {
-                return;
+    private void loadRecipesFromFirestore() {
+        db.collection("recipes").limit(100).get().addOnSuccessListener(documents -> {
+            List<Recipe> recipes = new ArrayList<>();
+            for (var doc : documents) {
+                Recipe r = doc.toObject(Recipe.class);
+                if (r != null) {
+                    r.setId(doc.getId());
+                    recipes.add(r);
+                }
             }
+            viewModel.setAllRecipes(recipes);
+        }).addOnFailureListener(e -> Log.e(TAG, "❌ Failed to load recipes from Firestore", e));
+    }
+
+    /**
+     * Улучшенная логика сопоставления рецептов.
+     * 1. Очистка выбранных ингредиентов от эмодзи.
+     * 2. Подсчет количества совпадений для каждого рецепта.
+     * 3. Сортировка по релевантности (чем больше совпадений, тем выше).
+     */
+    private void updateMatchingRecipes() {
+        List<String> selected = viewModel.getSelectedIngredients().getValue();
+        List<Recipe> all = viewModel.getAllRecipes().getValue();
+        
+        if (all == null) return;
+        
+        if (selected == null || selected.isEmpty()) {
+            recipeAdapter.updateData(all);
+            textRecipeCount.setText(getString(R.string.recipes_count_format, all.size()));
+            return;
+        }
+
+        // 1. Очищаем выбранные ингредиенты от эмодзи для точного сравнения
+        List<String> cleanedSelected = new ArrayList<>();
+        for (String s : selected) {
+            String pureName = s.replaceAll("[\\p{So}\\p{Cn}]", "").trim().toLowerCase();
+            if (!pureName.isEmpty()) cleanedSelected.add(pureName);
+        }
+
+        List<Recipe> matched = new ArrayList<>();
+        final Map<String, Integer> matchScores = new HashMap<>();
+
+        for (Recipe r : all) {
+            if (r.getIngredients() == null) continue;
             
-            // Validate activity type
-            if (!(activity instanceof androidx.fragment.app.FragmentActivity)) {
-                return;
+            int score = 0;
+            List<String> recipeIngredients = r.getIngredients();
+            
+            for (String sel : cleanedSelected) {
+                for (String ri : recipeIngredients) {
+                    if (ri.toLowerCase().contains(sel)) {
+                        score++;
+                        break;
+                    }
+                }
             }
-            
-            androidx.fragment.app.FragmentActivity fragmentActivity = 
-                (androidx.fragment.app.FragmentActivity) activity;
-            
-            fragmentActivity.getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragment_container, detailFragment)
-                .addToBackStack(null)
-                .commitAllowingStateLoss();
+
+            if (score > 0) {
+                matchScores.put(r.getId(), score);
+                matched.add(r);
+            }
+        }
+
+        // 2. Сортировка по убыванию количества совпадений
+        matched.sort((a, b) -> {
+            int scoreA = matchScores.getOrDefault(a.getId(), 0);
+            int scoreB = matchScores.getOrDefault(b.getId(), 0);
+            return Integer.compare(scoreB, scoreA);
+        });
+
+        recipeAdapter.updateData(matched);
+        textRecipeCount.setText(getString(R.string.recipes_matching_format, matched.size()));
+    }
+
+    private void openUserSearchScreen() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateToFragment(
+                    new UserSearchBottomSheet(), true);
         }
     }
-    
-    private boolean isActivityDestroyed(android.app.Activity activity) {
-        if (activity == null) return true;
-        // Check if we're using a newer Android version that has isDestroyed
-        try {
-            return activity.isDestroyed();
-        } catch (NoSuchMethodError e) {
-            // For older Android versions, just check isFinishing
-            return activity.isFinishing();
+
+    private void openNotificationsScreen() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateToFragment(
+                    new NotificationsFragment(), true);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        isFragmentActive = false;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
+            backgroundExecutor.shutdown();
+            Log.d(TAG, "🛑 Background executor shut down");
         }
     }
 }

@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.kitchenbrain">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    
+    <!-- CRITICAL FIX: Add VIBRATE permission for haptic feedback -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
 
     <application
@@ -23,14 +26,10 @@
             android:name=".MainActivity"
             android:label="Main"
             android:theme="@style/Theme.KitchenBrain"
-            android:exported="true" />
-
-        <activity
-            android:name=".LoginActivity"
-            android:label="KitchenBrain"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:exported="true"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:clearTaskOnLaunch="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -38,11 +37,21 @@
         </activity>
 
         <activity
+            android:name=".LoginActivity"
+            android:label="KitchenBrain"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".RegisterActivity"
             android:label="Register"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:exported="true"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".WaitingForConfirmationActivity"
@@ -51,11 +60,11 @@
             android:exported="true" />
 
         <activity
-            android:name=".ProfileSetupFragment"
-            android:label="Setup Profile"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:exported="true"
-            tools:ignore="Instantiatable" />
+            android:name=".RecipeDetailActivity"
+            android:exported="false"
+            android:label="@string/recipe_detail_title"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.KitchenBrain" />
     </application>
 
 </manifest>

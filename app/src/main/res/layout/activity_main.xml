@@ -3,43 +3,119 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:background="@color/background_primary">
 
-    <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
+        android:background="@color/background_primary"
+        android:elevation="0dp"
         app:title="KitchenBrain"
-        app:titleTextColor="@color/on_primary_color"
+        app:titleTextColor="@color/text_primary"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Fragment container -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/background_secondary"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
+        app:layout_constraintBottom_toTopOf="@id/nav_divider" />
 
-    <!-- Bottom Navigation -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        app:itemIconTint="@color/on_primary_color"
-        app:itemTextColor="@color/on_primary_color"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/bottom_nav_menu" />
+    <View
+        android:id="@+id/nav_divider"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/divider_color"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation_container" />
+
+    <!-- Modern Instagram-style Bottom Navigation -->
+    <LinearLayout
+        android:id="@+id/bottom_navigation_container"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:background="@color/background_primary"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Home -->
+        <LinearLayout
+            android:id="@+id/nav_home"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_home_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_home_modern"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Search -->
+        <LinearLayout
+            android:id="@+id/nav_search"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_search_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_search_modern"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Center Add Button (Highlighted) -->
+        <LinearLayout
+            android:id="@+id/nav_add_recipe"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_add_icon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_add_modern"
+                app:tint="@color/primary_blue" />
+        </LinearLayout>
+
+        <!-- Friends -->
+        <LinearLayout
+            android:id="@+id/nav_friends"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_friends_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_friends_modern"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Chat -->
+        <LinearLayout
+            android:id="@+id/nav_chat"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_chat_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_chat"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Profile -->
+        <LinearLayout
+            android:id="@+id/nav_profile"
+            style="@style/NavMenuItemStyle">
+            <ImageView
+                android:id="@+id/nav_profile_icon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@drawable/ic_profile_modern"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

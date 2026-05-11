@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "112175187786",
+    "firebase_url": "https://kitchen-brain-58a1e-default-rtdb.firebaseio.com",
     "project_id": "kitchen-brain-58a1e",
     "storage_bucket": "kitchen-brain-58a1e.firebasestorage.app"
   },

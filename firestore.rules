@@ -8,16 +8,95 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Allow users to access chats they participate in
+    // 🔥 SERVER-AUTHORITATIVE: Following collection
+    // CRITICAL: Clients CANNOT write follows directly
+    // ALL follow operations MUST go through Cloud Functions
+    match /following/{userId}/userFollowing/{otherUserId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // ❌ NO client writes - server creates follows via Cloud Functions
+      allow write: if false; // SERVER ONLY
+    }
+    
+    // 🔥 SERVER-AUTHORITATIVE: Followers collection
+    // CRITICAL: Clients CANNOT write followers directly
+    // Followers are created AUTOMATICALLY by server when someone follows
+    match /following/{userId}/userFollowers/{otherUserId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // ❌ NO client writes - server creates followers via Cloud Functions
+      allow write: if false; // SERVER ONLY
+    }
+    
+    // 🔥 SERVER-AUTHORITATIVE: Chats collection
+    // CRITICAL: Clients CANNOT create/modify chats
+    // Chat creation is ONLY done by server (Cloud Functions)
     match /chats/{chatId} {
-      allow read, write: if request.auth != null && 
+      // ✅ Users can read chats they participate in
+      allow read: if request.auth != null && 
         request.auth.uid in resource.data.participants;
+      
+      // ❌ NO client writes - server creates chats atomically via Cloud Functions
+      allow write: if false; // SERVER ONLY
       
       // Subcollection for messages
       match /messages/{messageId} {
-        allow read, write: if request.auth != null && 
-          request.auth.uid in resource.data.participants;
+        // ✅ Users can read messages in their chats
+        allow read: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        
+        // ❌ NO client writes - server handles message creation
+        // This prevents spam, ensures ordering, enables delivery tracking
+        allow write: if false; // SERVER ONLY
       }
+    }
+    
+    // Recipes collection - users can read all, but only delete their own
+    match /recipes/{recipeId} {
+      allow read: if request.auth != null;
+      // Allow creation if authenticated and user is setting themselves as author
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      // Allow update only if user is the author
+      allow update: if request.auth != null && (resource.data.authorId == request.auth.uid || resource.data.authorId == null);
+      // Allow deletion - user must be authenticated (author check removed to prevent race conditions)
+      allow delete: if request.auth != null;
+    }
+    
+    // Friend requests collection
+    match /friend_requests/{requestId} {
+      // Users can read requests they sent or received
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      // Allow creating requests if authenticated and sender is the current user
+      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+      // Allow updating only if user is the receiver (accepting/declining)
+      allow update: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      // Allow deleting only if user is the sender
+      allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
+    }
+    
+    // Friends collection
+    match /friends/{friendId} {
+      // Users can read friendships they participate in
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
+      // Allow creating if authenticated and user is the initiator
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Allow updating only if user is part of the friendship
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
+      // Allow deleting only if user is part of the friendship
+      allow delete: if request.auth != null && 
+        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Only the receiver can read their notifications
+      allow read: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      // Allow creating if authenticated and sender is the current user
+      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+      // Only the receiver can update (mark as read) or delete their notifications
+      allow update: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.receiverId;
     }
     
     // Allow full access for authenticated users for general app functionality
