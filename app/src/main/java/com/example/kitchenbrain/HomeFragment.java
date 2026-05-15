@@ -130,6 +130,12 @@ public class HomeFragment extends Fragment {
             }
 
             @Override
+            public void onSendClick(FeedItem item, int position) {
+                // 🔥 FIXED: Now opens dedicated ShareNewsFragment for mutual followers
+                handleSendToChat(item);
+            }
+
+            @Override
             public void onSaveClick(FeedItem item, int position) {
                 viewModel.toggleSave(item.getStableId());
                 feedAdapter.updateItem(item);
@@ -149,6 +155,23 @@ public class HomeFragment extends Fragment {
         recyclerViewFeed.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewFeed.setAdapter(feedAdapter);
         recyclerViewFeed.setHasFixedSize(true);
+    }
+
+    /**
+     * 🔥 Opens the dedicated ShareNewsFragment to pick a mutual follower to send the news to.
+     */
+    private void handleSendToChat(FeedItem item) {
+        Log.d(TAG, "📤 Opening ShareNewsFragment for: " + item.getRecipe().getName());
+        
+        // Create the dedicated fragment for sharing with mutual followers
+        ShareNewsFragment shareFragment = ShareNewsFragment.newInstance(
+            item.getRecipe().getName(), 
+            item.getRecipe().getVideoUrl()
+        );
+        
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateToFragment(shareFragment, true);
+        }
     }
 
     private void setupSwipeRefresh() {
@@ -218,6 +241,12 @@ public class HomeFragment extends Fragment {
                     feedAdapter.setFeedItems(state.getData());
                 }
                 showContent();
+                
+                // 🔥 Notify user if showing cached data due to API limits
+                if (state.isFromCache() && getContext() != null) {
+                    Toast.makeText(getContext(), "Daily API quota reached. Showing cached recipes.", Toast.LENGTH_LONG).show();
+                }
+
                 // 🔴 CRITICAL: Reset API error state on success
                 if (isApiError) {
                     isApiError = false;

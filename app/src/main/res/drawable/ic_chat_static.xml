@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modern Chat Icon - Material Symbols Rounded Style with Dual Tone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Main chat bubble with rounded corners -->
+    <path
+        android:name="chatBubble"
+        android:pathData="M12,3C7.5,3 4,6.5 4,10.5c0,2.5 1.2,4.7 3.1,6.2L6,20l3.5,-1.1C10,19 11,19 12,19c4.5,0 8,-3.5 8,-7.5S16.5,3 12,3z"
+        android:fillColor="@color/primary_green"
+        android:strokeWidth="0"/>
+    
+    <!-- Subtle inner highlight for premium feel -->
+    <path
+        android:pathData="M12,4C8,4 5,7 5,10.5c0,2.2 1,4.2 2.7,5.5l-0.5,2.3 2.5,-0.8C10.5,17.8 11.2,18 12,18c4,0 7,-3 7,-6.5S16,4 12,4z"
+        android:fillColor="#30FFFFFF"
+        android:strokeWidth="0"/>
+</vector>

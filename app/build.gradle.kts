@@ -3,11 +3,11 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    kotlin("kapt") // Re-enabled for Glide annotation processing
+    kotlin("kapt")
     id("com.google.gms.google-services")
 }
 
-// SPOONACULAR_API_KEY: Resolve from local.properties
+// API KEYS: Resolve from local.properties
 val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -27,10 +27,10 @@ val openaiApiKeyResolved = resolveApiKey("OPENAI_API_KEY")
 val deepseekApiKeyResolved = resolveApiKey("DEEPSEEK_API_KEY")
 val groqApiKeyResolved = resolveApiKey("GROQ_API_KEY")
 val youtubeApiKeyResolved = resolveApiKey("YOUTUBE_API_KEY")
+val cloudinaryApiKeyResolved = resolveApiKey("CLOUDINARY_API_KEY")
 
 fun formatForBuildConfig(key: String) = key.replace("\\", "\\\\").replace("\"", "\\\"")
 
-// 🔥 CRITICAL: Force metadata and coroutines compatibility
 configurations.all {
     resolutionStrategy {
         force("org.jetbrains.kotlin:kotlin-stdlib:2.2.0")
@@ -59,6 +59,7 @@ android {
         buildConfigField("String", "DEEPSEEK_API_KEY", "\"${formatForBuildConfig(deepseekApiKeyResolved)}\"")
         buildConfigField("String", "GROQ_API_KEY", "\"${formatForBuildConfig(groqApiKeyResolved)}\"")
         buildConfigField("String", "YOUTUBE_API_KEY", "\"${formatForBuildConfig(youtubeApiKeyResolved)}\"")
+        buildConfigField("String", "CLOUDINARY_API_KEY", "\"${formatForBuildConfig(cloudinaryApiKeyResolved)}\"")
     }
 
     buildTypes {
@@ -100,6 +101,7 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation(libs.constraintlayout)
     
     implementation(libs.lifecycle.viewmodel.ktx)
@@ -107,7 +109,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.ktx)
     
     implementation(libs.glide)
-    kapt(libs.glide.compiler) // Re-enabled for Glide annotation processing
+    kapt(libs.glide.compiler)
     implementation(libs.circleimageview)
     implementation(libs.picasso)
     
@@ -132,10 +134,13 @@ dependencies {
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     implementation("androidx.room:room-paging:$room_version")
-    // kapt("androidx.room:room-compiler:$room_version") // Temporarily disabled
+    kapt("androidx.room:room-compiler:$room_version")
 
     // PAGING
     implementation("androidx.paging:paging-runtime-ktx:3.3.0")
+    
+    // WORK MANAGER
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
     
     implementation(libs.play.services.base)
     

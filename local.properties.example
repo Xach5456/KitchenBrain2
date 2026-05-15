@@ -1,0 +1,14 @@
+# Copy this file to local.properties (project root, next to settings.gradle.kts).
+# One line, no quotes: NEWS_API_KEY=your_hex_key_from_newsapi_org
+#
+# app/build.gradle.kts: findProperty (gradle.properties) first, else NEWS_API_KEY from this file in defaultConfig.
+# Alternatively put NEWS_API_KEY in gradle.properties or use -PNEWS_API_KEY=... for CI.
+# Do not commit real secrets.
+
+NEWS_API_KEY=
+YOUTUBE_API_KEY=your_youtube_api_key_here
+GROK_API_KEY=your_grok_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+GROQ_API_KEY=your_groq_api_key_here

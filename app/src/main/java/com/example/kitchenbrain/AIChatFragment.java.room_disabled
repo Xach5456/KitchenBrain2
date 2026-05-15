@@ -1,0 +1,864 @@
+package com.example.kitchenbrain;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.kitchenbrain.model.AIChat;
+import com.example.kitchenbrain.repository.AIChatRepository;
+import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * AI Chat Fragment - Connects to Groq API (llama-3.3-70b-versatile)
+ * Provides AI-powered culinary assistance
+ * Groq is SUPER FAST - responses in <1 second!
+ */
+public class AIChatFragment extends Fragment {
+
+    private static final String TAG = "AIChatFragment";
+    
+    // System prompt for culinary AI assistant
+    private static final String SYSTEM_PROMPT = 
+        "You are a helpful culinary AI assistant in the Kitchen Brain app. " +
+        "Your role is to help users with cooking questions, recipe suggestions, " +
+        "ingredient substitutions, cooking techniques, and food safety. " +
+        "Be concise, friendly, and practical. Answer in the same language as the user's question. " +
+        "If asked about non-cooking topics, politely redirect to culinary topics.";
+    
+    // Quick suggestion questions for first-time users
+    private static final String[] QUICK_SUGGESTIONS = {
+        "🍗 What can I cook with chicken?",
+        "🥛 How to substitute milk in recipes?",
+        "⏱️ How long to cook rice?",
+        "🥗 Easy dinner ideas"
+    };
+
+    private RecyclerView recyclerViewMessages;
+    private EditText editTextMessage;
+    private MaterialButton buttonSend;
+    private ImageButton buttonBack;
+    private TextView textViewTitle;
+    private LinearLayout layoutQuickSuggestions;
+    
+    private AIChatMessageAdapter messageAdapter;
+    private List<AIChatMessage> messageList;
+    
+    private FirebaseAuth auth;
+    private String currentUserId;
+    
+    // Room Database for local chat storage
+    private AIChatRepository chatRepository;
+    private long currentChatId = -1;
+    
+    // Groq AI (SUPER FAST!)
+    private OkHttpClient groqClient;
+    private Call currentApiCall = null; // Track current API call for cancellation
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isWaitingForResponse = false;
+    private int retryCount = 0;
+    private static final int MAX_RETRIES = 2; // Retry up to 2 times on transient errors
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_ai_chat, container, false);
+        
+        initFirebase();
+        initRepository();
+        initViews(view);
+        setupRecyclerView();
+        setupClickListeners();
+        createOrLoadChat();
+        
+        return view;
+    }
+
+    private void initFirebase() {
+        auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            currentUserId = auth.getCurrentUser().getUid();
+        }
+    }
+    
+    /**
+     * Initialize Room Repository for local chat storage
+     */
+    private void initRepository() {
+        if (getContext() != null) {
+            chatRepository = AIChatRepository.getInstance(getContext());
+        }
+    }
+    
+    /**
+     * Create new chat or load existing
+     */
+    private void createOrLoadChat() {
+        chatRepository.createChatAsync("New Chat", 
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback1<Long>() {
+                @Override
+                public void invoke(Long chatId) {
+                    currentChatId = chatId;
+                    Log.d(TAG, "Created new chat with ID: " + currentChatId);
+                    loadChatHistoryFromRoom();
+                }
+            },
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback1<Exception>() {
+                @Override
+                public void invoke(Exception error) {
+                    Log.e(TAG, "Error creating chat", error);
+                }
+            }
+        );
+    }
+
+    private void initViews(View view) {
+        recyclerViewMessages = view.findViewById(R.id.recyclerViewMessages);
+        editTextMessage = view.findViewById(R.id.editTextMessage);
+        buttonSend = view.findViewById(R.id.buttonSend);
+        buttonBack = view.findViewById(R.id.buttonBack);
+        textViewTitle = view.findViewById(R.id.textUserName);
+        layoutQuickSuggestions = view.findViewById(R.id.layoutQuickSuggestions);
+        
+        if (textViewTitle != null) {
+            textViewTitle.setText("🤖 AI Kitchen Assistant");
+        }
+        
+        // Initialize Groq AI
+        initGroq();
+    }
+    
+    /**
+     * Check if network is available
+     * Simple connectivity check before API calls
+     */
+    private boolean isNetworkAvailable() {
+        try {
+            if (getContext() == null) return false;
+            
+            android.net.ConnectivityManager connectivityManager = 
+                (android.net.ConnectivityManager) getContext().getSystemService(
+                    android.content.Context.CONNECTIVITY_SERVICE);
+            
+            if (connectivityManager == null) return false;
+            
+            android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            boolean isConnected = networkInfo != null && networkInfo.isConnected();
+            
+            Log.d("AI_API_DEBUG", "Network available: " + isConnected);
+            return isConnected;
+        } catch (Exception e) {
+            Log.e("AI_API_DEBUG", "Error checking network", e);
+            return false; // Assume no network on error
+        }
+    }
+    
+    /**
+     * Validate API key configuration before making requests
+     */
+    private void validateApiKey() {
+        String apiKey = BuildConfig.GROQ_API_KEY;
+        
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e("AI_API_DEBUG", "❌ GROQ_API_KEY is NULL or EMPTY");
+            Log.e("AI_API_DEBUG", "Add to local.properties: GROQ_API_KEY=your_key_here");
+            return;
+        }
+        
+        if ("YOUR_GROQ_API_KEY_HERE".equals(apiKey)) {
+            Log.e("AI_API_DEBUG", "❌ GROQ_API_KEY is still the placeholder value");
+            Log.e("AI_API_DEBUG", "Get your key from: https://console.groq.com/keys");
+            return;
+        }
+        
+        if (!apiKey.startsWith("gsk_")) {
+            Log.w("AI_API_DEBUG", "⚠️ GROQ_API_KEY doesn't start with 'gsk_' - may be invalid");
+        }
+        
+        Log.d("AI_API_DEBUG", "✅ GROQ_API_KEY appears valid (length: " + apiKey.length() + ")");
+    }
+    
+    /**
+     * Initialize Groq client (OkHttp) with API key from BuildConfig
+     * Added comprehensive debugging for AI_API_DEBUG
+     */
+    private void initGroq() {
+        try {
+            // Validate API key first
+            validateApiKey();
+            
+            String apiKey = BuildConfig.GROQ_API_KEY;
+            
+            // AI_API_DEBUG: Log API key status
+            Log.d("AI_API_DEBUG", "=== Groq API Key Configuration ===");
+            Log.d("AI_API_DEBUG", "API Key present: " + (apiKey != null && !apiKey.isEmpty()));
+            Log.d("AI_API_DEBUG", "API Key length: " + (apiKey != null ? apiKey.length() : 0));
+            
+            if (apiKey != null && !apiKey.isEmpty()) {
+                String preview = apiKey.length() > 8 
+                    ? apiKey.substring(0, 4) + "..." + apiKey.substring(apiKey.length() - 4)
+                    : "***";
+                Log.d("AI_API_DEBUG", "API Key preview: " + preview);
+            } else {
+                Log.e("AI_API_DEBUG", "❌ GROQ_API_KEY is NOT configured!");
+                Log.e("AI_API_DEBUG", "Please add to local.properties: GROQ_API_KEY=your_key_here");
+            }
+            
+            // Check if API key is configured
+            if (apiKey == null || apiKey.isEmpty() || "YOUR_GROQ_API_KEY_HERE".equals(apiKey)) {
+                Log.w("AI_API_DEBUG", "Groq API key not configured or using placeholder");
+                groqClient = null;
+                return;
+            }
+            
+            // Create OkHttpClient with timeouts, retry logic, and logging interceptor
+            groqClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .addInterceptor(chain -> {
+                    Request request = chain.request();
+                    Log.d("AI_API_DEBUG", "Making API request to: " + request.url());
+                    return chain.proceed(request);
+                })
+                .build();
+            
+            Log.d("AI_API_DEBUG", "✅ Groq client initialized with retry logic and logging");
+        } catch (Exception e) {
+            Log.e("AI_API_DEBUG", "❌ Failed to initialize Groq", e);
+            groqClient = null;
+        }
+    }
+
+    private void setupRecyclerView() {
+        messageList = new ArrayList<>();
+        messageAdapter = new AIChatMessageAdapter(messageList, currentUserId);
+        
+        recyclerViewMessages.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewMessages.setAdapter(messageAdapter);
+    }
+
+    private void setupClickListeners() {
+        buttonBack.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                getActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
+        
+        buttonSend.setOnClickListener(v -> {
+            Log.d(TAG, "Send button clicked - isWaitingForResponse: " + isWaitingForResponse);
+            if (!isWaitingForResponse) {
+                sendMessage();
+            } else {
+                Log.w(TAG, "Send button clicked but already waiting for response - ignored");
+            }
+        });
+        
+        editTextMessage.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                Log.d(TAG, "Enter key pressed - sending message");
+                if (!isWaitingForResponse) {
+                    sendMessage();
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void sendMessage() {
+        String rawInput = editTextMessage.getText().toString();
+        String messageText = rawInput.trim();
+        
+        Log.d(TAG, "=== Send Message ===");
+        Log.d(TAG, "Raw input: '" + rawInput + "'");
+        Log.d(TAG, "Trimmed input: '" + messageText + "'");
+        Log.d(TAG, "Input length (raw): " + rawInput.length());
+        Log.d(TAG, "Input length (trimmed): " + messageText.length());
+        
+        if (messageText.isEmpty() || isWaitingForResponse) {
+            Log.w(TAG, "Message empty or already waiting for response");
+            return;
+        }
+        
+        if (!isNetworkAvailable()) {
+            Log.w(TAG, "No network available");
+            Toast.makeText(getContext(), "No internet connection", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        if (groqClient == null) {
+            Log.e(TAG, "Groq client not configured");
+            Toast.makeText(getContext(), "AI service not configured", Toast.LENGTH_LONG).show();
+            return;
+        }
+        
+        if (layoutQuickSuggestions != null && layoutQuickSuggestions.getVisibility() == View.VISIBLE) {
+            layoutQuickSuggestions.setVisibility(View.GONE);
+        }
+        
+        AIChatMessage userMessage = new AIChatMessage(
+            currentUserId != null ? currentUserId : "user",
+            messageText,
+            "user",
+            System.currentTimeMillis()
+        );
+        
+        messageList.add(userMessage);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
+        scrollToBottom();
+        
+        editTextMessage.setText("");
+        isWaitingForResponse = true;
+        updateSendButtonState(true);
+        
+        saveMessageToRoom("user", messageText);
+        
+        AIChatMessage typingMessage = new AIChatMessage(
+            "ai",
+            "typing",
+            "typing",
+            System.currentTimeMillis()
+        );
+        messageList.add(typingMessage);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
+        scrollToBottom();
+        
+        callGroqAPI();
+    }
+    
+    /**
+     * Build conversation history from message list (last 10 messages)
+     */
+    private JSONArray buildConversationHistory() throws Exception {
+        JSONArray messages = new JSONArray();
+        
+        JSONObject systemMsg = new JSONObject();
+        systemMsg.put("role", "system");
+        systemMsg.put("content", SYSTEM_PROMPT);
+        messages.put(systemMsg);
+        
+        Log.d(TAG, "=== Building Conversation History ===");
+        Log.d(TAG, "Total messages in list: " + messageList.size());
+        
+        int startIdx = Math.max(0, messageList.size() - 11);
+        for (int i = startIdx; i < messageList.size(); i++) {
+            AIChatMessage msg = messageList.get(i);
+            
+            if ("typing".equals(msg.getSenderType())) {
+                Log.d(TAG, "Skipping typing indicator at index " + i);
+                continue;
+            }
+            
+            String content = msg.getMessage();
+            if (content == null || content.trim().isEmpty()) {
+                Log.w(TAG, "Skipping message with null/empty content at index " + i);
+                continue;
+            }
+            
+            String role = "user".equals(msg.getSenderType()) ? "user" : "assistant";
+            
+            JSONObject msgObj = new JSONObject();
+            msgObj.put("role", role);
+            msgObj.put("content", content.trim());
+            messages.put(msgObj);
+            
+            Log.d(TAG, "Message[" + i + "] - Role: " + role + ", Content: '" + content.substring(0, Math.min(50, content.length())) + "'");
+        }
+        
+        Log.d(TAG, "Final messages array length: " + messages.length());
+        return messages;
+    }
+    
+    /**
+     * Build request body for Groq API
+     */
+    private JSONObject buildRequestBody(JSONArray messages) throws Exception {
+        if (messages == null || messages.length() == 0) {
+            throw new IllegalArgumentException("Messages array cannot be null or empty");
+        }
+        
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("model", "llama-3.1-8b-instant");
+        requestBody.put("messages", messages);
+        requestBody.put("max_tokens", 1000);
+        requestBody.put("temperature", 0.7);
+        
+        Log.d(TAG, "=== Request Body Validation ===");
+        Log.d(TAG, "Model: llama-3.1-8b-instant");
+        Log.d(TAG, "Messages array length: " + messages.length());
+        Log.d(TAG, "Full JSON: " + requestBody.toString(2));
+        
+        return requestBody;
+    }
+
+    private void callGroqAPI() {
+        if (groqClient == null) {
+            mainHandler.post(() -> handleAPIError("AI service not configured"));
+            return;
+        }
+        
+        if (currentApiCall != null && !currentApiCall.isCanceled()) {
+            currentApiCall.cancel();
+        }
+        
+        final String apiKey = BuildConfig.GROQ_API_KEY;
+        
+        if (apiKey == null || apiKey.isEmpty() || "YOUR_GROQ_API_KEY_HERE".equals(apiKey)) {
+            Log.e(TAG, "API key not configured or is placeholder");
+            mainHandler.post(() -> handleAPIError("Invalid API key"));
+            return;
+        }
+        
+        retryCount = 0;
+        
+        try {
+            JSONArray messages = buildConversationHistory();
+            
+            Log.d(TAG, "=== Pre-Request Validation ===");
+            Log.d(TAG, "Messages array is null: " + (messages == null));
+            Log.d(TAG, "Messages array length: " + (messages != null ? messages.length() : 0));
+            
+            if (messages == null || messages.length() == 0) {
+                Log.e(TAG, "❌ VALIDATION FAILED: No valid messages to send");
+                mainHandler.post(() -> handleAPIError("Invalid request format (check message or model)"));
+                return;
+            }
+            
+            if (messages.length() == 1) {
+                Log.w(TAG, "⚠️ Only system message present - user message may be missing");
+            }
+            
+            JSONObject requestBody = buildRequestBody(messages);
+            
+            Log.d(TAG, "=== API Request ===");
+            Log.d(TAG, "URL: https://api.groq.com/openai/v1/chat/completions");
+            Log.d(TAG, "Model: llama-3.1-8b-instant");
+            Log.d(TAG, "Request Body: " + requestBody.toString(2));
+            Log.d(TAG, "API Key: " + (apiKey != null && apiKey.length() > 8 ? apiKey.substring(0, 4) + "..." + apiKey.substring(apiKey.length() - 4) : "null"));
+            Log.d(TAG, "Messages count: " + messages.length());
+            
+            RequestBody body = RequestBody.create(
+                requestBody.toString(),
+                MediaType.get("application/json")
+            );
+            
+            Request request = new Request.Builder()
+                .url("https://api.groq.com/openai/v1/chat/completions")
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .post(body)
+                .build();
+            
+            currentApiCall = groqClient.newCall(request);
+            currentApiCall.enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.e(TAG, "Network request failed", e);
+                    Log.e(TAG, "Error type: " + e.getClass().getSimpleName());
+                    Log.e(TAG, "Error message: " + e.getMessage());
+                    
+                    if (retryCount < MAX_RETRIES && isTransientError(e)) {
+                        retryCount++;
+                        Log.d(TAG, "Retrying... (" + retryCount + "/" + MAX_RETRIES + ")");
+                        
+                        mainHandler.postDelayed(() -> {
+                            if (isAdded() && getContext() != null) {
+                                callGroqAPI();
+                            }
+                        }, 1000 * retryCount);
+                        return;
+                    }
+                    
+                    mainHandler.post(() -> {
+                        if (isAdded() && getContext() != null) {
+                            handleAPIError("Check internet connection");
+                        }
+                    });
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    int responseCode = response.code();
+                    String responseBody = response.body() != null ? response.body().string() : "";
+                    
+                    Log.d(TAG, "=== API Response ===");
+                    Log.d(TAG, "HTTP Status: " + responseCode);
+                    Log.d(TAG, "Response Headers: " + response.headers());
+                    Log.d(TAG, "Response Body: " + responseBody);
+                    
+                    if (!response.isSuccessful()) {
+                        Log.e(TAG, "❌ API Error - HTTP Code: " + responseCode);
+                        Log.e(TAG, "Error Body: " + responseBody);
+                        
+                        if (responseCode >= 500 && retryCount < MAX_RETRIES) {
+                            retryCount++;
+                            Log.d(TAG, "Server error - retrying (" + retryCount + "/" + MAX_RETRIES + ")");
+                            mainHandler.postDelayed(() -> {
+                                if (isAdded() && getContext() != null) {
+                                    callGroqAPI();
+                                }
+                            }, 1000 * retryCount);
+                            return;
+                        }
+                        
+                        final String errorMessage = getErrorMessage(responseCode, responseBody);
+                        Log.e(TAG, "User-facing error message: " + errorMessage);
+                        
+                        mainHandler.post(() -> {
+                            if (isAdded() && getContext() != null) {
+                                handleAPIError(errorMessage);
+                            }
+                        });
+                        return;
+                    }
+                    
+                    retryCount = 0;
+                    Log.d(TAG, "✅ API Success");
+                    
+                    try {
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        JSONArray choices = jsonResponse.getJSONArray("choices");
+                        
+                        if (choices.length() > 0) {
+                            JSONObject choice = choices.getJSONObject(0);
+                            JSONObject message = choice.getJSONObject("message");
+                            String aiResponse = message.getString("content");
+                            
+                            Log.d(TAG, "AI Response length: " + aiResponse.length());
+                            Log.d(TAG, "AI Response preview: " + (aiResponse.length() > 100 ? aiResponse.substring(0, 100) + "..." : aiResponse));
+                            
+                            mainHandler.post(() -> {
+                                if (isAdded() && getContext() != null) {
+                                    handleAIResponse(aiResponse);
+                                }
+                            });
+                        } else {
+                            Log.e(TAG, "No choices in response");
+                            mainHandler.post(() -> {
+                                if (isAdded() && getContext() != null) {
+                                    handleAPIError("AI returned no response");
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing JSON response", e);
+                        mainHandler.post(() -> {
+                            if (isAdded() && getContext() != null) {
+                                handleAPIError("Error processing response");
+                            }
+                        });
+                    }
+                }
+            });
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error building request", e);
+            handleAPIError("Request error");
+        }
+    }
+    
+    private String getErrorMessage(int code, String errorBody) {
+        String detail = "";
+        try {
+            if (!errorBody.isEmpty()) {
+                JSONObject json = new JSONObject(errorBody);
+                if (json.has("error")) {
+                    JSONObject error = json.getJSONObject("error");
+                    if (error.has("message")) {
+                        detail = error.getString("message");
+                        Log.e(TAG, "Groq API Error Detail: " + detail);
+                    }
+                    if (error.has("type")) {
+                        Log.e(TAG, "Error Type: " + error.getString("type"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not parse error body", e);
+        }
+        
+        return switch (code) {
+            case 400 -> "Invalid request format (check message or model)";
+            case 401 -> "Invalid API key";
+            case 403 -> "Access restricted";
+            case 429 -> "Too many requests";
+            default -> "AI service error (" + code + ")";
+        };
+    }
+    
+    private boolean isTransientError(IOException e) {
+        if (e.getMessage() == null) return false;
+        String msg = e.getMessage().toLowerCase();
+        return msg.contains("timeout") || 
+               msg.contains("connection") ||
+               msg.contains("reset") ||
+               msg.contains("unreachable");
+    }
+    
+    private void scrollToBottom() {
+        if (!messageList.isEmpty()) {
+            recyclerViewMessages.postDelayed(() -> {
+                recyclerViewMessages.smoothScrollToPosition(messageList.size() - 1);
+            }, 100);
+        }
+    }
+    
+    private void updateSendButtonState(boolean isLoading) {
+        if (buttonSend == null) return;
+        
+        buttonSend.setEnabled(!isLoading);
+        buttonSend.setAlpha(isLoading ? 0.6f : 1.0f);
+        buttonSend.setClickable(!isLoading);
+        
+        if (isLoading) {
+            buttonSend.setIconResource(android.R.drawable.ic_menu_rotate);
+            buttonSend.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                getContext().getColor(android.R.color.darker_gray)));
+        } else {
+            buttonSend.setIconResource(R.drawable.ic_send);
+            buttonSend.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                getContext().getColor(R.color.ai_button_gradient_start)));
+        }
+        
+        Log.d(TAG, "Send button state - Loading: " + isLoading + ", Enabled: " + buttonSend.isEnabled());
+    }
+    
+    private void handleAIResponse(String response) {
+        int typingIndex = -1;
+        for (int i = messageList.size() - 1; i >= 0; i--) {
+            if ("typing".equals(messageList.get(i).getSenderType())) {
+                typingIndex = i;
+                break;
+            }
+        }
+        
+        if (typingIndex != -1) {
+            messageList.remove(typingIndex);
+            messageAdapter.notifyItemRemoved(typingIndex);
+        }
+        
+        AIChatMessage aiMessage = new AIChatMessage(
+            "ai",
+            response.trim(),
+            "ai",
+            System.currentTimeMillis()
+        );
+        
+        messageList.add(aiMessage);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
+        scrollToBottom();
+        
+        saveMessageToRoom("ai", response.trim());
+        
+        isWaitingForResponse = false;
+        updateSendButtonState(false);
+    }
+
+    private void handleAPIError(String error) {
+        int typingIndex = -1;
+        for (int i = messageList.size() - 1; i >= 0; i--) {
+            if ("typing".equals(messageList.get(i).getSenderType())) {
+                typingIndex = i;
+                break;
+            }
+        }
+        
+        if (typingIndex != -1) {
+            messageList.remove(typingIndex);
+            messageAdapter.notifyItemRemoved(typingIndex);
+        }
+        
+        AIChatMessage errorMsg = new AIChatMessage(
+            "ai",
+            error,
+            "ai",
+            System.currentTimeMillis()
+        );
+        
+        messageList.add(errorMsg);
+        messageAdapter.notifyItemInserted(messageList.size() - 1);
+        scrollToBottom();
+        
+        isWaitingForResponse = false;
+        updateSendButtonState(false);
+    }
+    
+    /**
+     * Save message to Room Database
+     * Uses async callback to prevent ANR
+     */
+    private void saveMessageToRoom(String senderType, String message) {
+        if (currentChatId == -1 || chatRepository == null) {
+            Log.w(TAG, "Cannot save message: chat not initialized");
+            return;
+        }
+        
+        chatRepository.addMessageAsync(currentChatId, senderType, message,
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback0() {
+                @Override
+                public void invoke() {
+                    Log.d(TAG, "Message saved to Room: " + senderType);
+                }
+            },
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback1<Exception>() {
+                @Override
+                public void invoke(Exception error) {
+                    Log.e(TAG, "Error saving message to Room", error);
+                }
+            }
+        );
+    }
+    
+    /**
+     * Load chat history from Room Database
+     * Uses async callback to prevent ANR
+     */
+    private void loadChatHistoryFromRoom() {
+        if (currentChatId == -1 || chatRepository == null) {
+            Log.w(TAG, "Chat not initialized yet");
+            return;
+        }
+        
+        chatRepository.getMessagesAsync(currentChatId,
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback1<List<com.example.kitchenbrain.model.AIChatMessage>>() {
+                @Override
+                public void invoke(List<com.example.kitchenbrain.model.AIChatMessage> messages) {
+                    mainHandler.post(() -> updateMessageList(messages));
+                }
+            },
+            new com.example.kitchenbrain.repository.AIChatRepository.Callback1<Exception>() {
+                @Override
+                public void invoke(Exception error) {
+                    Log.e(TAG, "Error loading chat history from Room", error);
+                }
+            }
+        );
+    }
+    
+    /**
+     * Update message list UI with loaded messages
+     */
+    private void updateMessageList(List<com.example.kitchenbrain.model.AIChatMessage> messages) {
+        int oldSize = messageList.size();
+        messageList.clear();
+        if (oldSize > 0) {
+            messageAdapter.notifyItemRangeRemoved(0, oldSize);
+        }
+        
+        for (com.example.kitchenbrain.model.AIChatMessage msg : messages) {
+            // Convert Room entity to UI model
+            messageList.add(new AIChatMessage(
+                msg.getSenderType(),
+                msg.getMessage(),
+                msg.getSenderType(),
+                msg.getTimestamp()
+            ));
+        }
+        if (!messages.isEmpty()) {
+            messageAdapter.notifyItemRangeInserted(0, messages.size());
+        }
+        
+        // Show quick suggestions only if chat is empty
+        if (messageList.isEmpty() && layoutQuickSuggestions != null) {
+            showQuickSuggestions();
+        } else if (layoutQuickSuggestions != null) {
+            layoutQuickSuggestions.setVisibility(View.GONE);
+        }
+        
+        if (!messageList.isEmpty()) {
+            recyclerViewMessages.scrollToPosition(messageList.size() - 1);
+        }
+    }
+    
+    private void showQuickSuggestions() {
+        if (layoutQuickSuggestions == null) return;
+        
+        layoutQuickSuggestions.removeAllViews();
+        layoutQuickSuggestions.setVisibility(View.VISIBLE);
+        
+        for (String suggestion : QUICK_SUGGESTIONS) {
+            com.google.android.material.button.MaterialButton button = 
+                new com.google.android.material.button.MaterialButton(requireContext());
+            button.setText(suggestion);
+            button.setTextSize(13);
+            button.setPadding(24, 12, 24, 12);
+            button.setCornerRadius(24);
+            button.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ));
+            ((LinearLayout.LayoutParams) button.getLayoutParams()).setMargins(0, 0, 12, 12);
+            button.setOnClickListener(v -> {
+                editTextMessage.setText(suggestion);
+                editTextMessage.requestFocus();
+                layoutQuickSuggestions.setVisibility(View.GONE);
+            });
+            layoutQuickSuggestions.addView(button);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        
+        // Cancel ongoing API call to prevent memory leaks and crashes
+        if (currentApiCall != null && !currentApiCall.isCanceled()) {
+            currentApiCall.cancel();
+            Log.d(TAG, "Cancelled ongoing API request");
+        }
+        
+        // Cancel all pending callbacks to prevent memory leaks
+        mainHandler.removeCallbacksAndMessages(null);
+        
+        // Shutdown executor service properly
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        Log.d(TAG, "AIChatFragment destroyed, resources cleaned up");
+    }
+}

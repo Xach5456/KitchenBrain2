@@ -79,6 +79,9 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         // Получаем ViewModel, привязанную к Activity, чтобы состояние сохранялось при навигации
         viewModel = new ViewModelProvider(requireActivity(), 
                 new SavedStateViewModelFactory(requireActivity().getApplication(), requireActivity())).get(SearchViewModel.class);
+        
+        // Включаем прослушивание изменений в рецептах в реальном времени
+        viewModel.startRecipeListener();
     }
 
     private void initExecutor() {
@@ -102,13 +105,8 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         initFirebase();
         observeViewModel();
         
-        // Загружаем данные только если они еще не в памяти
-        if (!viewModel.isDataLoaded()) {
-            loadInitialData();
-        } else {
-            // Если данные есть, просто загружаем список всех продуктов для выбора
-            loadIngredients();
-        }
+        // Загружаем ингредиенты (продукты)
+        loadIngredients();
         
         return view;
     }
@@ -144,6 +142,8 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
                 viewModel.removeIngredient(product.getDisplayName());
             }
         });
+        // 🔥 CRITICAL FIX: Populate selectedIngredientsAdapter with products so it can filter them
+        selectedIngredientsAdapter.setProducts(ProductDatabase.getAllProducts());
         recyclerViewSelectedIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerViewSelectedIngredients.setAdapter(selectedIngredientsAdapter);
         
@@ -155,7 +155,7 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         recipeAdapter = new RecipeAdapter(new ArrayList<>(), getContext(), new RecipeAdapter.OnRecipeClickListener() {
             @Override
             public void onRecipeClick(com.example.kitchenbrain.model.Recipe recipe, int position) {
-                // TODO: Open recipe detail
+                // Handled in adapter's internal logic
             }
             
             @Override
@@ -276,11 +276,6 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         });
     }
 
-    private void loadInitialData() {
-        loadIngredients();
-        loadRecipesFromFirestore();
-    }
-    
     /**
      * Загружает начальный список ингредиентов (ограничено 10 для чистоты экрана).
      */
@@ -298,26 +293,12 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
             });
         });
     }
-    
-    private void loadRecipesFromFirestore() {
-        db.collection("recipes").limit(100).get().addOnSuccessListener(documents -> {
-            List<Recipe> recipes = new ArrayList<>();
-            for (var doc : documents) {
-                Recipe r = doc.toObject(Recipe.class);
-                if (r != null) {
-                    r.setId(doc.getId());
-                    recipes.add(r);
-                }
-            }
-            viewModel.setAllRecipes(recipes);
-        }).addOnFailureListener(e -> Log.e(TAG, "❌ Failed to load recipes from Firestore", e));
-    }
 
     /**
      * Улучшенная логика сопоставления рецептов.
-     * 1. Очистка выбранных ингредиентов от эмодзи.
-     * 2. Подсчет количества совпадений для каждого рецепта.
-     * 3. Сортировка по релевантности (чем больше совпадений, тем выше).
+     * 1. Очистка выбранных ингредиентов от эмодзи для точного сравнения.
+     * 2. Проверка совпадений как в списке строк ingredients, так и через ingredientIds.
+     * 3. Сортировка по релевантности (Instagram-style).
      */
     private void updateMatchingRecipes() {
         List<String> selected = viewModel.getSelectedIngredients().getValue();
@@ -332,41 +313,98 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         }
 
         // 1. Очищаем выбранные ингредиенты от эмодзи для точного сравнения
+        // 🔥 Robust Cleaning: Split by space to remove emoji and keep name
         List<String> cleanedSelected = new ArrayList<>();
         for (String s : selected) {
-            String pureName = s.replaceAll("[\\p{So}\\p{Cn}]", "").trim().toLowerCase();
+            int firstSpace = s.indexOf(' ');
+            String pureName;
+            if (firstSpace != -1 && firstSpace < s.length() - 1) {
+                pureName = s.substring(firstSpace + 1).trim().toLowerCase();
+            } else {
+                // Fallback for cases where there is no space, remove anything that isn't a word character or space
+                pureName = s.replaceAll("[^a-zA-Zа-яА-Я\\s]", "").trim().toLowerCase();
+            }
             if (!pureName.isEmpty()) cleanedSelected.add(pureName);
+        }
+
+        if (cleanedSelected.isEmpty()) {
+            recipeAdapter.updateData(all);
+            return;
+        }
+
+        // Кэшируем продукты для быстрого поиска по ID
+        List<FoodProduct> allProductsList = ProductDatabase.getAllProducts();
+        Map<String, FoodProduct> productMap = new HashMap<>();
+        for (FoodProduct p : allProductsList) {
+            productMap.put(p.getId(), p);
         }
 
         List<Recipe> matched = new ArrayList<>();
         final Map<String, Integer> matchScores = new HashMap<>();
 
         for (Recipe r : all) {
-            if (r.getIngredients() == null) continue;
-            
             int score = 0;
-            List<String> recipeIngredients = r.getIngredients();
             
-            for (String sel : cleanedSelected) {
-                for (String ri : recipeIngredients) {
-                    if (ri.toLowerCase().contains(sel)) {
-                        score++;
-                        break;
+            // Собираем все поисковые фразы для этого рецепта
+            List<String> searchTerms = new ArrayList<>();
+            
+            // Из текстового списка ингредиентов
+            if (r.getIngredients() != null) {
+                for (String ing : r.getIngredients()) {
+                    searchTerms.add(ing.toLowerCase());
+                }
+            }
+            
+            // Из связанных ID (через ProductDatabase)
+            List<String> ids = r.getIngredientIds();
+            if (ids != null) {
+                for (String id : ids) {
+                    FoodProduct p = productMap.get(id);
+                    if (p != null) {
+                        searchTerms.add(p.getName().toLowerCase());
+                        if (p.getAliases() != null) {
+                            for (String alias : p.getAliases()) {
+                                searchTerms.add(alias.toLowerCase());
+                            }
+                        }
                     }
                 }
             }
 
+            // Проверяем совпадения
+            for (String sel : cleanedSelected) {
+                boolean found = false;
+                for (String term : searchTerms) {
+                    if (term.contains(sel)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) score++;
+            }
+
             if (score > 0) {
+                // Рассчитываем процент совпадения и сохраняем в метаданные
+                int percentage = (int) ((score * 100.0) / cleanedSelected.size());
+                if (percentage > 100) percentage = 100;
+                
+                Map<String, Object> metadata = r.getMetadata();
+                if (metadata == null) metadata = new HashMap<>();
+                metadata.put("matchScore", score);
+                metadata.put("matchPercentage", percentage);
+                r.setMetadata(metadata);
+
                 matchScores.put(r.getId(), score);
                 matched.add(r);
             }
         }
 
-        // 2. Сортировка по убыванию количества совпадений
+        // 2. Сортировка по убыванию количества совпадений, затем по заголовку
         matched.sort((a, b) -> {
             int scoreA = matchScores.getOrDefault(a.getId(), 0);
             int scoreB = matchScores.getOrDefault(b.getId(), 0);
-            return Integer.compare(scoreB, scoreA);
+            if (scoreA != scoreB) return Integer.compare(scoreB, scoreA);
+            return a.getTitle().compareToIgnoreCase(b.getTitle());
         });
 
         recipeAdapter.updateData(matched);

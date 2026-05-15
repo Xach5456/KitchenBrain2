@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Refresh Icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M480,756q116,0 196,-80t80,-196 -80,-196 -196,-80q-83,0 -150.5,43T236,364L180,308q68,-88 168,-136t232,-48q149,0 254.5,105.5T940,480q0,63 -21,119.5t-59,101.5l-54,-54q29,-37 42.5,-80t13.5,-87q0,-116 -80,-196t-196,-80q-85,0 -155.5,42.5T316,360v120h120v80H236v-200h80v-80q-72,56 -114,140t-42,180q0,149 105.5,254.5T480,756z"/>
+</vector>

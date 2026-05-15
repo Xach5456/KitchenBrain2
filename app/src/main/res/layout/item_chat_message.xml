@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="4dp">
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="2dp">
 
+    <!-- Sent Message -->
     <LinearLayout
         android:id="@+id/layoutSent"
         android:layout_width="wrap_content"
@@ -13,7 +14,8 @@
         android:background="@drawable/bg_message_sent"
         android:maxWidth="280dp"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -22,32 +24,33 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#FFFFFF"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:lineSpacingExtra="2dp" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginTop="4dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/textTimestampSent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#B3FFFFFF"
-                android:textSize="11sp" />
-
-            <ImageView
-                android:id="@+id/imageMessageStatus"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="4dp"
-                android:contentDescription="Message status" />
-        </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/textTimestampSent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="4dp"
+        android:textColor="#8E8E8E"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/layoutSent"
+        app:layout_constraintTop_toBottomOf="@id/layoutSent" />
+
+    <ImageView
+        android:id="@+id/imageMessageStatus"
+        android:layout_width="12dp"
+        android:layout_height="12dp"
+        android:layout_marginTop="2dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutSent" />
+
+    <!-- Received Message -->
     <LinearLayout
         android:id="@+id/layoutReceived"
         android:layout_width="wrap_content"
@@ -55,7 +58,8 @@
         android:background="@drawable/bg_message_received"
         android:maxWidth="280dp"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="10dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -63,17 +67,22 @@
             android:id="@+id/textMessageReceived"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#000000"
-            android:textSize="15sp" />
+            android:textColor="#262626"
+            android:textSize="15sp"
+            android:lineSpacingExtra="2dp" />
 
-        <TextView
-            android:id="@+id/textTimestampReceived"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginTop="4dp"
-            android:textColor="#66000000"
-            android:textSize="11sp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/textTimestampReceived"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginStart="4dp"
+        android:textColor="#8E8E8E"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/layoutReceived"
+        app:layout_constraintTop_toBottomOf="@id/layoutReceived" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

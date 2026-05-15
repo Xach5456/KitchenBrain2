@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "112175187786",
+    "firebase_url": "https://kitchen-brain-58a1e-default-rtdb.firebaseio.com",
+    "project_id": "kitchen-brain-58a1e",
+    "storage_bucket": "kitchen-brain-58a1e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:112175187786:android:5c05e0e9cacd8af2dde3b3",
+        "android_client_info": {
+          "package_name": "com.example.kitchenbrain"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeZYWWUrHtnHGMMyWoIOEshulAyDqlhnI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

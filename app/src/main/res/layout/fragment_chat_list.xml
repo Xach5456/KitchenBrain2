@@ -4,38 +4,66 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/surface_color">
+    android:background="#FFFFFF">
 
-    <!-- Header with AI Assistant button -->
+    <!-- Header for Chat List -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:paddingHorizontal="16dp">
+
+        <ImageButton
+            android:id="@+id/buttonBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#262626" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Select User to Chat"
-            android:textSize="18sp"
+            android:text="Messages"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="8dp"
-            android:gravity="center"
-            android:background="@drawable/category_background"
-            android:textColor="@color/text_primary" />
+            android:textColor="#262626"
+            android:layout_marginStart="12dp" />
 
-        <ImageButton
-            android:id="@+id/buttonAIAssistant"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_ai_button"
-            android:contentDescription="AI Assistant"
-            android:src="@drawable/ic_ai_robot"
-            app:tint="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Search Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginVertical="8dp"
+        android:background="@drawable/bg_input_field"
+        android:backgroundTint="#EFEFEF"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_search"
+            app:tint="#8E8E8E" />
+
+        <EditText
+            android:id="@+id/editTextSearch"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:hint="Search"
+            android:textSize="14sp"
+            android:textColor="#262626"
+            android:textColorHint="#8E8E8E"
+            android:paddingStart="8dp"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1" />
     </LinearLayout>
 
     <FrameLayout
@@ -45,9 +73,10 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewChatList"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
         
-        <!-- ✅ Pagination loading indicator -->
         <ProgressBar
             android:id="@+id/progressBarLoadMore"
             android:layout_width="wrap_content"

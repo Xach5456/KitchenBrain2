@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API Upgrade Screen - Payment Required -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="@color/background_primary">
+
+    <!-- Icon -->
+    <ImageView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@drawable/ic_fast_food"
+        android:layout_marginBottom="24dp"
+        android:tint="@color/text_secondary" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="API Limit Reached"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Description -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Your Spoonacular API limit has been reached. Please upgrade your plan or wait for the limit to reset."
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Upgrade Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnUpgrade"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Upgrade Plan"
+        android:textSize="16sp"
+        android:textColor="@android:color/white"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="8dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Check Usage Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCheckUsage"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Check Usage"
+        android:textSize="16sp"
+        android:textColor="@color/primary"
+        app:strokeColor="@color/primary"
+        app:strokeWidth="1dp"
+        app:cornerRadius="8dp"
+        app:backgroundTint="@android:color/transparent" />
+
+    <!-- Wait Button -->
+    <TextView
+        android:id="@+id/btnWait"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Wait for Reset"
+        android:textSize="16sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:background="?attr/selectableItemBackground"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Material 3 Dark Theme - Premium 2026 -->
+    <color name="md_primary_dark">#A8C7FF</color>
+    <color name="md_on_primary_dark">#002E6C</color>
+    <color name="md_primary_container_dark">#00479E</color>
+    <color name="md_on_primary_container_dark">#DBE7FF</color>
+    
+    <color name="md_secondary_dark">#C4C7CF</color>
+    <color name="md_on_secondary_dark">#2E3138</color>
+    <color name="md_secondary_container_dark">#3A3D44</color>
+    <color name="md_on_secondary_container_dark">#E8EAED</color>
+    
+    <color name="md_tertiary_dark">#C9B0FF</color>
+    <color name="md_on_tertiary_dark">#3B1B7E</color>
+    <color name="md_tertiary_container_dark">#6B45D4</color>
+    <color name="md_on_tertiary_container_dark">#EDE9FE</color>
+    
+    <color name="md_error_dark">#FFB4AB</color>
+    <color name="md_on_error_dark">#690005</color>
+    <color name="md_error_container_dark">#93000A</color>
+    <color name="md_on_error_container_dark">#FFDAD6</color>
+    
+    <color name="md_background_dark">#121212</color>
+    <color name="md_surface_dark">#121212</color>
+    <color name="md_surface_variant_dark">#44474F</color>
+    <color name="md_on_surface_dark">#E6E1E5</color>
+    <color name="md_on_surface_variant_dark">#C4C7CF</color>
+    <color name="md_outline_dark">#8E9099</color>
+    <color name="md_outline_variant_dark">#44474F</color>
+    
+    <color name="md_surface_container_lowest_dark">#0C0C0C</color>
+    <color name="md_surface_container_low_dark">#1A1A1A</color>
+    <color name="md_surface_container_dark">#202020</color>
+    <color name="md_surface_container_high_dark">#2A2A2A</color>
+    <color name="md_surface_container_highest_dark">#353535</color>
+    
+    <color name="md_inverse_surface_dark">#E6E1E5</color>
+    <color name="md_inverse_on_surface_dark">#313033</color>
+    <color name="md_inverse_primary_dark">#2563EB</color>
+    
+    <!-- Legacy Support Colors - Dark -->
+    <color name="primary">#A8C7FF</color>
+    <color name="on_primary">#002E6C</color>
+    <color name="primary_container">#00479E</color>
+    <color name="on_primary_container">#DBE7FF</color>
+    
+    <color name="secondary">#C4C7CF</color>
+    <color name="on_secondary">#2E3138</color>
+    <color name="secondary_container">#3A3D44</color>
+    <color name="on_secondary_container">#E8EAED</color>
+    
+    <color name="tertiary">#C9B0FF</color>
+    <color name="on_tertiary">#3B1B7E</color>
+    <color name="tertiary_container">#6B45D4</color>
+    <color name="on_tertiary_container">#EDE9FE</color>
+    
+    <color name="surface_color">#121212</color>
+    <color name="surface_variant">#44474F</color>
+    <color name="on_surface">#E6E1E5</color>
+    <color name="on_surface_variant">#C4C7CF</color>
+    
+    <color name="background_primary">#121212</color>
+    <color name="background_secondary">#1A1A1A</color>
+    <color name="background_tertiary">#202020</color>
+    
+    <color name="text_primary">#E6E1E5</color>
+    <color name="text_secondary">#C4C7CF</color>
+    <color name="text_tertiary">#8E9099</color>
+    <color name="text_disabled">#44474F</color>
+    
+    <color name="divider">#44474F</color>
+    <color name="outline">#8E9099</color>
+    
+    <color name="success_color">#4ADE80</color>
+    <color name="error_color">#FFB4AB</color>
+    <color name="warning_color">#FBBF24</color>
+    <color name="info_color">#A8C7FF</color>
+    
+    <color name="gradient_start">#A8C7FF</color>
+    <color name="gradient_center">#C9B0FF</color>
+    <color name="gradient_end">#C9B0FF</color>
+    
+    <color name="white_alpha_70">#B3FFFFFF</color>
+    <color name="status_sending">#B3FFFFFF</color>
+    <color name="status_sent">#FFFFFFFF</color>
+    <color name="status_delivered">#FFFFFFFF</color>
+    <color name="status_read">#4FC3F7</color>
+    
+    <color name="blue_50">#1E293B</color>
+    <color name="blue_100">#2563EB</color>
+    <color name="blue_500">#A8C7FF</color>
+    
+    <color name="green_50">#0F291E</color>
+    <color name="green_500">#4ADE80</color>
+    
+    <color name="purple_500">#C9B0FF</color>
+    <color name="purple_700">#8B5CF6</color>
+    
+    <color name="orange_color">#FFB74D</color>
+    <color name="orange_dark">#FF9800</color>
+    
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    
+    <color name="ai_button_gradient_start">#A8C7FF</color>
+    <color name="ai_button_gradient_end">#C9B0FF</color>
+    <color name="ai_message_bg">#2A2A2A</color>
+    <color name="user_message_bg">#00479E</color>
+    
+    <color name="button_primary_normal">#00479E</color>
+    <color name="button_primary_pressed">#A8C7FF</color>
+    <color name="button_primary_disabled">#2E3138</color>
+    <color name="button_secondary_normal">#2A2A2A</color>
+    <color name="button_secondary_pressed">#353535</color>
+    <color name="button_secondary_disabled">#1A1A1A</color>
+    <color name="button_secondary_border">#A8C7FF</color>
+    <color name="button_success_normal">#4ADE80</color>
+    <color name="button_success_pressed">#27AE60</color>
+    <color name="button_success_disabled">#0F291E</color>
+    
+    <color name="text_secondary_blue">#A8C7FF</color>
+    <color name="text_link">#A8C7FF</color>
+    <color name="text_on_primary">#002E6C</color>
+    <color name="text_on_secondary">#2E3138</color>
+    <color name="on_primary_color">#002E6C</color>
+    <color name="on_secondary_color">#2E3138</color>
+    <color name="on_surface_color">#E6E1E5</color>
+    <color name="error_red">#FFB4AB</color>
+    <color name="primary_blue">#A8C7FF</color>
+    <color name="primary_green">#4ADE80</color>
+    <color name="primary_blue_light">#00479E</color>
+    <color name="primary_green_light">#0F291E</color>
+    <color name="blue_200">#00479E</color>
+    <color name="blue_300">#2563EB</color>
+    <color name="blue_400">#4094FF</color>
+    <color name="blue_600">#A8C7FF</color>
+    <color name="blue_700">#C9B0FF</color>
+    <color name="blue_800">#DBE7FF</color>
+    <color name="green_100">#0F291E</color>
+    <color name="green_200">#1E4D35</color>
+    <color name="green_300">#27AE60</color>
+    <color name="green_400">#4ADE80</color>
+    <color name="green_600">#BBF0D2</color>
+    <color name="green_700">#D8EDDF</color>
+    <color name="green_800">#E8F8F0</color>
+    <color name="outline_variant">#44474F</color>
+    <color name="divider_color">#44474F</color>
+</resources>

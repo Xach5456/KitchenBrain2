@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_scroll_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
     android:background="?attr/colorSurface">
 
     <LinearLayout
@@ -28,11 +30,11 @@
             android:background="?attr/selectableItemBackground"
             android:layout_marginBottom="16dp" />
 
-        <!-- Recipe Title -->
+        <!-- Recipe Name -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Recipe Title"
+            android:hint="Recipe Name"
             android:layout_marginBottom="16dp"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
@@ -46,7 +48,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Description"
+            android:hint="Description (optional)"
             android:layout_marginBottom="16dp"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
             <com.google.android.material.textfield.TextInputEditText
@@ -54,47 +56,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="3"
+                android:minLines="2"
                 android:maxLines="5" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Recipe Instructions -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Instructions"
-            android:layout_marginBottom="12dp"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/cookingInstructions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnIngredients"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Select Ingredients"
-            android:layout_marginBottom="8dp"
-            style="@style/Widget.Material3.Button.TonalButton" />
-
-        <TextView
-            android:id="@+id/textSelectedIngredients"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No ingredients selected"
-            android:layout_marginBottom="16dp"
-            android:padding="8dp" />
-
+        <!-- Video Selection -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="16dp">
 
             <ImageView
                 android:id="@+id/recipeVideo"
@@ -123,6 +95,15 @@
             android:text="Ingredients"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnIngredients"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pick from Pantry"
+            android:layout_marginBottom="8dp"
+            style="@style/Widget.Material3.Button.TonalButton"
+            app:icon="@drawable/ic_search" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -133,7 +114,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Add ingredient"
+                android:hint="Add manually"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/ingredientsEditText"
@@ -152,7 +133,6 @@
 
         </LinearLayout>
 
-        <!-- Ingredients Chips -->
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/ingredientsChipGroup"
             android:layout_width="match_parent"
@@ -164,7 +144,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="Steps"
+            android:text="Instructions"
             android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -174,76 +154,108 @@
             android:layout_marginBottom="8dp"
             android:nestedScrollingEnabled="false" />
 
+        <LinearLayout
+            android:id="@+id/stepsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="8dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter instruction step"
+            android:layout_marginBottom="8dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/stepEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <Button
             android:id="@+id/addStepButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="24dp"
             android:text="Add Step"
             style="@style/Widget.Material3.Button.OutlinedButton" />
 
         <!-- Recipe Details -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Recipe Details"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:gravity="center_vertical">
 
-            <!-- Difficulty -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="12dp"
                 android:text="Difficulty:"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_gravity="center_vertical" />
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
             <Spinner
                 android:id="@+id/difficultySpinner"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp" />
+                android:layout_weight="1" />
 
-            <!-- Cook Time -->
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/cookTimeEditText"
-                android:layout_width="80dp"
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="100dp"
                 android:layout_height="wrap_content"
-                android:hint="Min"
-                android:inputType="number"
-                android:background="@drawable/category_background"
-                android:padding="8dp" />
+                android:hint="Time(min)"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/cookTimeEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
 
-        <!-- Servings and Calories -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/servingsEditText"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:hint="Servings"
-                android:inputType="number"
-                android:background="@drawable/category_background"
-                android:padding="8dp" />
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/servingsEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/caloriesEditText"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="Calories"
-                android:inputType="number"
-                android:background="@drawable/category_background"
-                android:padding="8dp" />
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/caloriesEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
 
@@ -261,16 +273,15 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp" />
 
-        <!-- Save Button -->
+        <!-- Actions -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveRecipe"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Recipe"
+            android:text="Save as Draft"
             android:layout_marginBottom="8dp"
             style="@style/Widget.Material3.Button.TonalButton" />
 
-        <!-- Publish Button -->
         <Button
             android:id="@+id/publishButton"
             android:layout_width="match_parent"
@@ -280,7 +291,6 @@
             android:padding="12dp"
             style="@style/Widget.Material3.Button" />
 
-        <!-- Progress Bar -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
@@ -290,4 +300,4 @@
             android:visibility="gone" />
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

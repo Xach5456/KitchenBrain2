@@ -1,82 +1,59 @@
 package com.example.kitchenbrain;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentId;
+import com.google.firebase.firestore.IgnoreExtraProperties;
+import com.google.firebase.firestore.PropertyName;
+import androidx.annotation.Keep;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ✅ PRODUCTION-READY User Model
+ * Fully compatible with Firestore deserialization and Social Graph system.
+ */
+@Keep
+@IgnoreExtraProperties
 public class User {
+    @DocumentId
+    private String id;
     private String userId;
     private String username;
-    private String usernameLower;  // 🔥 NEW: For case-insensitive search
+    private String usernameLower;
+    private String nickname;
     private String email;
     private String avatarUrl;
     private Timestamp createdAt;
     private int recipesCount;
-    private int followersCount;  // ✅ NEW: Follower count
-    private int followingCount;  // ✅ NEW: Following count
+    private int followersCount;
+    private int followingCount;
     private List<String> followers;
     private List<String> following;
     private Boolean isOnline;
-    private Object lastSeen; // Can be Long (from DB) or Timestamp (for flexibility)
+    private Object lastSeen;
     private Boolean isGuest;
     private Boolean messagingEnabled;
     
-    // Fields for Firestore mapping compatibility
+    // Firestore mapping compatibility fields
     private Boolean online;
     private java.util.Date lastSeenAsDate;
     private com.google.firebase.Timestamp lastSeenAsTimestamp;
-
-    // Default constructor required for Firestore
-    public User() {
-        this.isOnline = false;
-        this.lastSeen = Timestamp.now().toDate().getTime(); // Store as Long milliseconds
-        this.online = false; // Default value
-        this.lastSeenAsDate = null;
-        this.lastSeenAsTimestamp = null;
-        this.messagingEnabled = true; // Default: messaging enabled
-    }
-
-    // Constructor with username
-    public User(String username) {
-        this.username = username;
-        this.createdAt = Timestamp.now();
-        this.recipesCount = 0;
-        this.isOnline = false;
-        this.lastSeen = Timestamp.now().toDate().getTime(); // Store as Long milliseconds
-        this.online = false; // Default value
-        this.lastSeenAsDate = null;
-        this.lastSeenAsTimestamp = null;
-        this.messagingEnabled = true; // Default: messaging enabled
-    }
-
-    // Full constructor
-    public User(String username, String email, String avatarUrl, Timestamp createdAt, int recipesCount) {
-        this.username = username;
-        this.email = email;
-        this.avatarUrl = avatarUrl;
-        this.createdAt = createdAt;
-        this.recipesCount = recipesCount;
-        this.isOnline = false;
-        this.lastSeen = Timestamp.now().toDate().getTime(); // Store as Long milliseconds
-        this.online = false; // Default value
-        this.lastSeenAsDate = null;
-        this.lastSeenAsTimestamp = null;
-        this.messagingEnabled = true; // Default: messaging enabled
-    }
-
-
     private List<String> hiddenRecipes;
 
-    public List<String> getHiddenRecipes() {
-        return hiddenRecipes;
+    public User() {
+        this.isOnline = false;
+        this.online = false;
+        this.messagingEnabled = true;
+        this.followersCount = 0;
+        this.followingCount = 0;
+        this.recipesCount = 0;
     }
 
-    public void setHiddenRecipes(List<String> hiddenRecipes) {
-        this.hiddenRecipes = hiddenRecipes;
+    public User(String username) {
+        this();
+        this.username = username;
+        this.createdAt = Timestamp.now();
     }
-
-    // Document ID field for Firestore compatibility
-    private String id;
 
     public String getId() {
         return id != null ? id : userId;
@@ -84,18 +61,11 @@ public class User {
 
     public void setId(String id) {
         this.id = id;
-        // 🔥 CRITICAL FIX: Ensure userId is synced with Firestore document ID
         if (this.userId == null) {
             this.userId = id;
         }
     }
 
-    public String getDisplayId() {
-        return id != null ? id : userId;
-    }
-
-
-    // Getters and Setters
     public String getUserId() {
         return userId != null ? userId : id;
     }
@@ -113,10 +83,17 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
-        // 🔥 AUTO-UPDATE: Set usernameLower when username changes
         if (username != null) {
             this.usernameLower = username.toLowerCase().trim();
         }
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getEmail() {
@@ -151,7 +128,6 @@ public class User {
         this.recipesCount = recipesCount;
     }
 
-    // ✅ NEW: Getters and Setters for follower/following counts
     public int getFollowersCount() {
         return followersCount;
     }
@@ -187,19 +163,20 @@ public class User {
     }
 
     public Boolean getIsOnline() {
-        if (isOnline != null) {
-            return isOnline;
-        }
-        // Fallback to the 'online' field for compatibility
-        return online;
+        return isOnline != null ? isOnline : online;
     }
 
     public void setIsOnline(Boolean isOnline) {
         this.isOnline = isOnline;
+        this.online = isOnline;
     }
 
     public Object getLastSeen() {
         return lastSeen;
+    }
+
+    public void setLastSeen(Object lastSeen) {
+        this.lastSeen = lastSeen;
     }
     
     public Boolean getIsGuest() {
@@ -217,92 +194,28 @@ public class User {
     public void setMessagingEnabled(Boolean messagingEnabled) {
         this.messagingEnabled = messagingEnabled;
     }
-    
-    // Convenience method to get last seen as Timestamp
-    public com.google.firebase.Timestamp getLastSeenAsTimestamp() {
-        if (lastSeen instanceof Long) {
-            // Convert Long (milliseconds) to Timestamp
-            Long millis = (Long) lastSeen;
-            return new com.google.firebase.Timestamp(millis / 1000, (int) ((millis % 1000) * 1000000));
-        } else if (lastSeen instanceof com.google.firebase.Timestamp) {
-            return (com.google.firebase.Timestamp) lastSeen;
-        } else if (lastSeen instanceof java.util.Date) {
-            java.util.Date date = (java.util.Date) lastSeen;
-            return new com.google.firebase.Timestamp(date.getTime() / 1000, (int) ((date.getTime() % 1000) * 1000000));
-        }
-        return null;
-    }
-    
-    // Convenience method to get last seen as Date
-    public java.util.Date getLastSeenAsDate() {
-        if (lastSeen instanceof Long) {
-            return new java.util.Date((Long) lastSeen);
-        } else if (lastSeen instanceof com.google.firebase.Timestamp) {
-            return ((com.google.firebase.Timestamp) lastSeen).toDate();
-        } else if (lastSeen instanceof java.util.Date) {
-            return (java.util.Date) lastSeen;
-        }
-        return null;
+
+    public List<String> getHiddenRecipes() {
+        return hiddenRecipes;
     }
 
-    public void setLastSeen(Object lastSeen) {
-        this.lastSeen = lastSeen;
+    public void setHiddenRecipes(List<String> hiddenRecipes) {
+        this.hiddenRecipes = hiddenRecipes;
     }
-    
-    // Convenience method to set last seen from Timestamp
-    public void setLastSeenFromTimestamp(com.google.firebase.Timestamp lastSeen) {
-        this.lastSeen = lastSeen;
-    }
-    
-    // Convenience method to set last seen from Long
-    public void setLastSeenFromLong(Long lastSeen) {
-        this.lastSeen = lastSeen;
-    }
-    
-    // Convenience method to set last seen from Date
-    public void setLastSeenFromDate(java.util.Date lastSeen) {
-        if (lastSeen != null) {
-            this.lastSeen = lastSeen.getTime();
-        } else {
-            this.lastSeen = null;
-        }
-    }
-    
-    // 🔥 NEW: usernameLower getters/setters
-    public String getUsernameLower() {
-        return usernameLower;
-    }
-    
-    public void setUsernameLower(String usernameLower) {
-        this.usernameLower = usernameLower;
-    }
-    
-    // Getters and setters for the additional fields to resolve Firestore warnings
-    
-    public Boolean getOnline() {
-        return online;
-    }
-    
-    public void setOnline(Boolean online) {
-        this.online = online;
-    }
-    
-    // Add setters for fields that exist in Firestore to prevent warnings
+
+    // --- Legacy / Firestore Warning Resolvers ---
+
+    public Boolean getOnline() { return online; }
+    public void setOnline(Boolean online) { this.online = online; this.isOnline = online; }
+
     public void setLastSeenAsDate(java.util.Date lastSeenAsDate) {
-        // Convert Date to our internal format (Long milliseconds)
-        if (lastSeenAsDate != null) {
-            this.lastSeen = lastSeenAsDate.getTime();
-        } else {
-            this.lastSeen = null;
-        }
+        if (lastSeenAsDate != null) this.lastSeen = lastSeenAsDate.getTime();
     }
     
     public void setLastSeenAsTimestamp(com.google.firebase.Timestamp lastSeenAsTimestamp) {
-        // Convert Timestamp to our internal format (Long milliseconds)
-        if (lastSeenAsTimestamp != null) {
-            this.lastSeen = lastSeenAsTimestamp.toDate().getTime();
-        } else {
-            this.lastSeen = null;
-        }
+        if (lastSeenAsTimestamp != null) this.lastSeen = lastSeenAsTimestamp.toDate().getTime();
     }
+
+    public String getUsernameLower() { return usernameLower; }
+    public void setUsernameLower(String usernameLower) { this.usernameLower = usernameLower; }
 }

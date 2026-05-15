@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.kitchenbrain.ui.CreateRecipeFragment;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -68,6 +69,7 @@ public class AddRecipeFragment extends Fragment {
                 }
                 
                 if (getActivity() != null) {
+                    // 🔥 UPDATED: Opening the modern social CreateRecipeFragment
                     ((MainActivity) getActivity()).showFragment(new CreateRecipeFragment(), "create_recipe");
                 }
             });

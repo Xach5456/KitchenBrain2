@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,15 +20,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.kitchenbrain.MainActivity;
 import com.example.kitchenbrain.OtherUserProfileFragment;
 import com.example.kitchenbrain.R;
+import com.example.kitchenbrain.User;
 import com.example.kitchenbrain.adapter.UserSearchAdapter;
 import com.example.kitchenbrain.viewmodel.SearchViewModel;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Полноэкранный Fragment для поиска пользователей (Instagram-style).
- * Использует ту же SearchViewModel (Activity Scope) для доступа к результатам поиска.
+ * Fragment for searching users.
+ * Supports "Selection Mode" for sharing content.
  */
 public class UserSearchBottomSheet extends Fragment {
 
@@ -35,6 +38,19 @@ public class UserSearchBottomSheet extends Fragment {
     private UserSearchAdapter adapter;
     private TextInputEditText editTextSearch;
     private RecyclerView recyclerView;
+    private TextView textTitle;
+    
+    private OnUserSelectedListener selectionListener;
+    private boolean isSelectionMode = false;
+
+    public interface OnUserSelectedListener {
+        void onUserSelected(User user);
+    }
+
+    public void setOnUserSelectedListener(OnUserSelectedListener listener) {
+        this.selectionListener = listener;
+        this.isSelectionMode = true;
+    }
 
     @Nullable
     @Override
@@ -45,51 +61,47 @@ public class UserSearchBottomSheet extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        // Используем requireActivity() для доступа к той же ViewModel, что и в SearchFragment
         viewModel = new ViewModelProvider(requireActivity()).get(SearchViewModel.class);
 
         initViews(view);
         setupAdapter();
         setupListeners();
         observeViewModel();
+        
+        if (isSelectionMode && textTitle != null) {
+            textTitle.setText("Send to...");
+        }
     }
 
     private void initViews(View view) {
         editTextSearch = view.findViewById(R.id.editTextUserSearch);
         recyclerView = view.findViewById(R.id.recyclerViewUserResults);
+        textTitle = view.findViewById(R.id.textTitle); // Assuming this ID exists
         ImageButton buttonBack = view.findViewById(R.id.buttonBack);
         
         if (buttonBack != null) {
-            buttonBack.setOnClickListener(v -> {
-                if (getActivity() != null && !getActivity().isFinishing()) {
-                    getActivity().onBackPressed();
-                }
-            });
+            buttonBack.setOnClickListener(v -> requireActivity().onBackPressed());
         }
     }
 
     private void setupAdapter() {
         adapter = new UserSearchAdapter(getContext(), new UserSearchAdapter.OnUserInteractionListener() {
             @Override
-            public void onUserClick(com.example.kitchenbrain.User user) {
-                // При клике открываем профиль пользователя
-                if (getActivity() instanceof MainActivity) {
+            public void onUserClick(User user) {
+                if (isSelectionMode && selectionListener != null) {
+                    selectionListener.onUserSelected(user);
+                    requireActivity().onBackPressed();
+                } else if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).navigateToFragment(
                             OtherUserProfileFragment.newInstance(user.getUserId()), true);
                 }
             }
 
             @Override
-            public void onFollowToggle(com.example.kitchenbrain.User user, boolean isFollowing) {
-                // Логика подписки уже в адаптере (через FollowRepository)
-                // Можно добавить аналитику или логирование здесь
-                Log.d("UserSearchBottomSheet", "User " + user.getUsername() + " follow state changed to: " + isFollowing);
-            }
+            public void onFollowToggle(User user, boolean isFollowing) {}
 
             @Override
-            public void onMessageClick(com.example.kitchenbrain.User user) {
-                // Открываем чат через MainActivity
+            public void onMessageClick(User user) {
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).openChat(user.getUserId(), user.getUsername());
                 }
@@ -102,30 +114,22 @@ public class UserSearchBottomSheet extends Fragment {
 
     private void setupListeners() {
         editTextSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                viewModel.searchUsers(query);
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                viewModel.searchUsers(s.toString().trim());
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
+            @Override public void afterTextChanged(Editable s) {}
         });
     }
 
     private void observeViewModel() {
         viewModel.getSearchResults().observe(getViewLifecycleOwner(), items -> {
-            // Преобразуем SearchItem обратно в User для текущего адаптера
-            java.util.List<com.example.kitchenbrain.User> users = new ArrayList<>();
+            List<User> users = new ArrayList<>();
             for (com.example.kitchenbrain.model.SearchItem item : items) {
                 if (item.getType() == com.example.kitchenbrain.model.SearchItem.Type.USER) {
                     users.add(item.getUser());
                 }
             }
-            Log.d("UserSearchBottomSheet", "📊 [OBSERVE] Received " + users.size() + " users from ViewModel");
             adapter.setUsers(users);
         });
     }
@@ -133,8 +137,6 @@ public class UserSearchBottomSheet extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (adapter != null) {
-            adapter.cleanup();
-        }
+        if (adapter != null) adapter.cleanup();
     }
 }

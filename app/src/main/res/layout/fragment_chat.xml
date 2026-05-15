@@ -1,36 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/chatRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F0F2F5">
+    android:background="#FFFFFF">
 
-    <!-- Chat Header -->
+    <!-- Professional Instagram Header -->
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:orientation="horizontal"
         android:background="#FFFFFF"
-        android:elevation="4dp"
         android:gravity="center_vertical"
-        android:paddingHorizontal="12dp">
+        android:paddingHorizontal="8dp">
 
         <ImageButton
             android:id="@+id/buttonBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
-            app:tint="#1A1A1A" />
+            app:tint="#262626" />
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imageUserProfile"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:src="@drawable/ic_default_avatar"
+            app:shapeAppearanceOverlay="@style/CircleAppearanceOverlay"
+            android:scaleType="centerCrop" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
             <TextView
@@ -38,40 +47,65 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="User Name"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#1A1A1A" />
+                android:textColor="#262626"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/textUserStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="online"
-                android:textSize="12sp"
-                android:textColor="#27AE60" />
+                android:text="Active now"
+                android:textSize="11sp"
+                android:textColor="#8E8E8E"
+                android:visibility="gone" />
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/buttonCall"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_more_vert"
+            android:visibility="gone"
+            app:tint="#262626" />
+
+        <ImageButton
+            android:id="@+id/buttonVideo"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_video"
+            android:visibility="gone"
+            app:tint="#262626" />
+
+        <ImageButton
             android:id="@+id/buttonMore"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_more_vert"
             android:contentDescription="More options"
-            app:tint="#1A1A1A" />
+            app:tint="#262626" />
 
     </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="#DBDBDB" />
+
     <!-- Messages List -->
-    <!-- 🔥 Weight 1 ensures it shrinks when keyboard pushes the inputContainer up -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewMessages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp"
         android:clipToPadding="false"
-        android:scrollbarStyle="outsideOverlay" />
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp" />
 
     <!-- Typing Indicator -->
     <TextView
@@ -80,41 +114,91 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="8dp"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp"
-        android:text="User is typing..."
+        android:text="Typing..."
         android:textSize="12sp"
-        android:textColor="#757575"
-        android:background="@drawable/bg_typing_indicator"
+        android:textColor="#8E8E8E"
         android:visibility="gone" />
 
-    <!-- Input Area Container (Now part of the vertical flow) -->
+    <!-- Edit Mode Indicator (Kept for functionality) -->
     <LinearLayout
-        android:id="@+id/inputContainer"
+        android:id="@+id/layoutEditMode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:background="#F0F9FF"
         android:padding="8dp"
-        android:gravity="bottom"
-        android:background="@android:color/transparent">
+        android:gravity="center_vertical"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_edit"
+            app:tint="#3797EF" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Editing message"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#3797EF" />
+            <TextView
+                android:id="@+id/textEditingOriginal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Original message content"
+                android:textSize="11sp"
+                android:textColor="#8E8E8E"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/buttonCancelEdit"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_close"
+            app:tint="#8E8E8E" />
+    </LinearLayout>
+
+    <!-- Input Area -->
+    <LinearLayout
+        android:id="@+id/inputContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingBottom="12dp"
+        android:paddingTop="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:background="@drawable/bg_message_input_container"
-            android:padding="4dp"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingHorizontal="4dp"
+            android:minHeight="44dp">
 
             <ImageButton
                 android:id="@+id/buttonAttach"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_attach"
-                android:contentDescription="Attach"
-                app:tint="#757575" />
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_circle_blue"
+                android:src="@drawable/ic_add_photo"
+                app:tint="#FFFFFF"
+                android:padding="9dp"
+                android:scaleType="centerInside"
+                android:contentDescription="Camera" />
 
             <EditText
                 android:id="@+id/editTextMessage"
@@ -122,38 +206,49 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="Message"
-                android:padding="10dp"
-                android:maxLines="6"
-                android:minHeight="40dp"
+                android:hint="Message..."
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="12dp"
+                android:maxLines="5"
                 android:inputType="textMultiLine|textCapSentences"
-                android:textSize="16sp"
-                android:textColor="#1A1A1A" />
+                android:textSize="15sp"
+                android:textColor="#262626"
+                android:textColorHint="#8E8E8E" />
 
-            <ImageButton
-                android:id="@+id/buttonEmoji"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_smile"
-                android:contentDescription="Emoji"
-                app:tint="#757575" />
+            <!-- Using FrameLayout to keep FloatingActionButtons for functionality compatibility -->
+            <FrameLayout
+                android:id="@+id/layoutActionButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp">
 
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonSend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:fabCustomSize="40dp"
+                    app:srcCompat="@drawable/ic_send"
+                    app:tint="#3797EF"
+                    app:backgroundTint="#FFFFFF"
+                    app:elevation="0dp"
+                    app:borderWidth="0dp"
+                    android:visibility="gone"
+                    android:contentDescription="Send" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonMic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:fabCustomSize="40dp"
+                    app:srcCompat="@drawable/ic_mic"
+                    app:tint="#262626"
+                    app:backgroundTint="#FFFFFF"
+                    app:elevation="0dp"
+                    app:borderWidth="0dp"
+                    android:contentDescription="Record Voice" />
+
+            </FrameLayout>
         </LinearLayout>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/buttonSend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="2dp"
-            app:fabCustomSize="48dp"
-            app:srcCompat="@drawable/ic_send"
-            app:tint="#FFFFFF"
-            app:backgroundTint="#2563EB"
-            app:elevation="2dp"
-            android:contentDescription="Send" />
-
     </LinearLayout>
 
 </LinearLayout>

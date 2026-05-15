@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Avatar with ring border -->
+        <FrameLayout
+            android:layout_width="70dp"
+            android:layout_height="70dp">
+
+            <!-- Ring border (gradient-like Instagram style) -->
+            <ImageView
+                android:id="@+id/imageStoryRing"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/story_ring_background"
+                android:contentDescription="Story ring" />
+
+            <!-- Circular avatar inside ring -->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imageStoryAvatar"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_profile_placeholder" />
+
+        </FrameLayout>
+
+        <!-- Username below story -->
+        <TextView
+            android:id="@+id/textStoryUsername"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="username"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</FrameLayout>

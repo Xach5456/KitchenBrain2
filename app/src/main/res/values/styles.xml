@@ -26,6 +26,10 @@
     <style name="CircularImageView" parent="">
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="CircleAppearanceOverlay" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
     
     <style name="RoundedImageCorners">
         <item name="cornerFamily">rounded</item>
@@ -49,6 +53,19 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
     
+    <!-- 🔥 FIXED: Modern Alert Dialog Theme - Added bridges for AppCompat components -->
+    <style name="AlertDialogTheme" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:backgroundDimEnabled">true</item>
+
+        <!-- Fix for "Failed to resolve attribute: textColorPrimary" crash -->
+        <item name="android:textColorPrimary">?attr/colorOnSurface</item>
+        <item name="android:textColorSecondary">?attr/colorOnSurfaceVariant</item>
+
+        <!-- Ensure buttons are visible in M3 -->
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Material3.Button.TextButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Material3.Button.TextButton</item>
+    </style>
+
     <style name="Premium.Button" parent="Widget.Material3.Button">
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">@font/inter_medium</item>

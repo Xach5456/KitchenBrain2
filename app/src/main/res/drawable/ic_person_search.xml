@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Person Search Icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M480,480q-66,0 -113,-47t-47,-113q0,-66 47,-113t113,-47q66,0 113,47t47,113q0,66 -47,113t-113,47zM220,700q42,-79 118,-124.5T480,530q86,0 162,45.5T740,700q10,-22 25,-41t35,-35q-66,-65 -148,-102.5T480,484q-110,0 -207,48T110,660q21,19 39,40t35,40q11,-11 20.5,-21t19.5,-19zM688,760q33,0 56.5,-23.5T768,680q0,-33 -23.5,-56.5T688,600q-33,0 -56.5,23.5T608,680q0,33 23.5,56.5T688,760zM896,904L752,760q-19,18 -43,29t-53,11q-56,0 -95,-39t-39,-95q0,-56 39,-95t95,-39q56,0 95,39t39,95q0,29 -11,53t-29,43l144,144-28,28z"/>
+</vector>

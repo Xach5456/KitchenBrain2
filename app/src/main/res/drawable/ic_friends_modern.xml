@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Premium 2026 Modern Friends/People Icon - Material Symbols Rounded -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_friends_static">
+    <target
+        android:name="peopleGroup"
+        android:animation="@animator/friends_icon_scale" />
+</animated-vector>

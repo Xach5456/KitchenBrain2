@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modern Home Icon Base - Material Symbols Rounded Style -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Home shape with modern rounded corners -->
+    <path
+        android:name="homeBase"
+        android:pathData="M12,3L4,9v12h5v-7h6v7h5V9L12,3z"
+        android:fillColor="@color/primary_blue"
+        android:strokeWidth="0"/>
+    
+    <!-- Subtle highlight for depth -->
+    <path
+        android:pathData="M12,3L4,9l0.5,0.4L12,3.8l7.5,5.6L20,9L12,3z"
+        android:fillColor="#40FFFFFF"
+        android:strokeWidth="0"/>
+</vector>

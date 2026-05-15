@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="14dp"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/textStepIndex"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/bg_step_index"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+        android:textColor="?attr/colorOnPrimaryContainer"
+        tools:text="1" />
+
+    <TextView
+        android:id="@+id/textStepBody"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_weight="1"
+        android:lineSpacingExtra="4dp"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        android:textColor="?attr/colorOnSurface"
+        tools:text="Heat the pan over medium heat until hot." />
+</LinearLayout>

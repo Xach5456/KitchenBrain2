@@ -1,141 +1,363 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/detailRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@color/background_primary">
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:padding="16dp"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="300dp"
+        android:background="@color/background_primary"
+        android:fitsSystemWindows="true">
 
-        <!-- Recipe Image -->
-        <ImageView
-            android:id="@+id/imgRecipeDetail"
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/collapsingToolbar"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:background="@drawable/ic_launcher_background" />
+            android:layout_height="match_parent"
+            app:contentScrim="@color/background_primary"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:expandedTitleMarginStart="20dp"
+            app:expandedTitleMarginBottom="20dp"
+            app:expandedTitleTextAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            app:collapsedTitleTextAppearance="@style/TextAppearance.Material3.TitleLarge">
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/txtTitleDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp" />
+            <ImageView
+                android:id="@+id/imgRecipeDetail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_placeholder"
+                android:fitsSystemWindows="true"
+                app:layout_collapseMode="parallax" />
 
-        <!-- Info Chips -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/gradient_overlay_bottom" />
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:navigationIcon="@drawable/ic_arrow_back" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/rounded_corners_top"
+        android:layout_marginTop="-28dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical"
+            android:padding="20dp">
 
+            <!-- Title & Engagement -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/txtTitleDetail"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    tools:text="Creamy Pasta Carbonara" />
+
+                <LinearLayout
+                    android:id="@+id/layoutLikes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_meta_pill"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:layout_marginStart="12dp">
+
+                    <ImageView
+                        android:id="@+id/imgLikeDetail"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_heart_filled"
+                        app:tint="@color/primary_blue" />
+
+                    <TextView
+                        android:id="@+id/txtLikesDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        tools:text="1.2k" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Author Section -->
+            <LinearLayout
+                android:id="@+id/layoutAuthor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/imgAuthorAvatar"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_default_avatar" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:id="@+id/txtAuthorName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        tools:text="Chef Gordon" />
+
+                    <TextView
+                        android:id="@+id/txtCreatedAt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        tools:text="Published 2 days ago" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Category Badge -->
             <TextView
-                android:id="@+id/txtTimeDetail"
+                android:id="@+id/txtCategoryDetail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_category_tag"
-                android:padding="8dp"
-                android:textSize="12sp"
-                android:textColor="@android:color/white"
-                android:drawableStart="@android:drawable/ic_menu_recent_history"
-                android:drawablePadding="4dp" />
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_meta_pill"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/primary_blue"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Italian"
+                tools:visibility="visible" />
+
+            <!-- Tags ChipGroup -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:chipSpacingHorizontal="8dp" />
+
+            <!-- Stats Grid -->
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:columnCount="2"
+                android:alignmentMode="alignBounds">
+
+                <!-- Time -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_columnWeight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_input_field"
+                    android:padding="12dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_marginBottom="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_time"
+                        app:tint="@color/primary_blue" />
+                    <TextView
+                        android:id="@+id/txtTimeDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        tools:text="25 min" />
+                </LinearLayout>
+
+                <!-- Difficulty -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_columnWeight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_input_field"
+                    android:padding="12dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginBottom="12dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_star"
+                        app:tint="@color/primary_blue" />
+                    <TextView
+                        android:id="@+id/txtDifficultyDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        tools:text="Medium" />
+                </LinearLayout>
+
+                <!-- Calories -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_columnWeight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_input_field"
+                    android:padding="12dp"
+                    android:layout_marginEnd="6dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_meat"
+                        app:tint="@color/primary_blue" />
+                    <TextView
+                        android:id="@+id/txtCaloriesDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        tools:text="450 kcal" />
+                </LinearLayout>
+
+                <!-- Servings -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_columnWeight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_input_field"
+                    android:padding="12dp"
+                    android:layout_marginStart="6dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_people"
+                        app:tint="@color/primary_blue" />
+                    <TextView
+                        android:id="@+id/txtServingsDetail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        tools:text="2 ppl" />
+                </LinearLayout>
+            </GridLayout>
+
+            <!-- Video Tutorial Button -->
+            <Button
+                android:id="@+id/btnWatchVideo"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="Watch Video Tutorial"
+                android:visibility="gone"
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_video"
+                app:iconGravity="textStart" />
+
+            <!-- Description -->
+            <TextView
+                android:id="@+id/txtDescriptionDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:lineSpacingExtra="5dp"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                tools:text="This authentic Italian carbonara recipe is made with fresh eggs, guanciale, and pecorino romano..." />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider_color"
+                android:layout_marginVertical="24dp" />
+
+            <!-- Ingredients Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ingredients"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
 
             <TextView
-                android:id="@+id/txtDifficultyDetail"
-                android:layout_width="wrap_content"
+                android:id="@+id/txtIngredientsDetail"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_category_tag"
-                android:padding="8dp"
-                android:textSize="12sp"
-                android:textColor="@android:color/white"
-                android:layout_marginStart="8dp"
-                android:drawableStart="@android:drawable/ic_menu_info_details"
-                android:drawablePadding="4dp" />
+                android:layout_marginTop="12dp"
+                android:lineSpacingExtra="6dp"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:padding="12dp"
+                android:background="@drawable/rounded_container" />
+
+            <!-- Instructions Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="Instructions"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
 
             <TextView
-                android:id="@+id/txtServingsDetail"
-                android:layout_width="wrap_content"
+                android:id="@+id/txtInstructionsDetail"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_category_tag"
-                android:padding="8dp"
-                android:textSize="12sp"
-                android:textColor="@android:color/white"
-                android:layout_marginStart="8dp"
-                android:drawableStart="@android:drawable/ic_menu_share"
-                android:drawablePadding="4dp" />
+                android:layout_marginTop="12dp"
+                android:lineSpacingExtra="8dp"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:padding="16dp"
+                android:layout_marginBottom="40dp"
+                android:background="@drawable/rounded_container" />
 
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        <!-- Description -->
-        <TextView
-            android:id="@+id/txtDescriptionDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="16dp"
-            android:lineSpacingExtra="4dp" />
-
-        <!-- Ingredients Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Ingredients"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/txtIngredientsDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@android:color/black"
-            android:background="@drawable/bg_input_field"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp"
-            android:lineSpacingExtra="2dp" />
-
-        <!-- Instructions Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Instructions"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/txtInstructionsDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@android:color/black"
-            android:background="@drawable/bg_input_field"
-            android:padding="12dp"
-            android:lineSpacingExtra="2dp" />
-
-        <!-- Category -->
-        <TextView
-            android:id="@+id/txtCategoryDetail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_difficulty_easy"
-            android:padding="8dp"
-            android:textSize="12sp"
-            android:textColor="@android:color/white"
-            android:layout_marginTop="16dp" />
-
-    </LinearLayout>
-
-</ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

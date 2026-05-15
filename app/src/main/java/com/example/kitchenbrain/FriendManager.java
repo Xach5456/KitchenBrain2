@@ -194,29 +194,36 @@ public class FriendManager {
                         return;
                     }
 
-                    Map<String, Object> requestData = new HashMap<>();
-                    requestData.put("senderId", currentUserId);
-                    requestData.put("senderUsername", getCurrentUserUsername());
-                    requestData.put("senderAvatarUrl", getCurrentUserAvatar());
-                    requestData.put("receiverId", user.getUserId());
-                    requestData.put("createdAt", com.google.firebase.Timestamp.now());
-                    requestData.put("status", "pending");
+                    getCurrentUserData(userData -> {
+                        String senderUsername = userData.getOrDefault("username", "User");
+                        String senderNickname = userData.getOrDefault("nickname", senderUsername);
+                        String senderAvatar = userData.getOrDefault("avatarUrl", null);
 
-                    friendRequestsCollection.add(requestData)
-                            .addOnSuccessListener(documentReference -> {
-                                FriendRequest request = new FriendRequest(
-                                        currentUserId,
-                                        getCurrentUserUsername(),
-                                        getCurrentUserAvatar(),
-                                        user.getUserId()
-                                );
-                                request.setId(documentReference.getId());
-                                callback.onSuccess(request);
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.e(TAG, "Error sending friend request", e);
-                                callback.onError("Failed to send request: " + e.getMessage());
-                            });
+                        Map<String, Object> requestData = new HashMap<>();
+                        requestData.put("senderId", currentUserId);
+                        requestData.put("senderUsername", senderUsername);
+                        requestData.put("senderNickname", senderNickname);
+                        requestData.put("senderAvatarUrl", senderAvatar);
+                        requestData.put("receiverId", user.getUserId());
+                        requestData.put("createdAt", com.google.firebase.Timestamp.now());
+                        requestData.put("status", "pending");
+
+                        friendRequestsCollection.add(requestData)
+                                .addOnSuccessListener(documentReference -> {
+                                    FriendRequest request = new FriendRequest(
+                                            currentUserId,
+                                            senderUsername,
+                                            senderAvatar,
+                                            user.getUserId()
+                                    );
+                                    request.setId(documentReference.getId());
+                                    callback.onSuccess(request);
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Error sending friend request", e);
+                                    callback.onError("Failed to send request: " + e.getMessage());
+                                });
+                    });
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Send request failed", e);
@@ -345,21 +352,27 @@ public class FriendManager {
     }
 
     private void createFriendRelationship(String friendId, String username, String avatarUrl, FriendCallback callback) {
-        Map<String, Object> friendData1 = new HashMap<>();
-        friendData1.put("userId", currentUserId);
-        friendData1.put("friendId", friendId);
-        friendData1.put("friendUsername", username);
-        friendData1.put("friendAvatarUrl", avatarUrl);
-        friendData1.put("isOnline", false);
-        friendData1.put("createdAt", com.google.firebase.Timestamp.now());
+        getCurrentUserData(userData -> {
+            String myUsername = userData.getOrDefault("username", "User");
+            String myNickname = userData.getOrDefault("nickname", myUsername);
+            String myAvatar = userData.getOrDefault("avatarUrl", null);
 
-        friendsCollection.add(friendData1)
+            Map<String, Object> friendData1 = new HashMap<>();
+            friendData1.put("userId", currentUserId);
+            friendData1.put("friendId", friendId);
+            friendData1.put("friendUsername", username);
+            friendData1.put("friendAvatarUrl", avatarUrl);
+            friendData1.put("isOnline", false);
+            friendData1.put("createdAt", com.google.firebase.Timestamp.now());
+
+            friendsCollection.add(friendData1)
                 .addOnSuccessListener(documentReference -> {
                     Map<String, Object> friendData2 = new HashMap<>();
                     friendData2.put("userId", friendId);
                     friendData2.put("friendId", currentUserId);
-                    friendData2.put("friendUsername", getCurrentUserUsername());
-                    friendData2.put("friendAvatarUrl", getCurrentUserAvatar());
+                    friendData2.put("friendUsername", myUsername);
+                    friendData2.put("friendNickname", myNickname);
+                    friendData2.put("friendAvatarUrl", myAvatar);
                     friendData2.put("isOnline", false);
                     friendData2.put("createdAt", com.google.firebase.Timestamp.now());
 
@@ -382,6 +395,7 @@ public class FriendManager {
                     Log.e(TAG, "Error creating friend relationship", e);
                     callback.onError("Failed to add friend: " + e.getMessage());
                 });
+        });
     }
     
     /**
@@ -413,48 +427,40 @@ public class FriendManager {
      * This triggers auto-open chat in both users' apps
      */
     private void notifyMutualFollowToBothUsers(String userId1, String userId2) {
-        // Create notification document in Firestore
-        Map<String, Object> notificationData = new HashMap<>();
-        notificationData.put("type", "mutual_follow");
-        notificationData.put("userId1", userId1);
-        notificationData.put("userId2", userId2);
-        notificationData.put("timestamp", com.google.firebase.Timestamp.now());
-        notificationData.put("read", false);
-        
-        // Generate unique notification ID
-        String notificationId = "mutual_" + generateChatRoomId(userId1, userId2);
-        
-        // Store in mutual_follows collection
-        db.collection("mutual_follows").document(notificationId)
-            .set(notificationData)
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "✅ Mutual follow notification created: " + notificationId);
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to create mutual follow notification", e);
-            });
-        
-        // Also update user documents to trigger real-time listeners
-        Map<String, Object> updateData = new HashMap<>();
-        updateData.put("lastMutualFollow", com.google.firebase.Timestamp.now());
-        updateData.put("newMutualFollowUserId", userId2);
-        
-        db.collection("users").document(userId1)
-            .update(updateData)
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "✅ User 1 notified of mutual follow");
-            });
-        
-        // Notify user 2
-        Map<String, Object> updateData2 = new HashMap<>();
-        updateData2.put("lastMutualFollow", com.google.firebase.Timestamp.now());
-        updateData2.put("newMutualFollowUserId", userId1);
-        
-        db.collection("users").document(userId2)
-            .update(updateData2)
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "✅ User 2 notified of mutual follow");
-            });
+        // 🔥 FIX: Create notification in the central "notifications" collection so NotificationsFragment sees it
+        getCurrentUserData(userData -> {
+            String myUsername = userData.getOrDefault("username", "User");
+            String myNickname = userData.getOrDefault("nickname", myUsername);
+            String myAvatar = userData.getOrDefault("avatarUrl", null);
+
+            // Notify User 2 that User 1 followed them back
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("receiverId", userId2);
+            notificationData.put("senderId", userId1);
+            notificationData.put("senderUsername", myUsername);
+            notificationData.put("senderNickname", myNickname);
+            notificationData.put("senderAvatarUrl", myAvatar != null ? myAvatar : "");
+            notificationData.put("type", "mutual_follow");
+            notificationData.put("message", "🎉 " + (myNickname != null && !myNickname.isEmpty() ? myNickname : myUsername) + " followed you back!");
+            notificationData.put("isRead", false);
+            notificationData.put("createdAt", System.currentTimeMillis());
+
+            db.collection("notifications").add(notificationData);
+
+            // Also update User 1's document to trigger auto-open chat in MainActivity
+            Map<String, Object> updateData = new HashMap<>();
+            updateData.put("lastMutualFollow", com.google.firebase.Timestamp.now());
+            updateData.put("newMutualFollowUserId", userId2);
+            
+            db.collection("users").document(userId1).update(updateData);
+            
+            // And notify User 2 (if they are online)
+            Map<String, Object> updateData2 = new HashMap<>();
+            updateData2.put("lastMutualFollow", com.google.firebase.Timestamp.now());
+            updateData2.put("newMutualFollowUserId", userId1);
+            
+            db.collection("users").document(userId2).update(updateData2);
+        });
     }
     
     /**
@@ -462,8 +468,7 @@ public class FriendManager {
      * Uses consistent chat ID format to prevent duplicates
      */
     private void createChatForMutualFollow(String userId1, String userId2) {
-        // Chat creation logic moved to ChatRepository - simplified for now
-        Log.d(TAG, "Mutual follow detected between " + userId1 + " and " + userId2);
+        createChatRoomForMutualFollowers(userId1, userId2);
     }
 
     private void checkExistingRequest(String userId, ExistCallback callback) {
@@ -528,40 +533,48 @@ public class FriendManager {
     }
 
     /**
-     * Get current user's username from Firestore
-     * This method fetches the actual username, not a hardcoded string
+     * Get current user's data from Firestore (username, nickname, avatar)
      */
-    private void getCurrentUserUsername(final UsernameCallback callback) {
+    private void getCurrentUserData(final UserDataCallback callback) {
         if (currentUserId == null) {
-            callback.onUsernameReceived("User");
+            callback.onDataReceived(new HashMap<>());
             return;
         }
         
         db.collection("users").document(currentUserId)
             .get()
             .addOnSuccessListener(documentSnapshot -> {
+                Map<String, String> data = new HashMap<>();
                 if (documentSnapshot.exists()) {
-                    String username = documentSnapshot.getString("username");
-                    callback.onUsernameReceived(username != null ? username : "User");
-                } else {
-                    callback.onUsernameReceived("User");
+                    data.put("username", documentSnapshot.getString("username"));
+                    data.put("nickname", documentSnapshot.getString("nickname"));
+                    data.put("avatarUrl", documentSnapshot.getString("avatarUrl"));
                 }
+                callback.onDataReceived(data);
             })
             .addOnFailureListener(e -> {
-                Log.e(TAG, "Error fetching current user username", e);
-                callback.onUsernameReceived("User");
+                Log.e(TAG, "Error fetching current user data", e);
+                callback.onDataReceived(new HashMap<>());
             });
     }
     
-    // Callback interface for async username retrieval
+    // Callback interface for async user data retrieval
+    private interface UserDataCallback {
+        void onDataReceived(Map<String, String> data);
+    }
+    
+    // Deprecated methods
+    @Deprecated
+    private void getCurrentUserUsername(final UsernameCallback callback) {
+        getCurrentUserData(data -> callback.onUsernameReceived(data.getOrDefault("username", "User")));
+    }
+    
     private interface UsernameCallback {
         void onUsernameReceived(String username);
     }
     
-    // Deprecated - kept for backward compatibility but should not be used
     @Deprecated
     private String getCurrentUserUsername() {
-        Log.w(TAG, "WARNING: getCurrentUserUsername() deprecated - returns 'User'. Use async version instead!");
         return "User";
     }
 
@@ -570,24 +583,33 @@ public class FriendManager {
     }
 
     private void createFollowNotification(String userId, String username, String avatarUrl) {
-        if (userId == null || username == null) return;
+        if (userId == null) return;
         
-        // Fetch REAL username from Firestore asynchronously
-        getCurrentUserUsername(actualUsername -> {
+        // Fetch REAL data from Firestore asynchronously
+        getCurrentUserData(userData -> {
+            String actualUsername = userData.getOrDefault("username", "User");
+            String actualNickname = userData.getOrDefault("nickname", actualUsername);
+            String actualAvatar = userData.getOrDefault("avatarUrl", avatarUrl);
+
             Map<String, Object> notificationData = new HashMap<>();
             notificationData.put("receiverId", userId);
             notificationData.put("senderId", currentUserId);
-            notificationData.put("senderUsername", actualUsername); // ✅ Use REAL username
-            notificationData.put("senderAvatarUrl", avatarUrl != null ? avatarUrl : "");
+            notificationData.put("senderUsername", actualUsername);
+            notificationData.put("senderNickname", actualNickname); // ✅ Use REAL nickname
+            notificationData.put("senderAvatarUrl", actualAvatar != null ? actualAvatar : "");
             notificationData.put("type", "follow");
-            notificationData.put("message", actualUsername + " followed you");
+            
+            // Prefer nickname for the message
+            String displayName = (actualNickname != null && !actualNickname.isEmpty()) ? actualNickname : actualUsername;
+            notificationData.put("message", displayName + " followed you");
+            
             notificationData.put("isRead", false);
             notificationData.put("createdAt", System.currentTimeMillis());
             
             db.collection("notifications").add(notificationData)
                     .addOnSuccessListener(aVoid -> {
-                        Log.d(TAG, "Follow notification created with username: " + actualUsername);
-                        sendFCMFollowNotification(userId, actualUsername);
+                        Log.d(TAG, "Follow notification created with display name: " + displayName);
+                        sendFCMFollowNotification(userId, displayName);
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Error creating follow notification", e);
@@ -595,7 +617,7 @@ public class FriendManager {
         });
     }
     
-    private void sendFCMFollowNotification(String receiverId, String followerUsername) {
+    private void sendFCMFollowNotification(String receiverId, String followerDisplayName) {
         db.collection("users").document(receiverId)
             .get()
             .addOnSuccessListener(userDoc -> {
@@ -608,22 +630,7 @@ public class FriendManager {
                     return;
                 }
                 
-                Map<String, Object> message = new HashMap<>();
-                message.put("token", fcmToken);
-                
-                Map<String, String> notification = new HashMap<>();
-                notification.put("title", "New Follower");
-                notification.put("body", followerUsername + " subscribed to you");
-                
-                Map<String, String> data = new HashMap<>();
-                data.put("type", "follow");
-                data.put("senderId", currentUserId);
-                data.put("senderUsername", followerUsername);
-                
-                message.put("notification", notification);
-                message.put("data", data);
-                
-                Log.d(TAG, "FCM Notification ready: " + receiverId);
+                Log.d(TAG, "FCM Notification would be sent to: " + receiverId + " from: " + followerDisplayName);
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error getting user for FCM notification", e);
@@ -631,8 +638,7 @@ public class FriendManager {
     }
 
     /**
-     * @deprecated Use FollowGraphRepository.isMutual() instead. This method uses blocking Tasks.await()
-     * and has performance issues. FollowGraphRepository provides instant cache-based mutual checks.
+     * @deprecated Use FollowGraphRepository.isMutual() instead.
      */
     @Deprecated
     public Task<Boolean> areMutualFriends(String userId1, String userId2) {
@@ -640,8 +646,6 @@ public class FriendManager {
         
         executor.execute(() -> {
             try {
-                // ✅ FIXED: Use following/followers collections instead of friends
-                // Check if userId1 follows userId2
                 com.google.firebase.firestore.DocumentSnapshot aFollowsB = Tasks.await(db.collection("following")
                         .document(userId1)
                         .collection("userFollowing")
@@ -650,7 +654,6 @@ public class FriendManager {
                 
                 boolean user1FollowsUser2 = aFollowsB.exists();
                 
-                // Check if userId2 follows userId1
                 com.google.firebase.firestore.DocumentSnapshot bFollowsA = Tasks.await(db.collection("following")
                         .document(userId2)
                         .collection("userFollowing")
@@ -782,8 +785,7 @@ public class FriendManager {
     }
 
     /**
-     * @deprecated Use FollowGraphRepository.isFollowing() instead. This method uses blocking Tasks.await()
-     * and reads from the wrong Firestore collection. FollowGraphRepository provides instant cache-based checks.
+     * @deprecated Use FollowGraphRepository.isFollowing() instead.
      */
     @Deprecated
     public Task<Boolean> isFollowing(String userId) {
@@ -813,8 +815,7 @@ public class FriendManager {
     }
 
     /**
-     * @deprecated Use FollowRepository.followUser() instead. This method writes to the wrong Firestore collection.
-     * FollowRepository writes to following/followers collections which is the correct architecture.
+     * @deprecated Use FollowRepository.followUser() instead.
      */
     @Deprecated
     public Task<Void> followUser(String userId) {
@@ -879,14 +880,12 @@ public class FriendManager {
     
     /**
      * Check if following another user creates a mutual follow relationship
-     * If mutual, chat room will be created automatically
      */
     private void checkAndCreateChatOnMutualFollow(String otherUserId) {
         areMutualFriends(currentUserId, otherUserId)
             .addOnSuccessListener(isMutual -> {
                 if (isMutual) {
                     Log.d(TAG, "✅ Mutual follow detected between " + currentUserId + " and " + otherUserId);
-                    Log.d(TAG, "Chat room already created by areMutualFriends method");
                 } else {
                     Log.d(TAG, "Not mutual yet - " + otherUserId + " does not follow back");
                 }
@@ -897,8 +896,7 @@ public class FriendManager {
     }
 
     /**
-     * @deprecated Use FollowRepository.unfollowUser() instead. This method writes to the wrong Firestore collection.
-     * FollowRepository writes to following/followers collections which is the correct architecture.
+     * @deprecated Use FollowRepository.unfollowUser() instead.
      */
     @Deprecated
     public Task<Void> unfollowUser(String userId) {

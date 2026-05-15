@@ -7,7 +7,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,16 +19,18 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.kitchenbrain.utils.CloudinaryHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -46,12 +50,7 @@ import java.util.List;
  */
 public class ProfileFragment extends Fragment {
     private static final String TAG = "ProfileFragment";
-    private static final int PICK_IMAGE_REQUEST = 100;
-    private static final int PERMISSION_REQUEST_CODE = 200;
 
-    /**
-     * Factory method for creating ProfileFragment with user ID
-     */
     public static ProfileFragment newInstance(String userId) {
         ProfileFragment fragment = new ProfileFragment();
         Bundle args = new Bundle();
@@ -67,14 +66,14 @@ public class ProfileFragment extends Fragment {
     private String currentUserId;
     private User currentUser;
     
-    // Firestore listeners for real-time updates
     private ListenerRegistration userDataListener;
     private ListenerRegistration userRecipesListener;
     
-    // UI Components
     private ShapeableImageView imageViewProfile;
     private TextView textViewUsername;
     private TextView textViewEmail;
+    private TextView textFollowersCount;
+    private TextView textFollowingCount;
     private MaterialButton buttonEditProfile;
     private View buttonChangePhoto;
     private LinearLayout layoutEditUsername;
@@ -91,29 +90,48 @@ public class ProfileFragment extends Fragment {
     private PostAdapter postAdapter;
     private List<Recipe> userPosts;
 
+    // Modern Activity Result Launchers
+    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        uploadProfileImage(uri);
+                    }
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    openImagePicker();
+                } else {
+                    showSnackbar("Permission denied. Cannot select image.");
+                }
+            }
+    );
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateView called");
-        
         View view = inflater.inflate(R.layout.fragment_profile_modern, container, false);
         
-        // Initialize Firebase FIRST (lightweight)
         initFirebase();
         prefs = requireContext().getSharedPreferences("app_settings", Context.MODE_PRIVATE);
         
-        // Initialize views NEXT (lightweight)
         initViews(view);
         setupClickListeners();
         loadSettings();
         setupRecyclerView();
         
-        // DEFER heavy Firestore operations to let UI render first
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             if (isAdded()) {
                 loadUserData();
             }
-        }, 400); // 400ms delay
+        }, 400);
         
         return view;
     }
@@ -122,7 +140,6 @@ public class ProfileFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         
-        // Get user ID from arguments or current user
         Bundle args = getArguments();
         if (args != null) {
             currentUserId = args.getString("user_id");
@@ -131,18 +148,14 @@ public class ProfileFragment extends Fragment {
         if (currentUserId == null && mAuth.getCurrentUser() != null) {
             currentUserId = mAuth.getCurrentUser().getUid();
         }
-        
-        if (currentUserId == null) {
-            if (getContext() != null) {
-                Toast.makeText(getContext(), "Please log in to View Profile", Toast.LENGTH_LONG).show();
-            }
-        }
     }
     
     private void initViews(View view) {
         imageViewProfile = view.findViewById(R.id.imageViewProfile);
         textViewUsername = view.findViewById(R.id.textViewUsername);
         textViewEmail = view.findViewById(R.id.textViewEmail);
+        textFollowersCount = view.findViewById(R.id.textFollowersCount);
+        textFollowingCount = view.findViewById(R.id.textFollowingCount);
         buttonEditProfile = view.findViewById(R.id.buttonEditProfile);
         buttonChangePhoto = view.findViewById(R.id.buttonChangePhoto);
         layoutEditUsername = view.findViewById(R.id.layoutEditUsername);
@@ -164,25 +177,21 @@ public class ProfileFragment extends Fragment {
     }
     
     private void setupClickListeners() {
-        buttonChangePhoto.setOnClickListener(v -> {
-            if (checkPermission()) openImagePicker();
-            else requestPermission();
-        });
+        if (buttonChangePhoto != null) {
+            buttonChangePhoto.setOnClickListener(v -> handleImagePickerClick());
+        }
         
-        buttonEditProfile.setOnClickListener(v -> showEditUsernameDialog());
-        layoutEditUsername.setOnClickListener(v -> showEditUsernameDialog());
-        layoutDeleteAccount.setOnClickListener(v -> showDeleteAccountConfirmation());
-        layoutMessagePermissions.setOnClickListener(v -> showMessagePermissionsDialog());
-        layoutBlockedUsers.setOnClickListener(v -> showBlockedUsersDialog());
+        if (buttonEditProfile != null) buttonEditProfile.setOnClickListener(v -> showEditUsernameDialog());
+        if (layoutEditUsername != null) layoutEditUsername.setOnClickListener(v -> showEditUsernameDialog());
+        if (layoutDeleteAccount != null) layoutDeleteAccount.setOnClickListener(v -> showDeleteAccountConfirmation());
+        if (layoutMessagePermissions != null) layoutMessagePermissions.setOnClickListener(v -> showMessagePermissionsDialog());
+        if (layoutBlockedUsers != null) layoutBlockedUsers.setOnClickListener(v -> showBlockedUsersDialog());
         
-        // FIXED: Add null check before setting listener
         if (switchDarkMode != null) {
             switchDarkMode.setOnCheckedChangeListener((b, isChecked) -> {
                 applyDarkMode(isChecked);
                 saveSettings();
             });
-        } else {
-            Log.w(TAG, "switchDarkMode is null - skipping listener setup");
         }
         
         if (switchNotifications != null) {
@@ -198,70 +207,124 @@ public class ProfileFragment extends Fragment {
                 saveSettings();
             });
         }
+
+        if (textFollowersCount != null) {
+            ((View)textFollowersCount.getParent()).setOnClickListener(v -> openFriendsFragment(FriendsFragment.TAB_FOLLOWERS));
+        }
+        if (textFollowingCount != null) {
+            ((View)textFollowingCount.getParent()).setOnClickListener(v -> openFriendsFragment(FriendsFragment.TAB_FOLLOWING));
+        }
+    }
+
+    private void handleImagePickerClick() {
+        String permission = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                ? Manifest.permission.READ_MEDIA_IMAGES
+                : Manifest.permission.READ_EXTERNAL_STORAGE;
+
+        if (ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED) {
+            openImagePicker();
+        } else {
+            requestPermissionLauncher.launch(permission);
+        }
+    }
+
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        imagePickerLauncher.launch(intent);
+    }
+
+    private void uploadProfileImage(Uri imageUri) {
+        if (currentUserId == null || !isAdded()) return;
+        
+        showSnackbar("Uploading profile picture...");
+        
+        CloudinaryHelper.uploadImage(
+            requireContext(),
+            imageUri,
+            url -> {
+                if (isAdded()) {
+                    db.collection("users").document(currentUserId).update("avatarUrl", url)
+                            .addOnSuccessListener(aVoid -> {
+                                if (isAdded()) {
+                                    showSnackbar("Profile photo updated!");
+                                    loadUserData();
+                                }
+                            });
+                }
+            },
+            error -> {
+                if (isAdded()) showSnackbar("Upload failed: " + error);
+            },
+            null
+        );
+    }
+
+    private void openFriendsFragment(int initialTab) {
+        if (getActivity() instanceof MainActivity) {
+            FriendsFragment fragment = new FriendsFragment();
+            Bundle args = new Bundle();
+            args.putInt("current_tab", initialTab);
+            fragment.setArguments(args);
+            ((MainActivity) getActivity()).showFragment(fragment, "friends");
+        }
     }
     
     private void loadUserData() {
         if (currentUserId == null || getContext() == null) return;
         
-        // Use real-time listener instead of blocking .get()
         userDataListener = db.collection("users").document(currentUserId)
                 .addSnapshotListener((document, error) -> {
                     if (!isAdded()) return;
                     
                     if (error != null) {
                         Log.e(TAG, "Error listening to user data", error);
-                        showSnackbar("Error loading profile: " + error.getMessage());
                         return;
                     }
                     
                     if (document != null && document.exists()) {
                         currentUser = document.toObject(User.class);
-                        if (currentUser != null) updateUIWithUserData(currentUser);
+                        if (currentUser != null) {
+                            currentUser.setId(document.getId());
+                            updateUIWithUserData(currentUser);
+                        }
                     }
                 });
         
-        // Load recipes with real-time listener
         loadUserRecipes();
     }
     
     private void updateUIWithUserData(User user) {
         if (!isAdded()) return;
         
-        if (textViewUsername != null && user.getUsername() != null)
-            textViewUsername.setText(user.getUsername());
-        if (textCurrentUsername != null && user.getUsername() != null)
-            textCurrentUsername.setText(user.getUsername());
+        if (textViewUsername != null) textViewUsername.setText(user.getUsername());
+        if (textCurrentUsername != null) textCurrentUsername.setText(user.getUsername());
         
-        if (textViewEmail != null && mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null)
+        if (textViewEmail != null && mAuth.getCurrentUser() != null)
             textViewEmail.setText(mAuth.getCurrentUser().getEmail());
+
+        if (textFollowersCount != null)
+            textFollowersCount.setText(String.valueOf(user.getFollowersCount()));
+        
+        if (textFollowingCount != null)
+            textFollowingCount.setText(String.valueOf(user.getFollowingCount()));
         
         if (imageViewProfile != null) {
-            String avatarUrl = user.getAvatarUrl();
-            if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                try {
-                    Glide.with(this).load(avatarUrl).placeholder(R.drawable.ic_default_avatar).circleCrop().into(imageViewProfile);
-                } catch (Exception e) {
-                    imageViewProfile.setImageResource(R.drawable.ic_default_avatar);
-                }
-            } else {
-                imageViewProfile.setImageResource(R.drawable.ic_default_avatar);
-            }
+            Glide.with(this)
+                .load(user.getAvatarUrl())
+                .placeholder(R.drawable.ic_default_avatar)
+                .circleCrop()
+                .into(imageViewProfile);
         }
     }
     
     private void loadUserRecipes() {
         if (currentUserId == null || getContext() == null) return;
         
-        // Use real-time listener instead of blocking .get()
         userRecipesListener = db.collection("recipes").whereEqualTo("authorId", currentUserId)
                 .addSnapshotListener((queryDocumentSnapshots, error) -> {
                     if (!isAdded()) return;
                     
-                    if (error != null) {
-                        Log.e(TAG, "Error loading recipes", error);
-                        showSnackbar("Error loading recipes: " + error.getMessage());
-                        return;
-                    }
+                    if (error != null) return;
                     
                     if (userPosts != null && queryDocumentSnapshots != null) {
                         userPosts.clear();
@@ -279,17 +342,9 @@ public class ProfileFragment extends Fragment {
     
     private void loadSettings() {
         if (!isAdded()) return;
-        
-        // FIXED: Add null checks before accessing switches
-        if (switchDarkMode != null) {
-            switchDarkMode.setChecked(prefs.getBoolean("dark_mode", false));
-        }
-        if (switchNotifications != null) {
-            switchNotifications.setChecked(prefs.getBoolean("notifications_enabled", true));
-        }
-        if (switchMessaging != null) {
-            switchMessaging.setChecked(prefs.getBoolean("messaging_enabled", true));
-        }
+        if (switchDarkMode != null) switchDarkMode.setChecked(prefs.getBoolean("dark_mode", false));
+        if (switchNotifications != null) switchNotifications.setChecked(prefs.getBoolean("notifications_enabled", true));
+        if (switchMessaging != null) switchMessaging.setChecked(prefs.getBoolean("messaging_enabled", true));
         
         String permission = prefs.getString("message_permission", "everyone");
         updateMessagePermissionText(permission);
@@ -298,7 +353,6 @@ public class ProfileFragment extends Fragment {
     
     private void saveSettings() {
         if (!isAdded()) return;
-        
         prefs.edit()
                 .putBoolean("dark_mode", switchDarkMode != null && switchDarkMode.isChecked())
                 .putBoolean("notifications_enabled", switchNotifications == null || switchNotifications.isChecked())
@@ -309,20 +363,15 @@ public class ProfileFragment extends Fragment {
     private void applyDarkMode(boolean enabled) {
         if (!isAdded()) return;
         AppCompatDelegate.setDefaultNightMode(enabled ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        showSnackbar(enabled ? "Dark mode enabled" : "Light mode enabled");
     }
     
     private void updateMessagingSetting(boolean enabled) {
         if (!isAdded() || currentUserId == null) return;
-        
-        db.collection("users").document(currentUserId).update("messagingEnabled", enabled)
-                .addOnSuccessListener(aVoid -> showSnackbar(enabled ? "Messaging enabled" : "Messaging disabled"))
-                .addOnFailureListener(e -> showSnackbar("Failed to update setting"));
+        db.collection("users").document(currentUserId).update("messagingEnabled", enabled);
     }
     
     private void updateMessagePermissionText(String permission) {
         if (textMessagePermission == null || !isAdded()) return;
-        
         switch (permission) {
             case "friends": textMessagePermission.setText("Friends only"); break;
             case "nobody": textMessagePermission.setText("Nobody"); break;
@@ -337,11 +386,9 @@ public class ProfileFragment extends Fragment {
     
     private void showEditUsernameDialog() {
         if (!isAdded() || getContext() == null) return;
-        
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_edit_profile, null);
         EditText editText = dialogView.findViewById(R.id.editTextUsername);
-        if (currentUser != null && currentUser.getUsername() != null)
-            editText.setText(currentUser.getUsername());
+        if (currentUser != null) editText.setText(currentUser.getUsername());
         
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Edit Username")
@@ -349,7 +396,6 @@ public class ProfileFragment extends Fragment {
                 .setPositiveButton("Save", (d, w) -> {
                     String newUsername = editText.getText().toString().trim();
                     if (!newUsername.isEmpty()) updateUsername(newUsername);
-                    else showSnackbar("Username cannot be empty");
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -357,21 +403,12 @@ public class ProfileFragment extends Fragment {
     
     private void updateUsername(String newUsername) {
         if (currentUserId == null || !isAdded()) return;
-        
         db.collection("users").document(currentUserId).update("username", newUsername)
-                .addOnSuccessListener(aVoid -> {
-                    if (!isAdded()) return;
-                    if (textViewUsername != null) textViewUsername.setText(newUsername);
-                    if (textCurrentUsername != null) textCurrentUsername.setText(newUsername);
-                    showSnackbar("Username updated");
-                    loadUserData();
-                })
-                .addOnFailureListener(e -> showSnackbar("Failed: " + e.getMessage()));
+                .addOnSuccessListener(aVoid -> loadUserData());
     }
     
     private void showLogoutConfirmation() {
         if (!isAdded()) return;
-        
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Logout")
                 .setMessage("Are you sure?")
@@ -381,7 +418,7 @@ public class ProfileFragment extends Fragment {
     }
     
     private void logout() {
-        if (db != null && currentUserId != null && isAdded()) {
+        if (db != null && currentUserId != null) {
             db.collection("users").document(currentUserId)
                     .update("online", false, "lastSeen", Timestamp.now())
                     .addOnCompleteListener(t -> performSignOut());
@@ -391,11 +428,8 @@ public class ProfileFragment extends Fragment {
     }
     
     private void performSignOut() {
-        currentUserId = null;
-        currentUser = null;
         if (mAuth != null) mAuth.signOut();
-        
-        if (getActivity() != null && !getActivity().isFinishing()) {
+        if (getActivity() != null) {
             Intent intent = new Intent(getActivity(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -405,65 +439,28 @@ public class ProfileFragment extends Fragment {
     
     private void showDeleteAccountConfirmation() {
         if (!isAdded()) return;
-        
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Delete Account")
-                .setMessage("This action cannot be undone. All data will be deleted.")
+                .setMessage("This action cannot be undone.")
                 .setPositiveButton("Delete", (d, w) -> deleteAccount())
                 .setNegativeButton("Cancel", null)
                 .show();
     }
     
     private void deleteAccount() {
-        if (!isAdded() || currentUserId == null) return;
-        
+        if (currentUserId == null) return;
         db.collection("users").document(currentUserId).delete()
-                .addOnSuccessListener(aVoid -> deleteUserRecipes())
-                .addOnFailureListener(e -> showSnackbar("Failed: " + e.getMessage()));
-    }
-    
-    private void deleteUserRecipes() {
-        if (!isAdded() || currentUserId == null) return;
-        
-        db.collection("recipes").whereEqualTo("authorId", currentUserId).get()
-                .addOnSuccessListener(docs -> {
-                    List<String> ids = new ArrayList<>();
-                    for (DocumentSnapshot doc : docs) ids.add(doc.getId());
-                    deleteRecipesBatch(ids, 0);
-                })
-                .addOnFailureListener(e -> deleteRecipesBatch(new ArrayList<>(), 0));
-    }
-    
-    private void deleteRecipesBatch(List<String> ids, int index) {
-        if (index >= ids.size()) {
-            deleteAuthAccount();
-            return;
-        }
-        
-        db.collection("recipes").document(ids.get(index)).delete()
-                .addOnCompleteListener(t -> deleteRecipesBatch(ids, index + 1));
+                .addOnSuccessListener(aVoid -> deleteAuthAccount());
     }
     
     private void deleteAuthAccount() {
-        if (!isAdded() || mAuth.getCurrentUser() == null) return;
-        
-        mAuth.getCurrentUser().delete()
-                .addOnCompleteListener(task -> {
-                    if (!isAdded()) return;
-                    showSnackbar("Account deleted");
-                    Intent intent = new Intent(getActivity(), LoginActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    if (getActivity() != null) {
-                        getActivity().finish();
-                    }
-                })
-                .addOnFailureListener(e -> showSnackbar("Database deleted, contact support"));
+        if (mAuth.getCurrentUser() != null) {
+            mAuth.getCurrentUser().delete().addOnCompleteListener(task -> performSignOut());
+        }
     }
     
     private void showMessagePermissionsDialog() {
         if (!isAdded()) return;
-        
         String[] options = {"Everyone", "Friends only", "Nobody"};
         String current = prefs.getString("message_permission", "everyone");
         int index = current.equals("friends") ? 1 : current.equals("nobody") ? 2 : 0;
@@ -474,7 +471,6 @@ public class ProfileFragment extends Fragment {
                     String perm = which == 1 ? "friends" : which == 2 ? "nobody" : "everyone";
                     prefs.edit().putString("message_permission", perm).apply();
                     updateMessagePermissionText(perm);
-                    showSnackbar("Updated");
                     d.dismiss();
                 })
                 .setNegativeButton("Cancel", null)
@@ -483,74 +479,11 @@ public class ProfileFragment extends Fragment {
     
     private void showBlockedUsersDialog() {
         if (!isAdded()) return;
-        
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Blocked Users")
                 .setMessage("No blocked users yet.")
                 .setPositiveButton("OK", null)
                 .show();
-    }
-    
-    private void openImagePicker() {
-        if (!isAdded()) return;
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
-    }
-    
-    private boolean checkPermission() {
-        return getContext() != null && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-    }
-    
-    private void requestPermission() {
-        ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
-    }
-    
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == getActivity().RESULT_OK && data != null && data.getData() != null) {
-            uploadProfileImage(data.getData());
-        }
-    }
-    
-    private void uploadProfileImage(Uri imageUri) {
-        if (currentUserId == null || !isAdded() || getContext() == null) return;
-        
-        Log.d(TAG, "Starting profile image upload to Cloudinary");
-        
-        // Use Cloudinary for upload
-        com.example.kitchenbrain.utils.CloudinaryHelper.INSTANCE.uploadImage(
-            requireContext(),
-            imageUri,
-            url -> {
-                // Success - update Firestore
-                Log.d(TAG, "Image uploaded successfully: " + url);
-                db.collection("users").document(currentUserId).update("avatarUrl", url)
-                        .addOnSuccessListener(aVoid -> {
-                            if (!isAdded()) return;
-                            if (imageViewProfile != null) {
-                                try {
-                                    Glide.with(this).load(url).circleCrop().into(imageViewProfile);
-                                } catch (Exception e) {
-                                    Log.e(TAG, "Error loading image with Glide", e);
-                                }
-                            }
-                            showSnackbar("Profile image updated successfully");
-                        })
-                        .addOnFailureListener(e -> {
-                            Log.e(TAG, "Failed to update avatar URL", e);
-                            showSnackbar("Failed to update database: " + e.getMessage());
-                        });
-            },
-            error -> {
-                // Error
-                Log.e(TAG, "Upload failed: " + error);
-                showSnackbar("Upload failed: " + error);
-            },
-            null
-        );
     }
     
     private void setupRecyclerView() {
@@ -564,41 +497,13 @@ public class ProfileFragment extends Fragment {
     }
     
     @Override
-    public void onResume() {
-        super.onResume();
-        // Don't reload data - Firestore listeners are already active
-        Log.d(TAG, "onResume - no reload needed (listeners active)");
-    }
-    
-    @Override
     public void onDestroyView() {
-        Log.d(TAG, "onDestroyView called - cleaning up listeners");
         super.onDestroyView();
-        
-        // Remove Firestore listeners to prevent memory leaks and crashes
-        if (userDataListener != null) {
-            userDataListener.remove();
-            userDataListener = null;
-            Log.d(TAG, "User data listener removed");
-        }
-        
-        if (userRecipesListener != null) {
-            userRecipesListener.remove();
-            userRecipesListener = null;
-            Log.d(TAG, "User recipes listener removed");
-        }
-        
-        // Clear references to prevent memory leaks
-        currentUserId = null;
-        currentUser = null;
-        postAdapter = null;
-        userPosts = null;
-        
-        Log.d(TAG, "onDestroyView completed - all resources cleaned up");
+        if (userDataListener != null) userDataListener.remove();
+        if (userRecipesListener != null) userRecipesListener.remove();
     }
     
     private void showSnackbar(String message) {
-        if (!isAdded() || getView() == null) return;
-        Snackbar.make(getView(), message, Snackbar.LENGTH_SHORT).show();
+        if (getView() != null) Snackbar.make(getView(), message, Snackbar.LENGTH_SHORT).show();
     }
 }

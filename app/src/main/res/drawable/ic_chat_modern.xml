@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Premium 2026 Modern Chat Icon - Material Symbols Rounded -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_chat_static">
+    <target
+        android:name="chatBubble"
+        android:animation="@animator/chat_icon_bounce" />
+</animated-vector>

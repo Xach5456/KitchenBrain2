@@ -21,13 +21,16 @@
         <item name="colorOnSurface">@color/md_on_surface_light</item>
         <item name="colorSurfaceVariant">@color/md_surface_variant_light</item>
         <item name="colorOnSurfaceVariant">@color/md_on_surface_variant_light</item>
-        <item name="colorSurfaceContainerLowest">@color/md_surface_container_lowest_light</item>
-        <item name="colorSurfaceContainerLow">@color/md_surface_container_low_light</item>
-        <item name="colorSurfaceContainer">@color/md_surface_container_light</item>
-        <item name="colorSurfaceContainerHigh">@color/md_surface_container_high_light</item>
-        <item name="colorSurfaceContainerHighest">@color/md_surface_container_highest_light</item>
         <item name="colorOutline">@color/md_outline_light</item>
         <item name="colorOutlineVariant">@color/md_outline_variant_light</item>
+
+        <!-- Bridge for AppCompat/Material Components compatibility -->
+        <item name="android:textColorPrimary">?attr/colorOnSurface</item>
+        <item name="android:textColorSecondary">?attr/colorOnSurfaceVariant</item>
+
+        <!-- Material 3 Dialog Theme -->
+        <item name="materialAlertDialogTheme">@style/AlertDialogTheme</item>
+
         <item name="android:statusBarColor">@color/md_background_light</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/md_background_light</item>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Premium 2026 Modern Profile Icon - Material Symbols Rounded -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_profile_static">
+    <target
+        android:name="profilePerson"
+        android:animation="@animator/profile_icon_fade" />
+</animated-vector>

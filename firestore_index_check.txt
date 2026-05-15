@@ -1,0 +1,34 @@
+FIRESTORE INDEX CHECKLIST:
+
+1. CREATE INDEX FOR USERNAMELOWER:
+Go to Firebase Console → Firestore → Indexes → Create Index
+Collection: users
+Fields: 
+- usernameLower (Ascending)
+- createdAt (Descending, optional for ranking)
+
+2. VERIFY EXISTING USERS HAVE USERNAMELOWER:
+Run this query in Firebase Console:
+db.collection("users").where("usernameLower", "==", null).get()
+
+3. BACKFILL OLD USERS:
+Create a Cloud Function or manual script:
+db.collection("users").get().then(snapshot => {
+  snapshot.forEach(doc => {
+    const user = doc.data();
+    if (user.username && !user.usernameLower) {
+      doc.ref.update({
+        usernameLower: user.username.toLowerCase().trim()
+      });
+    }
+  });
+});
+
+4. TEST SEARCH:
+- "alex" should find "Alex", "alex", "ALEX"
+- "al" should find partial matches
+- Empty query should clear results
+
+5. CHECK LOGS FOR INDEX ERRORS:
+Look for: "The query requires an index"
+If found → create the missing index

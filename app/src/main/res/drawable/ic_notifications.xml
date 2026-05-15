@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Notifications Icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#000000"
+        android:pathData="M480,840q50,0 85,-35t35,-85h-240q0,50 35,85t85,35zM160,680v-320q0,-117 66.5,-212.5T400,33v-53q0,-33 23.5,-56.5T480,-100q33,0 56.5,23.5T560,-20v53q107,39 173.5,134.5T800,360v320L680,800v-40H280v40L160,680zM680,600V360q0,-83 -58.5,-141.5T480,160q-83,0 -141.5,58.5T280,360v240h400z"/>
+</vector>

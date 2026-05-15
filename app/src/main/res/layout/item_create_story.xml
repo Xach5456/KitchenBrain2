@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Circular avatar with + icon -->
+        <FrameLayout
+            android:layout_width="70dp"
+            android:layout_height="70dp">
+
+            <!-- Ring border (gray for create story) -->
+            <ImageView
+                android:id="@+id/imageCreateStoryRing"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/story_ring_background"
+                android:alpha="0.5"
+                android:contentDescription="Create story ring" />
+
+            <!-- Circular placeholder avatar -->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imageCreateStoryAvatar"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop"
+                android:src="@color/background_primary"
+                app:civ_border_width="2dp"
+                app:civ_border_color="@color/text_secondary" />
+
+            <!-- Plus icon overlay (bottom-right) -->
+            <ImageView
+                android:id="@+id/imageCreateStoryPlus"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="-4dp"
+                android:layout_marginEnd="-4dp"
+                android:src="@drawable/ic_add_circle"
+                android:contentDescription="Add story"
+                android:elevation="4dp" />
+
+        </FrameLayout>
+
+        <!-- Label below -->
+        <TextView
+            android:id="@+id/textCreateStoryLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Your Story"
+            android:textSize="12sp"
+            android:textColor="@color/text_secondary"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</FrameLayout>

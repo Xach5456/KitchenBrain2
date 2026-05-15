@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home Icon Pulse Animation - Premium Spring Physics -->
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:propertyName="scaleX"
+    android:duration="300"
+    android:valueFrom="1.0"
+    android:valueTo="1.15"
+    android:valueType="floatType"
+    android:interpolator="@android:interpolator/overshoot"
+    android:repeatMode="reverse"
+    android:repeatCount="1"/>

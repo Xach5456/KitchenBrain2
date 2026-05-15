@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Modern Material Design 3 Theme -->
+    
+    <!-- Base Application Theme -->
+    <style name="Theme.KitchenBrain2" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary_blue</item>
+        <item name="colorPrimaryVariant">@color/blue_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/primary_green</item>
+        <item name="colorSecondaryVariant">@color/green_600</item>
+        <item name="colorOnSecondary">@color/white</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/background_primary</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        
+        <!-- Background color -->
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="backgroundColor">@color/background_primary</item>
+        
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        
+        <!-- Input style -->
+        <item name="textInputStyle">@style/Widget.KitchenBrain2.TextInputLayout</item>
+        
+        <!-- Button style -->
+        <item name="materialButtonStyle">@style/Widget.KitchenBrain2.Button</item>
+    </style>
+    
+    <!-- Modern Card Style -->
+    <style name="Widget.KitchenBrain2.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/white</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/blue_100</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+    
+    <!-- Modern Button Style -->
+    <style name="Widget.KitchenBrain2.Button" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/primary_blue</item>
+        <item name="cornerRadius">50dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <!-- Outlined Button Style -->
+    <style name="Widget.KitchenBrain2.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary_blue</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="cornerRadius">50dp</item>
+        <item name="android:textColor">@color/primary_blue</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+    
+    <!-- Text Button Style -->
+    <style name="Widget.KitchenBrain2.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/primary_blue</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+    
+    <!-- Modern TextInputLayout Style -->
+    <style name="Widget.KitchenBrain2.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">24dp</item>
+        <item name="boxCornerRadiusTopEnd">24dp</item>
+        <item name="boxCornerRadiusBottomStart">24dp</item>
+        <item name="boxCornerRadiusBottomEnd">24dp</item>
+        <item name="boxStrokeColor">@color/primary_blue</item>
+        <item name="boxStrokeWidth">2dp</item>
+        <item name="hintTextColor">@color/text_secondary</item>
+    </style>
+    
+    <!-- Modern FAB Style -->
+    <style name="Widget.KitchenBrain2.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/gradient_start</item>
+        <item name="tint">@color/white</item>
+        <item name="fabSize">normal</item>
+        <item name="elevation">6dp</item>
+    </style>
+    
+    <!-- Typography Styles -->
+    <style name="TextAppearance.KitchenBrain2.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.KitchenBrain2.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.KitchenBrain2.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.KitchenBrain2.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.KitchenBrain2.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <!-- Chip Style -->
+    <style name="Widget.KitchenBrain2.Chip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipBackgroundColor">@color/blue_50</item>
+        <item name="chipStrokeColor">@color/blue_200</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    
+    <!-- Custom Bottom Navigation Indicator - Premium 2026 Style -->
+    <style name="App.Custom.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/blue_200</item>
+        <item name="android:width">68dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+    
+    <!-- Premium Button with Animation Support -->
+    <style name="Widget.KitchenBrain2.Button.Premium" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/white</item>
+        <item name="backgroundTint">@color/primary_blue</item>
+        <item name="cornerRadius">50dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>
