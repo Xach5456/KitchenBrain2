@@ -81,8 +81,10 @@ public class ChatRepository {
             }
         }
         
-        db.collection("chat_rooms").document(chatId).set(update, SetOptions.merge());
-        db.collection("chats").document(chatId).set(update, SetOptions.merge());
+        db.collection("chat_rooms").document(chatId).set(update, SetOptions.merge())
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to update chat_rooms summary", e));
+        db.collection("chats").document(chatId).set(update, SetOptions.merge())
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to update chats summary", e));
     }
     
     /**
@@ -241,7 +243,7 @@ public class ChatRepository {
     /**
      * MARK MESSAGES AS READ
      */
-    public void markMessagesAsRead(String chatId, String currentUserId, String otherUserId, FirebaseCallback callback) {
+    public void markMessagesAsRead(String chatId, String otherUserId, FirebaseCallback callback) {
         db.collection("chats")
                 .document(chatId)
                 .collection("messages")
@@ -309,8 +311,10 @@ public class ChatRepository {
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) { if (listener != null) listener.onError(e); return; }
                     if (snapshot != null && snapshot.exists()) {
-                        Map<String, Boolean> typingMap = (Map<String, Boolean>) snapshot.get("typing");
-                        if (typingMap != null && listener != null) {
+                        Object typingData = snapshot.get("typing");
+                        if (typingData instanceof Map && listener != null) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Boolean> typingMap = (Map<String, Boolean>) typingData;
                             listener.onTypingChanged(typingMap);
                         }
                     }

@@ -34,7 +34,8 @@ public class ReadReceiptEngine {
     public void markMessagesAsRead(String chatId, String currentUserId, String otherUserId) {
         Log.d(TAG, "📖 Marking messages as read for chat: " + chatId);
         
-        repository.markMessagesAsRead(chatId, currentUserId, otherUserId, new ChatRepository.FirebaseCallback() {
+        // 🔥 FIXED: Updated to match new ChatRepository signature (removed unused currentUserId)
+        repository.markMessagesAsRead(chatId, otherUserId, new ChatRepository.FirebaseCallback() {
             @Override
             public void onSuccess() {
                 Log.d(TAG, "✅ Messages marked as read successfully");

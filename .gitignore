@@ -11,3 +11,13 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Local properties
+local.properties
+local.properties.*
+*.backup
+*.bak
+
+# Android
+*.keystore
+*.jks
