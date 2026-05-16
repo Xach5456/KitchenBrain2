@@ -54,7 +54,6 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
     private TextView textSelectedCount;
     private EditText editTextSearchProducts;
     private ImageButton buttonClearSearch;
-    private ImageButton buttonNotifications;
     private RecyclerView recyclerViewRecipes;
     private TextView textRecipeCount;
     
@@ -62,7 +61,6 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
     private ProductChipAdapter ingredientAdapter;
     private RecipeAdapter recipeAdapter;
     
-    private FirebaseFirestore db;
     private ExecutorService backgroundExecutor;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private volatile boolean isFragmentActive = true;
@@ -102,7 +100,6 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         initViews(view);
         setupAdapters();
         setupListeners();
-        initFirebase();
         observeViewModel();
         
         // Загружаем ингредиенты (продукты)
@@ -117,7 +114,7 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         textSelectedCount = view.findViewById(R.id.textSelectedCount);
         editTextSearchProducts = view.findViewById(R.id.editTextSearchProducts);
         buttonClearSearch = view.findViewById(R.id.buttonClearSearch);
-        buttonNotifications = view.findViewById(R.id.buttonNotifications);
+        ImageButton buttonNotifications = view.findViewById(R.id.buttonNotifications);
         recyclerViewRecipes = view.findViewById(R.id.recyclerViewRecipes);
         textRecipeCount = view.findViewById(R.id.textRecipeCount);
         
@@ -195,10 +192,6 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
                 Toast.makeText(getContext(), R.string.selection_cleared, Toast.LENGTH_SHORT).show();
             });
         }
-    }
-    
-    private void initFirebase() {
-        db = FirebaseFirestore.getInstance();
     }
     
     private void observeViewModel() {
@@ -313,19 +306,7 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         }
 
         // 1. Очищаем выбранные ингредиенты от эмодзи для точного сравнения
-        // 🔥 Robust Cleaning: Split by space to remove emoji and keep name
-        List<String> cleanedSelected = new ArrayList<>();
-        for (String s : selected) {
-            int firstSpace = s.indexOf(' ');
-            String pureName;
-            if (firstSpace != -1 && firstSpace < s.length() - 1) {
-                pureName = s.substring(firstSpace + 1).trim().toLowerCase();
-            } else {
-                // Fallback for cases where there is no space, remove anything that isn't a word character or space
-                pureName = s.replaceAll("[^a-zA-Zа-яА-Я\\s]", "").trim().toLowerCase();
-            }
-            if (!pureName.isEmpty()) cleanedSelected.add(pureName);
-        }
+        List<String> cleanedSelected = extractPureIngredientNames(selected);
 
         if (cleanedSelected.isEmpty()) {
             recipeAdapter.updateData(all);
@@ -343,45 +324,7 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
         final Map<String, Integer> matchScores = new HashMap<>();
 
         for (Recipe r : all) {
-            int score = 0;
-            
-            // Собираем все поисковые фразы для этого рецепта
-            List<String> searchTerms = new ArrayList<>();
-            
-            // Из текстового списка ингредиентов
-            if (r.getIngredients() != null) {
-                for (String ing : r.getIngredients()) {
-                    searchTerms.add(ing.toLowerCase());
-                }
-            }
-            
-            // Из связанных ID (через ProductDatabase)
-            List<String> ids = r.getIngredientIds();
-            if (ids != null) {
-                for (String id : ids) {
-                    FoodProduct p = productMap.get(id);
-                    if (p != null) {
-                        searchTerms.add(p.getName().toLowerCase());
-                        if (p.getAliases() != null) {
-                            for (String alias : p.getAliases()) {
-                                searchTerms.add(alias.toLowerCase());
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Проверяем совпадения
-            for (String sel : cleanedSelected) {
-                boolean found = false;
-                for (String term : searchTerms) {
-                    if (term.contains(sel)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) score++;
-            }
+            int score = calculateMatchScore(r, cleanedSelected, productMap);
 
             if (score > 0) {
                 // Рассчитываем процент совпадения и сохраняем в метаданные
@@ -401,14 +344,81 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
 
         // 2. Сортировка по убыванию количества совпадений, затем по заголовку
         matched.sort((a, b) -> {
-            int scoreA = matchScores.getOrDefault(a.getId(), 0);
-            int scoreB = matchScores.getOrDefault(b.getId(), 0);
+            Integer sA = matchScores.get(a.getId());
+            Integer sB = matchScores.get(b.getId());
+            int scoreA = (sA != null) ? sA : 0;
+            int scoreB = (sB != null) ? sB : 0;
+            
             if (scoreA != scoreB) return Integer.compare(scoreB, scoreA);
-            return a.getTitle().compareToIgnoreCase(b.getTitle());
+            
+            String titleA = a.getTitle();
+            String titleB = b.getTitle();
+            if (titleA == null) titleA = "";
+            if (titleB == null) titleB = "";
+            return titleA.compareToIgnoreCase(titleB);
         });
 
         recipeAdapter.updateData(matched);
         textRecipeCount.setText(getString(R.string.recipes_matching_format, matched.size()));
+    }
+
+    private List<String> extractPureIngredientNames(List<String> rawIngredients) {
+        List<String> cleanedSelected = new ArrayList<>();
+        for (String s : rawIngredients) {
+            int firstSpace = s.indexOf(' ');
+            String pureName;
+            if (firstSpace != -1 && firstSpace < s.length() - 1) {
+                pureName = s.substring(firstSpace + 1).trim().toLowerCase();
+            } else {
+                // Fallback for cases where there is no space, remove anything that isn't a word character or space
+                pureName = s.replaceAll("[^a-zA-Zа-яА-Я\\s]", "").trim().toLowerCase();
+            }
+            if (!pureName.isEmpty()) cleanedSelected.add(pureName);
+        }
+        return cleanedSelected;
+    }
+
+    private int calculateMatchScore(Recipe r, List<String> cleanedSelected, Map<String, FoodProduct> productMap) {
+        int score = 0;
+        
+        // Собираем все поисковые фразы для этого рецепта
+        List<String> searchTerms = new ArrayList<>();
+        
+        // Из текстового списка ингредиентов
+        if (r.getIngredients() != null) {
+            for (String ing : r.getIngredients()) {
+                searchTerms.add(ing.toLowerCase());
+            }
+        }
+        
+        // Из связанных ID (через ProductDatabase)
+        List<String> ids = r.getIngredientIds();
+        if (ids != null) {
+            for (String id : ids) {
+                FoodProduct p = productMap.get(id);
+                if (p != null) {
+                    searchTerms.add(p.getName().toLowerCase());
+                    if (p.getAliases() != null) {
+                        for (String alias : p.getAliases()) {
+                            searchTerms.add(alias.toLowerCase());
+                        }
+                    }
+                }
+            }
+        }
+
+        // Проверяем совпадения
+        for (String sel : cleanedSelected) {
+            boolean found = false;
+            for (String term : searchTerms) {
+                if (term.contains(sel)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) score++;
+        }
+        return score;
     }
 
     private void openUserSearchScreen() {

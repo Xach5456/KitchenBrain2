@@ -2,275 +2,244 @@ package com.example.kitchenbrain.model;
 
 import androidx.annotation.Keep;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
+import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Recipe model class for Firestore
- * MUST have public no-argument constructor for Firestore deserialization
+ * Optimized to handle all field types and prevent deserialization crashes.
+ * Consistent with the root Recipe model.
  */
 @Keep
 @IgnoreExtraProperties
 public class Recipe implements Serializable {
-    private String id;
-    private String title;
-    private String description;
-    private String category;
-    private int imageResId;
-    private double rating;
-    // Time fields - USE LONG for Firestore compatibility
-    private long cookingTime;        // Changed from String to long
-    private long prepTime;           // Added missing field
-    private String difficulty;
-    private Map<String, Object> ingredientIds; // For Firestore arrayContains queries
-    private long createdAt;
-    private String createdBy;
-    private int servings;
-    private List<String> instructions;
+    @Exclude private String id;
+    @Exclude private String title;
+    @Exclude private String description;
+    @Exclude private String category;
+    @Exclude private int imageResId;
+    @Exclude private double rating;
+    @Exclude private long cookingTime;
+    @Exclude private long prepTime;
+    @Exclude private String difficulty;
+    @Exclude private List<String> ingredientIds;
+    @Exclude private Map<String, Object> ingredientIdsMap;
+    @Exclude private long createdAtLong;
+    @Exclude private String createdBy;
+    @Exclude private int servings;
+    @Exclude private List<String> instructions;
     
-    // Additional fields for modern chat system
-    private List<String> ingredients;
-    private String authorId;
-    private String imageUrl;
-    private String cookingInstructions;
-    private Map<String, Object> metadata;
-    private int likesCount;  // Added for engagement tracking
+    @Exclude private List<String> ingredients;
+    @Exclude private String authorId;
+    @Exclude private String imageUrl;
+    @Exclude private String cookingInstructions;
+    @Exclude private Map<String, Object> metadata;
+    @Exclude private int likesCount;
+    @Exclude private int likes;
+    @Exclude private List<String> likedBy;
+    @Exclude private int saves;
+    @Exclude private List<String> savedBy;
+    @Exclude private int comments;
+    @Exclude private int socialPriority;
     
-    // Additional Firestore compatibility fields (may exist in some documents)
-    private String videoUrl;      // Optional video URL
-    private String name;          // Alternative name field (legacy)
-    private String username;      // Author username (legacy)
+    @Exclude private String videoUrl;
+    @Exclude private String name;
+    @Exclude private String username;
+    @Exclude private long updatedAt;
+    
+    @Exclude private boolean isDraft;
+    @Exclude private boolean draft;
 
-    /**
-     * REQUIRED: Public no-argument constructor for Firebase Firestore
-     * Firestore uses reflection to create instances before setting fields
-     */
     public Recipe() {
-        this.id = "";
-        this.title = "";
-        this.description = "";
-        this.category = "";
-        this.imageResId = 0;
-        this.rating = 0.0;
-        this.cookingTime = 0L;          // Default to 0 (Long)
-        this.prepTime = 0L;             // Default to 0 (Long)
+        this.instructions = new ArrayList<>();
+        this.ingredients = new ArrayList<>();
+        this.ingredientIds = new ArrayList<>();
+        this.ingredientIdsMap = new HashMap<>();
+        this.metadata = new HashMap<>();
+        this.likedBy = new ArrayList<>();
+        this.savedBy = new ArrayList<>();
         this.difficulty = "Easy";
-        this.servings = 1;
-        this.instructions = new ArrayList<>();
-        this.ingredients = new ArrayList<>();
-        this.ingredientIds = new HashMap<>(); // Use Map for Firestore arrayContains
-        this.authorId = "";
-        this.createdBy = "";
-        this.createdAt = System.currentTimeMillis();
-        this.imageUrl = "";
-        this.cookingInstructions = "";
-        this.metadata = new HashMap<>();
-        this.likesCount = 0;
-        this.videoUrl = null;      // Optional
-        this.name = null;          // Legacy field
-        this.username = null;      // Legacy field
     }
 
-    /**
-     * Full constructor with all parameters
-     */
-    public Recipe(String id, String title, String description, String category, 
-                  int imageResId, double rating, long cookingTime, String difficulty) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.category = category;
-        this.imageResId = imageResId;
-        this.rating = rating;
-        this.cookingTime = cookingTime;      // Now accepts long
-        this.difficulty = difficulty;
-        this.prepTime = 0L;
-        this.servings = 1;
-        this.instructions = new ArrayList<>();
-        this.ingredients = new ArrayList<>();
-        this.ingredientIds = new HashMap<>();
-        this.authorId = "";
-        this.createdBy = "";
-        this.createdAt = System.currentTimeMillis();
-        this.imageUrl = "";
-        this.cookingInstructions = "";
-        this.metadata = new HashMap<>();
-        this.likesCount = 0;
-    }
+    @PropertyName("id")
+    public String getId() { return id; }
+    @PropertyName("id")
+    public void setId(String id) { this.id = id; }
 
-    /**
-     * Constructor with ingredient IDs for Firestore queries
-     */
-    public Recipe(String id, String title, String description, String category, 
-                  int imageResId, double rating, long cookingTime, String difficulty,
-                  Map<String, Object> ingredientIds) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.category = category;
-        this.imageResId = imageResId;
-        this.rating = rating;
-        this.cookingTime = cookingTime;      // Now accepts long
-        this.difficulty = difficulty;
-        this.prepTime = 0L;
-        this.servings = 1;
-        this.instructions = new ArrayList<>();
-        this.ingredients = new ArrayList<>();
-        this.ingredientIds = ingredientIds != null ? ingredientIds : new HashMap<>();
-        this.authorId = "";
-        this.createdBy = "";
-        this.createdAt = System.currentTimeMillis();
-        this.imageUrl = "";
-        this.cookingInstructions = "";
-        this.metadata = new HashMap<>();
-        this.likesCount = 0;
-    }
+    @PropertyName("title")
+    public String getTitle() { return title != null ? title : name; }
+    @PropertyName("title")
+    public void setTitle(String title) { this.title = title; }
 
-    public String getId() {
-        return id;
-    }
+    @PropertyName("description")
+    public String getDescription() { return description; }
+    @PropertyName("description")
+    public void setDescription(String description) { this.description = description; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    @PropertyName("category")
+    public String getCategory() { return category; }
+    @PropertyName("category")
+    public void setCategory(String category) { this.category = category; }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public int getImageResId() {
-        return imageResId;
-    }
-
-    public void setImageResId(int imageResId) {
-        this.imageResId = imageResId;
-    }
-
-    public double getRating() {
-        return rating;
-    }
-
-    public void setRating(double rating) {
-        this.rating = rating;
-    }
-
-    // COOKING TIME - Handle both Long and String for backwards compatibility
+    @PropertyName("cookingTime")
     public long getCookingTime() { return cookingTime; }
-    public void setCookingTime(long cookingTime) { this.cookingTime = cookingTime; }
-    
-    // Helper method to handle String input
-    public void setCookingTimeFromString(String timeStr) {
-        if (timeStr == null || timeStr.isEmpty()) {
-            this.cookingTime = 0L;
-        } else {
-            try {
-                this.cookingTime = Long.parseLong(timeStr);
-            } catch (NumberFormatException e) {
-                this.cookingTime = 0L;
-            }
-        }
-    }
+    @PropertyName("cookingTime")
+    public void setCookingTime(Object value) { this.cookingTime = convertToLong(value); }
 
+    @PropertyName("prepTime")
     public long getPrepTime() { return prepTime; }
-    public void setPrepTime(long prepTime) { this.prepTime = prepTime; }
+    @PropertyName("prepTime")
+    public void setPrepTime(Object value) { this.prepTime = convertToLong(value); }
 
+    @PropertyName("difficulty")
     public String getDifficulty() { return difficulty; }
+    @PropertyName("difficulty")
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
 
+    @PropertyName("servings")
     public int getServings() { return servings; }
-    public void setServings(int servings) { this.servings = servings; }
+    @PropertyName("servings")
+    public void setServings(Object value) { this.servings = convertToInt(value); }
 
-    public List<String> getInstructions() { return instructions; }
-    public void setInstructions(List<String> instructions) { this.instructions = instructions; }
+    @PropertyName("createdAt")
+    public long getCreatedAt() { return createdAtLong; }
+    @PropertyName("createdAt")
+    public void setCreatedAt(Object value) { this.createdAtLong = convertToLong(value); }
 
-    public List<String> getIngredients() { return ingredients; }
-    public void setIngredients(List<String> ingredients) { this.ingredients = ingredients; }
+    @PropertyName("updatedAt")
+    public long getUpdatedAt() { return updatedAt; }
+    @PropertyName("updatedAt")
+    public void setUpdatedAt(Object value) { this.updatedAt = convertToLong(value); }
 
-    public List<String> getIngredientIds() { 
-        if (ingredientIds instanceof Map) {
-            Set<String> keys = ((Map<String, Object>) ingredientIds).keySet();
-            return new ArrayList<>(keys);
-        }
-        return new ArrayList<>();
-    }
-    public void setIngredientIds(List<String> ingredientIds) { 
-        Map<String, Object> ingredientMap = new HashMap<>();
-        if (ingredientIds != null) {
-            for (String ingredient : ingredientIds) {
-                ingredientMap.put(ingredient, true);
-            }
-        }
-        this.ingredientIds = ingredientMap;
-    }
+    @PropertyName("socialPriority")
+    public int getSocialPriority() { return socialPriority; }
+    @PropertyName("socialPriority")
+    public void setSocialPriority(Object value) { this.socialPriority = convertToInt(value); }
 
-    public String getAuthorId() { return authorId; }
-    public void setAuthorId(String authorId) { this.authorId = authorId; }
+    @PropertyName("likesCount")
+    public int getLikesCount() { return likesCount != 0 ? likesCount : likes; }
+    @PropertyName("likesCount")
+    public void setLikesCount(Object value) { this.likesCount = convertToInt(value); }
 
-    public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    @PropertyName("likes")
+    public int getLikes() { return likes; }
+    @PropertyName("likes")
+    public void setLikes(Object value) { this.likes = convertToInt(value); }
 
-    public long getCreatedAt() { return createdAt; }
-    
-    // SINGLE unified setter for createdAt - handles all types safely
-    @SuppressWarnings("unused")
-    public void setCreatedAt(Object createdAt) {
-        if (createdAt instanceof Long) {
-            this.createdAt = (Long) createdAt;
-        } else if (createdAt instanceof com.google.firebase.Timestamp) {
-            this.createdAt = ((com.google.firebase.Timestamp) createdAt).toDate().getTime();
-        } else if (createdAt instanceof java.util.Date) {
-            this.createdAt = ((java.util.Date) createdAt).getTime();
-        } else {
-            this.createdAt = System.currentTimeMillis();
-        }
-    }
+    @PropertyName("saves")
+    public int getSaves() { return saves; }
+    @PropertyName("saves")
+    public void setSaves(Object value) { this.saves = convertToInt(value); }
 
+    @PropertyName("comments")
+    public int getComments() { return comments; }
+    @PropertyName("comments")
+    public void setComments(Object value) { this.comments = convertToInt(value); }
+
+    @PropertyName("imageUrl")
     public String getImageUrl() { return imageUrl; }
+    @PropertyName("imageUrl")
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
+    @PropertyName("authorId")
+    public String getAuthorId() { return authorId; }
+    @PropertyName("authorId")
+    public void setAuthorId(String authorId) { this.authorId = authorId; }
+
+    @PropertyName("name")
+    public String getName() { return name; }
+    @PropertyName("name")
+    public void setName(String name) { this.name = name; }
+
+    @PropertyName("username")
+    public String getUsername() { return username; }
+    @PropertyName("username")
+    public void setUsername(String username) { this.username = username; }
+
+    @PropertyName("ingredients")
+    public List<String> getIngredients() { return ingredients; }
+    @PropertyName("ingredients")
+    public void setIngredients(List<String> ingredients) { this.ingredients = ingredients; }
+
+    @PropertyName("ingredientIds")
+    public List<String> getIngredientIds() { return ingredientIds; }
+    @PropertyName("ingredientIds")
+    public void setIngredientIds(List<String> ingredientIds) { this.ingredientIds = ingredientIds; }
+
+    @PropertyName("instructions")
+    public List<String> getInstructions() { return instructions; }
+    @PropertyName("instructions")
+    public void setInstructions(List<String> instructions) { this.instructions = instructions; }
+
+    @PropertyName("likedBy")
+    public List<String> getLikedBy() { return likedBy; }
+    @PropertyName("likedBy")
+    public void setLikedBy(List<String> likedBy) { this.likedBy = likedBy; }
+
+    @PropertyName("savedBy")
+    public List<String> getSavedBy() { return savedBy; }
+    @PropertyName("savedBy")
+    public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
+
+    @PropertyName("isDraft")
+    public boolean isDraft() { return isDraft; }
+    @PropertyName("isDraft")
+    public void setDraftFlag(boolean draft) { isDraft = draft; }
+
+    @PropertyName("draft")
+    public boolean getDraft() { return draft; }
+    @PropertyName("draft")
+    public void setDraft(boolean draft) { this.draft = draft; }
+
+    @PropertyName("cookingInstructions")
     public String getCookingInstructions() { return cookingInstructions; }
-    public void setCookingInstructions(String cookingInstructions) { 
-        this.cookingInstructions = cookingInstructions; 
+    @PropertyName("cookingInstructions")
+    public void setCookingInstructions(String cookingInstructions) { this.cookingInstructions = cookingInstructions; }
+
+    @PropertyName("videoUrl")
+    public String getVideoUrl() { return videoUrl; }
+    @PropertyName("videoUrl")
+    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
+
+    @PropertyName("createdBy")
+    public String getCreatedBy() { return createdBy; }
+    @PropertyName("createdBy")
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+
+    @Exclude
+    public Map<String, Object> getMetadata() { return metadata; }
+    @Exclude
+    public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
+
+    @Exclude
+    public int getImageResId() { return imageResId; }
+    @Exclude
+    public void setImageResId(int imageResId) { this.imageResId = imageResId; }
+
+    private long convertToLong(Object value) {
+        if (value instanceof Long) return (Long) value;
+        if (value instanceof Integer) return ((Integer) value).longValue();
+        if (value instanceof Double) return ((Double) value).longValue();
+        if (value instanceof Timestamp) return ((Timestamp) value).toDate().getTime();
+        if (value instanceof String) {
+            try { return Long.parseLong((String) value); } catch (Exception e) { return 0; }
+        }
+        return 0;
     }
 
-    public Map<String, Object> getMetadata() { return metadata; }
-    public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
-    
-    // Additional Firestore compatibility getters/setters
-    public String getVideoUrl() { return videoUrl; }
-    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
-    
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    
-    public int getLikesCount() { return likesCount; }
-    public void setLikesCount(int likesCount) { this.likesCount = likesCount; }
+    private int convertToInt(Object value) {
+        if (value instanceof Integer) return (Integer) value;
+        if (value instanceof Long) return ((Long) value).intValue();
+        if (value instanceof Double) return ((Double) value).intValue();
+        if (value instanceof String) {
+            try { return Integer.parseInt((String) value); } catch (Exception e) { return 0; }
+        }
+        return 0;
+    }
 }
