@@ -115,6 +115,7 @@ public class FollowRepository {
             notification.put("isRead", false);
             notification.put("createdAt", System.currentTimeMillis());
 
+            // 🔥 RESTORED: Back to the top-level collection as in original version
             db.collection("notifications").add(notification);
         });
     }
@@ -170,6 +171,8 @@ public class FollowRepository {
             notif.put("message", "🎉 You and " + doc.getString("username") + " are now mutual followers!");
             notif.put("isRead", false);
             notif.put("createdAt", System.currentTimeMillis());
+            
+            // 🔥 RESTORED: Back to the top-level collection as in original version
             db.collection("notifications").add(notif);
         });
     }

@@ -20,6 +20,7 @@ import java.util.List;
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendViewHolder> {
     
     public interface OnFriendActionListener {
+        void onUserClick(User user); // Added for profile navigation
         void onMessageClick(User user);
         void onFollowClick(User user);
         void onUnfollowClick(User user);
@@ -34,7 +35,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
         this.userList = userList;
         this.currentUserId = currentUserId;
         this.listener = listener;
-        this.currentTabType = 1; // Following по умолчанию
+        this.currentTabType = 1; // Following default
         setHasStableIds(true);
     }
 
@@ -85,11 +86,9 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
         }
 
         void bind(User user, int tabType) {
-            // Базовая информация
             textUsername.setText(user.getUsername() != null ? user.getUsername() : "Unknown");
-            textFullName.setVisibility(View.GONE); // Скрыть доп поле
+            textFullName.setVisibility(View.GONE);
 
-            // Аватар
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
                 Glide.with(itemView.getContext())
                         .load(user.getAvatarUrl())
@@ -99,8 +98,12 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
             } else {
                 imageAvatar.setImageResource(R.drawable.ic_user);
             }
+            
+            // Click to open profile
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onUserClick(user);
+            });
 
-            // Скрыть себя
             if (currentUserId != null && currentUserId.equals(user.getUserId())) {
                 buttonAction.setText("You");
                 buttonAction.setEnabled(false);
@@ -108,26 +111,21 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
                 return;
             }
 
-            // Сброс видимости кнопки отписки
             buttonUnfollowFriend.setVisibility(View.GONE);
 
-            // Определить состояние
             String followState = getFollowState(user.getUserId());
             boolean isMutual = "FRIEND".equals(followState);
 
-            // Message кнопка только для Mutual
             if (isMutual) {
                 buttonAction.setText("Message");
                 buttonAction.setOnClickListener(v -> {
                     if (listener != null) listener.onMessageClick(user);
                 });
-                // Показать кнопку отписки рядом с сообщением
                 buttonUnfollowFriend.setVisibility(View.VISIBLE);
                 buttonUnfollowFriend.setOnClickListener(v -> {
                     if (listener != null) listener.onUnfollowClick(user);
                 });
             } else {
-                // Follow/Unfollow кнопки
                 if ("FOLLOWING".equals(followState)) {
                     buttonAction.setText("Unfollow");
                     buttonAction.setOnClickListener(v -> {
@@ -148,15 +146,11 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.FriendVi
         }
 
         private String getFollowState(String userId) {
-            // 🔥 NULL SAFETY - Check userId
             if (userId == null) return "FOLLOW";
-            
             FollowGraphRepository graph = FollowGraphRepository.getInstance();
             if (graph == null) return "FOLLOW";
-            
             boolean isFollowing = graph.isFollowing(userId);
             boolean isFollower = graph.isFollower(userId);
-            
             if (isFollowing && isFollower) return "FRIEND";
             if (isFollower) return "FOLLOW_BACK";
             if (isFollowing) return "FOLLOWING";

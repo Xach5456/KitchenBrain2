@@ -27,13 +27,40 @@
         <item name="cornerSize">50%</item>
     </style>
 
-    <style name="CircleAppearanceOverlay" parent="">
-        <item name="cornerSize">50%</item>
+    <!-- Modern & Beautiful Delete Button Style -->
+    <style name="Widget.KitchenBrain.Button.Delete" parent="Widget.Material3.Button.IconButton.Filled.Tonal">
+        <item name="backgroundTint">?attr/colorErrorContainer</item>
+        <item name="iconTint">?attr/colorOnErrorContainer</item>
+        <item name="shapeAppearanceOverlay">@style/CircularImageView</item>
+        <item name="strokeColor">?attr/colorError</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:padding">10dp</item>
+    </style>
+
+    <!-- Modern & Beautiful Edit Button Style -->
+    <style name="Widget.KitchenBrain.Button.Edit" parent="Widget.Material3.Button">
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="android:elevation">7dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textColor">?attr/colorOnPrimary</item>
+        <item name="iconTint">?attr/colorOnPrimary</item>
+        <item name="rippleColor">?attr/colorControlHighlight</item>
     </style>
     
     <style name="RoundedImageCorners">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="CircleAppearanceOverlay" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">12dp</item>
     </style>
 
     <!-- Custom Bottom Sheet Style -->
@@ -53,85 +80,60 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
     
-    <!-- 🔥 FIXED: Modern Alert Dialog Theme - Added bridges for AppCompat components -->
-    <style name="AlertDialogTheme" parent="Theme.Material3.DayNight.Dialog.Alert">
+    <!-- Modern Alert Dialog Theme - FIXED: Inheriting from Material3 MaterialAlertDialog to resolve colorSurface correctly -->
+    <style name="AlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">?attr/colorSurface</item>
+        <item name="colorOnSurface">?attr/colorOnSurface</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">true</item>
-
-        <!-- Fix for "Failed to resolve attribute: textColorPrimary" crash -->
-        <item name="android:textColorPrimary">?attr/colorOnSurface</item>
-        <item name="android:textColorSecondary">?attr/colorOnSurfaceVariant</item>
-
-        <!-- Ensure buttons are visible in M3 -->
         <item name="buttonBarPositiveButtonStyle">@style/Widget.Material3.Button.TextButton</item>
         <item name="buttonBarNegativeButtonStyle">@style/Widget.Material3.Button.TextButton</item>
     </style>
 
+    <!-- Premium Button Styles -->
     <style name="Premium.Button" parent="Widget.Material3.Button">
         <item name="android:textSize">14sp</item>
-        <item name="android:fontFamily">@font/inter_medium</item>
-        <item name="android:letterSpacing">0.02</item>
         <item name="cornerRadius">12dp</item>
-        <item name="android:paddingStart">24dp</item>
-        <item name="android:paddingEnd">24dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
-        <item name="android:minHeight">48dp</item>
-        <item name="android:elevation">2dp</item>
-        <item name="android:stateListAnimator">@null</item>
-    </style>
-
-    <style name="Premium.Button.Filled">
         <item name="backgroundTint">?attr/colorPrimary</item>
         <item name="android:textColor">?attr/colorOnPrimary</item>
+        <item name="iconTint">?attr/colorOnPrimary</item>
     </style>
 
+    <style name="Premium.Button.Filled" parent="Premium.Button" />
+
     <style name="Premium.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="android:textColor">?attr/colorPrimary</item>
-        <item name="strokeColor">?attr/colorPrimary</item>
-        <item name="strokeWidth">1.5dp</item>
+        <item name="android:textSize">14sp</item>
         <item name="cornerRadius">12dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
+        <item name="strokeColor">?attr/colorPrimary</item>
     </style>
 
     <style name="Premium.Button.Text" parent="Widget.Material3.Button.TextButton">
-        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textSize">14sp</item>
         <item name="cornerRadius">12dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
     </style>
 
+    <!-- Premium Card Styles -->
     <style name="Premium.Card" parent="Widget.Material3.CardView.Filled">
         <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">2dp</item>
         <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
-        <item name="android:layout_marginStart">8dp</item>
-        <item name="android:layout_marginEnd">8dp</item>
-        <item name="android:layout_marginBottom">8dp</item>
-    </style>
-
-    <style name="Premium.Card.Elevated" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">16dp</item>
-        <item name="cardElevation">4dp</item>
-        <item name="cardBackgroundColor">?attr/colorSurface</item>
     </style>
 
     <style name="Premium.Card.Outlined" parent="Widget.Material3.CardView.Outlined">
         <item name="cardCornerRadius">16dp</item>
-        <item name="cardElevation">0dp</item>
-        <item name="strokeColor">?attr/colorOutlineVariant</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="cardBackgroundColor">?attr/colorSurface</item>
     </style>
 
+    <!-- Premium TextInput Styles -->
     <style name="Premium.TextInput" parent="Widget.Material3.TextInputLayout.FilledBox">
         <item name="boxCornerRadiusTopStart">12dp</item>
         <item name="boxCornerRadiusTopEnd">12dp</item>
         <item name="boxCornerRadiusBottomStart">12dp</item>
         <item name="boxCornerRadiusBottomEnd">12dp</item>
-        <item name="boxStrokeWidth">1.5dp</item>
-        <item name="boxStrokeWidthFocused">2dp</item>
         <item name="boxBackgroundColor">?attr/colorSurfaceContainerLow</item>
-        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
-        <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:fontFamily">@font/inter_regular</item>
     </style>
 
     <style name="Premium.TextInput.Outlined" parent="Widget.Material3.TextInputLayout.OutlinedBox">
@@ -139,65 +141,26 @@
         <item name="boxCornerRadiusTopEnd">12dp</item>
         <item name="boxCornerRadiusBottomStart">12dp</item>
         <item name="boxCornerRadiusBottomEnd">12dp</item>
-        <item name="boxStrokeWidth">1.5dp</item>
-        <item name="boxStrokeWidthFocused">2dp</item>
-        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
-        <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="Premium.TextAppearance.Headline1" parent="TextAppearance.Material3.HeadlineLarge">
-        <item name="android:fontFamily">@font/inter_semibold</item>
-        <item name="android:textSize">32sp</item>
-        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="Premium.TextAppearance.Headline2" parent="TextAppearance.Material3.HeadlineMedium">
-        <item name="android:fontFamily">@font/inter_semibold</item>
-        <item name="android:textSize">28sp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="Premium.TextAppearance.Title" parent="TextAppearance.Material3.TitleLarge">
-        <item name="android:fontFamily">@font/inter_medium</item>
-        <item name="android:textSize">22sp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="Premium.TextAppearance.Subtitle" parent="TextAppearance.Material3.TitleMedium">
-        <item name="android:fontFamily">@font/inter_medium</item>
-        <item name="android:textSize">16sp</item>
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="Premium.TextAppearance.Body" parent="TextAppearance.Material3.BodyLarge">
-        <item name="android:fontFamily">@font/inter_regular</item>
-        <item name="android:textSize">14sp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="Premium.TextAppearance.Caption" parent="TextAppearance.Material3.BodySmall">
-        <item name="android:fontFamily">@font/inter_regular</item>
-        <item name="android:textSize">12sp</item>
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
-    </style>
-
-    <style name="Premium.Chip" parent="Widget.Material3.Chip.Suggestion">
-        <item name="chipCornerRadius">20dp</item>
-        <item name="chipMinHeight">36dp</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:fontFamily">@font/inter_medium</item>
-    </style>
-
-    <style name="Premium.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
-        <item name="itemIconSize">24dp</item>
-        <item name="itemTextAppearanceActive">@style/Premium.TextAppearance.Caption</item>
-        <item name="itemTextAppearanceInactive">@style/Premium.TextAppearance.Caption</item>
-        <item name="itemActiveIndicatorStyle">@style/Premium.BottomNavigation.Indicator</item>
-    </style>
-
-    <style name="Premium.BottomNavigation.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">?attr/colorPrimaryContainer</item>
     </style>
 
     <style name="NavMenuItemStyle">

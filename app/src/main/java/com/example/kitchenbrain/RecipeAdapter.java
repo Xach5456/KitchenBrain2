@@ -1,19 +1,24 @@
 package com.example.kitchenbrain;
 
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.example.kitchenbrain.databinding.ItemRecipeBinding;
+import com.example.kitchenbrain.util.RecipeOwnershipUtils;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -24,21 +29,22 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     private List<Recipe> filteredRecipeList;
     private OnRecipeClickListener listener;
     private boolean allowEditing;
-    private boolean showOtherUsersRecipes; // New property to control showing other users' recipes
-    private boolean requireMutualFollow; // New property to require mutual follow for viewing recipes
+    private boolean showOtherUsersRecipes;
+    private boolean requireMutualFollow;
     private FirebaseAuth auth;
-    private FirebaseFirestore db;
     private String currentUserId;
-    private List<String> myFollowingList; // List of user IDs that current user follows
-    private List<String> myFollowersList; // List of user IDs that follow current user
+    private List<String> myFollowingList;
+    private List<String> myFollowersList;
+    private final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(2.2f);
 
     public interface OnRecipeClickListener {
         void onDeleteRecipe(Recipe recipe);
         void onRecipeClick(Recipe recipe);
+        default void onEditRecipe(Recipe recipe) {}
     }
 
     public RecipeAdapter(List<Recipe> recipeList, OnRecipeClickListener listener) {
-        this(recipeList, listener, true); // Default to allow editing
+        this(recipeList, listener, true);
     }
     
     public RecipeAdapter(List<Recipe> recipeList, OnRecipeClickListener listener, boolean allowEditing) {
@@ -46,14 +52,13 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         this.filteredRecipeList = new ArrayList<>(this.recipeList);
         this.listener = listener;
         this.allowEditing = allowEditing;
-        this.showOtherUsersRecipes = true; // By default, show other users' recipes
-        this.requireMutualFollow = false; // By default, don't require mutual follow (backward compatible)
+        this.showOtherUsersRecipes = true;
+        this.requireMutualFollow = false;
         this.myFollowingList = new ArrayList<>();
         this.myFollowersList = new ArrayList<>();
         this.auth = FirebaseAuth.getInstance();
-        this.db = FirebaseFirestore.getInstance();
         this.currentUserId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
-        updateFilteredRecipes(); // Initialize filtered list
+        updateFilteredRecipes();
     }
 
     @NonNull
@@ -61,7 +66,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_recipe, parent, false);
-        // Horizontal strip on Home: fixed card width so multiple recipes peek on screen.
         if (parent instanceof RecyclerView) {
             RecyclerView.LayoutManager lm = ((RecyclerView) parent).getLayoutManager();
             if (lm instanceof LinearLayoutManager
@@ -71,13 +75,13 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 view.setLayoutParams(new RecyclerView.LayoutParams(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
         }
-        return new RecipeViewHolder(view);
+        return new RecipeViewHolder(ItemRecipeBinding.bind(view), overshootInterpolator);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
         Recipe recipe = filteredRecipeList.get(position);
-        holder.bind(recipe, listener, auth, allowEditing, currentUserId);
+        holder.bind(recipe, listener, allowEditing, currentUserId);
     }
 
     @Override
@@ -86,147 +90,215 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     }
 
     public void updateRecipes(List<Recipe> newRecipes) {
-        this.recipeList = newRecipes != null ? newRecipes : new ArrayList<>();
+        this.recipeList = newRecipes != null ? new ArrayList<>(newRecipes) : new ArrayList<>();
         updateFilteredRecipes();
     }
 
-    // Method to toggle showing other users' recipes
     public void setShowOtherUsersRecipes(boolean show) {
         this.showOtherUsersRecipes = show;
         updateFilteredRecipes();
     }
     
-    // Method to enable/disable mutual follow requirement
     public void setRequireMutualFollow(boolean require) {
         this.requireMutualFollow = require;
         updateFilteredRecipes();
     }
     
-    // Method to set the list of users that current user follows
     public void setMyFollowingList(List<String> followingList) {
         this.myFollowingList = followingList != null ? new ArrayList<>(followingList) : new ArrayList<>();
         updateFilteredRecipes();
     }
     
-    // Method to set the list of users that follow current user
     public void setMyFollowersList(List<String> followersList) {
         this.myFollowersList = followersList != null ? new ArrayList<>(followersList) : new ArrayList<>();
         updateFilteredRecipes();
     }
-    
-    // Method to check if a specific user is being followed by current user
-    public boolean amIFollowingUser(String userId) {
-        return myFollowingList != null && myFollowingList.contains(userId);
-    }
-    
-    // Method to check if a specific user follows current user
-    public boolean isUserFollowingMe(String userId) {
-        return myFollowersList != null && myFollowersList.contains(userId);
-    }
-    
-    // Method to check if there's a mutual follow relationship with a specific user
-    public boolean hasMutualFollowWithUser(String userId) {
-        return amIFollowingUser(userId) && isUserFollowingMe(userId);
-    }
-    
-    // Getter to check if other users' recipes are being shown
-    public boolean areOtherUsersRecipesShown() {
-        return this.showOtherUsersRecipes;
-    }
 
-    // Method to update the filtered list based on current settings
     private void updateFilteredRecipes() {
+        List<Recipe> oldList = new ArrayList<>(filteredRecipeList);
+        List<Recipe> newFilteredList = new ArrayList<>();
         filteredRecipeList.clear();
         for (Recipe recipe : recipeList) {
-            // Include recipe if it passes all filters
             if (shouldIncludeRecipe(recipe)) {
-                filteredRecipeList.add(recipe);
+                newFilteredList.add(recipe);
             }
         }
-        notifyDataSetChanged();
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new RecipeDiffCallback(oldList, newFilteredList));
+        filteredRecipeList.addAll(newFilteredList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
-    // Helper method to determine if a recipe should be included in the filtered list
     private boolean shouldIncludeRecipe(Recipe recipe) {
         if (recipe == null) return false;
-
-        // If showing other users' recipes is disabled, only show current user's recipes
         if (!showOtherUsersRecipes && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
             return false;
         }
-        
-        // If mutual follow is required, check if there's a mutual relationship
         if (requireMutualFollow && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
             String recipeAuthorId = recipe.getAuthorId();
-            
-            // Check if current user follows the recipe author AND recipe author follows current user
             boolean iFollowAuthor = myFollowingList != null && myFollowingList.contains(recipeAuthorId);
             boolean authorFollowsMe = myFollowersList != null && myFollowersList.contains(recipeAuthorId);
-            
-            // Only show recipe if there's mutual follow
             if (!iFollowAuthor || !authorFollowsMe) {
                 return false;
             }
         }
-
         return true;
     }
 
     static class RecipeViewHolder extends RecyclerView.ViewHolder {
-        private TextView recipeNameTextView;
-        private TextView recipeTimeTextView;
-        private TextView recipeAuthorTextView; // View for author name
-        private ImageButton btnDeleteRecipe;
+        private final ItemRecipeBinding binding;
+        private final OvershootInterpolator overshootInterpolator;
 
-        public RecipeViewHolder(@NonNull View itemView) {
-            super(itemView);
-            
-            recipeNameTextView = itemView.findViewById(R.id.recipeName);
-            recipeTimeTextView = itemView.findViewById(R.id.recipeTime);
-            recipeAuthorTextView = itemView.findViewById(R.id.recipeAuthor);
-            btnDeleteRecipe = itemView.findViewById(R.id.btnDeleteRecipe);
+        public RecipeViewHolder(@NonNull ItemRecipeBinding binding, OvershootInterpolator overshootInterpolator) {
+            super(binding.getRoot());
+            this.binding = binding;
+            this.overshootInterpolator = overshootInterpolator;
         }
 
-        public void bind(Recipe recipe, OnRecipeClickListener listener, FirebaseAuth auth, boolean allowEditing, String currentUserId) {
-            // Safe null checks for recipe properties
+        public void bind(Recipe recipe, OnRecipeClickListener listener, boolean allowEditing, String currentUserId) {
             if (recipe != null) {
-                recipeNameTextView.setText(recipe.getName() != null ? recipe.getName() : "Unknown Recipe");
-                recipeTimeTextView.setText(recipe.getCookingTime() > 0 ? recipe.getCookingTime() + " min" : "Time unknown");
-                                
-                // Show author name if available
-                if (recipeAuthorTextView != null && recipe.getUsername() != null) {
-                    recipeAuthorTextView.setText("by " + recipe.getUsername());
-                    recipeAuthorTextView.setVisibility(View.VISIBLE);
+                binding.recipeName.setText(!TextUtils.isEmpty(recipe.getTitle()) ? recipe.getTitle() : "Unknown Recipe");
+                binding.recipeDescription.setText(!TextUtils.isEmpty(recipe.getDescription()) ? recipe.getDescription() : "No description yet");
+                binding.recipeTime.setText(recipe.getCookingTime() > 0 ? recipe.getCookingTime() + " min" : "Time unknown");
+                if (!TextUtils.isEmpty(recipe.getUsername())) {
+                    binding.recipeAuthor.setText("by " + recipe.getUsername());
+                    binding.recipeAuthor.setVisibility(View.VISIBLE);
                 } else {
-                    recipeAuthorTextView.setVisibility(View.GONE);
+                    binding.recipeAuthor.setVisibility(View.GONE);
                 }
+                Glide.with(binding.recipeImage)
+                        .load(recipe.getImageUrl())
+                        .placeholder(R.drawable.placeholder_recipe)
+                        .error(R.drawable.placeholder_recipe)
+                        .centerCrop()
+                        .into(binding.recipeImage);
             }
 
-            // CRITICAL FIX: Show delete button if editing is allowed OR if it's the user's own recipe
-            String recipeAuthorId = recipe != null ? recipe.getAuthorId() : null;
-            boolean isOwnRecipe = (currentUserId != null && recipeAuthorId != null &&
-                                   currentUserId.equals(recipeAuthorId));
-                        
-            // FIXED: Show delete button if allowEditing is true OR if it's own recipe
-            if ((allowEditing || isOwnRecipe) && recipe != null) {
-                btnDeleteRecipe.setVisibility(View.VISIBLE);
-                btnDeleteRecipe.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onDeleteRecipe(recipe);
-                    }
+            boolean isOwnRecipe = RecipeOwnershipUtils.isOwner(recipe, currentUserId);
+            boolean canModify = allowEditing && isOwnRecipe && recipe != null;
+            
+            if (canModify) {
+                binding.recipeActions.setVisibility(View.VISIBLE);
+                configurePremiumPress(binding.btnEditRecipe);
+                configurePremiumPress(binding.btnDeleteRecipe);
+                binding.btnEditRecipe.setOnClickListener(v -> {
+                    playGlow(binding.btnEditRecipe);
+                    if (listener != null) listener.onEditRecipe(recipe);
+                });
+                binding.btnDeleteRecipe.setOnClickListener(v -> {
+                    if (listener != null) listener.onDeleteRecipe(recipe);
                 });
             } else {
-                // ALWAYS hide delete button for other users' recipes
-                btnDeleteRecipe.setVisibility(View.GONE);
-                btnDeleteRecipe.setOnClickListener(null); // Clear any click listener
+                binding.recipeActions.setVisibility(View.GONE);
+                binding.btnEditRecipe.setOnClickListener(null);
+                binding.btnDeleteRecipe.setOnClickListener(null);
             }
 
-            // Set click listener for recipe item
             itemView.setOnClickListener(v -> {
                 if (listener != null && recipe != null) {
+                    animateCardClick(itemView);
                     listener.onRecipeClick(recipe);
                 }
             });
+        }
+
+        private void configurePremiumPress(MaterialButton button) {
+            button.setOnTouchListener((v, event) -> {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    v.animate()
+                            .scaleX(0.92f)
+                            .scaleY(0.92f)
+                            .translationZ(14f)
+                            .setDuration(110)
+                            .start();
+                } else if (event.getActionMasked() == MotionEvent.ACTION_UP
+                        || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                    v.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationZ(0f)
+                            .setInterpolator(overshootInterpolator)
+                            .setDuration(260)
+                            .start();
+                }
+                return false;
+            });
+        }
+
+        private void playGlow(View view) {
+            view.animate()
+                    .alpha(0.82f)
+                    .translationZ(22f)
+                    .setDuration(90)
+                    .withEndAction(() -> view.animate()
+                            .alpha(1f)
+                            .translationZ(0f)
+                            .setInterpolator(overshootInterpolator)
+                            .setDuration(260)
+                            .start())
+                    .start();
+        }
+
+        private void animateCardClick(View view) {
+            if (view instanceof MaterialCardView cardView) {
+                cardView.setCardElevation(8f);
+                cardView.animate()
+                        .scaleX(0.985f)
+                        .scaleY(0.985f)
+                        .setDuration(90)
+                        .withEndAction(() -> {
+                            cardView.setCardElevation(3f);
+                            cardView.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setInterpolator(overshootInterpolator)
+                                    .setDuration(220)
+                                    .start();
+                        })
+                        .start();
+            }
+        }
+    }
+
+    private static class RecipeDiffCallback extends DiffUtil.Callback {
+        private final List<Recipe> oldList;
+        private final List<Recipe> newList;
+
+        RecipeDiffCallback(List<Recipe> oldList, List<Recipe> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            Recipe oldRecipe = oldList.get(oldItemPosition);
+            Recipe newRecipe = newList.get(newItemPosition);
+            String oldId = oldRecipe != null ? oldRecipe.getId() : null;
+            String newId = newRecipe != null ? newRecipe.getId() : null;
+            return oldId != null && oldId.equals(newId);
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            Recipe oldRecipe = oldList.get(oldItemPosition);
+            Recipe newRecipe = newList.get(newItemPosition);
+            if (oldRecipe == newRecipe) return true;
+            if (oldRecipe == null || newRecipe == null) return false;
+            return TextUtils.equals(oldRecipe.getTitle(), newRecipe.getTitle())
+                    && TextUtils.equals(oldRecipe.getDescription(), newRecipe.getDescription())
+                    && TextUtils.equals(oldRecipe.getImageUrl(), newRecipe.getImageUrl())
+                    && oldRecipe.getCookingTime() == newRecipe.getCookingTime()
+                    && TextUtils.equals(oldRecipe.getUsername(), newRecipe.getUsername())
+                    && TextUtils.equals(oldRecipe.getAuthorId(), newRecipe.getAuthorId());
         }
     }
 }

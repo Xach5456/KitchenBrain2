@@ -1,195 +1,207 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Instagram-style Feed Post Item -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@color/background_primary"
-    android:layout_marginBottom="8dp">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerLowest"
+    app:strokeWidth="0dp">
 
-    <!-- Header: User Avatar + Username -->
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+        android:paddingBottom="16dp">
 
-        <ImageView
+        <!-- User Header -->
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageAvatar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:scaleType="centerCrop"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
             android:src="@drawable/ic_user"
-            android:background="@drawable/circle_background"
-            android:contentDescription="User avatar" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ContentDescription" />
 
         <TextView
             android:id="@+id/textUsername"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="12dp"
-            android:text="username"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            tools:text="foodie_chef" />
+            android:fontFamily="sans-serif-medium"
+            android:text="chef_gourmet"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="15sp"
+            app:layout_constraintBottom_toBottomOf="@+id/imageAvatar"
+            app:layout_constraintEnd_toStartOf="@+id/buttonMore"
+            app:layout_constraintStart_toEndOf="@+id/imageAvatar"
+            app:layout_constraintTop_toTopOf="@+id/imageAvatar" />
 
-        <ImageView
+        <ImageButton
             android:id="@+id/buttonMore"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Options"
+            android:padding="8dp"
             android:src="@drawable/ic_more_vert"
-            android:contentDescription="More options"
-            android:padding="2dp" />
+            app:layout_constraintBottom_toBottomOf="@+id/imageAvatar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/imageAvatar"
+            app:tint="?attr/colorOnSurfaceVariant" />
 
-    </LinearLayout>
-
-    <!-- Post Image (Full Width) -->
-    <ImageView
-        android:id="@+id/imagePost"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        android:background="@color/background_secondary"
-        android:minHeight="200dp"
-        android:maxHeight="400dp"
-        android:src="@drawable/ic_placeholder"
-        android:contentDescription="Post image" />
-
-    <!-- Action Buttons Row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
-
-        <!-- Like Button -->
-        <ImageButton
-            android:id="@+id/buttonLike"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_heart_outline"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Like"
-            android:padding="8dp" />
-
-        <!-- Comment Button -->
-        <ImageButton
-            android:id="@+id/buttonComment"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_comment"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Comment"
-            android:padding="8dp"
-            android:layout_marginStart="8dp" />
-
-        <!-- Send to Chat Button (Blue Tinted Paper Airplane) -->
-        <ImageButton
-            android:id="@+id/buttonSend"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_send"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Send to chat"
-            android:padding="8dp"
-            android:layout_marginStart="8dp"
-            app:tint="@color/primary_blue" />
-
-        <!-- Share Button -->
-        <ImageButton
-            android:id="@+id/buttonShare"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_share"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Share"
-            android:padding="8dp"
-            android:layout_marginStart="8dp" />
-
-        <!-- Spacer -->
-        <View
+        <!-- Post Image -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imagePost"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_marginTop="12dp"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            app:layout_constraintDimensionRatio="H,4:5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/imageAvatar"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.App.MediumComponent"
+            android:layout_marginHorizontal="8dp"
+            tools:src="@drawable/ic_placeholder" />
 
-        <!-- Save Button -->
-        <ImageButton
-            android:id="@+id/buttonSave"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_bookmark_outline"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Save"
-            android:padding="8dp" />
+        <!-- Interactions -->
+        <LinearLayout
+            android:id="@+id/interactionBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/imagePost">
 
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/buttonLike"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Like"
+                android:padding="12dp"
+                android:src="@drawable/ic_heart_outline"
+                app:tint="?attr/colorOnSurface" />
 
-    <!-- Likes Count -->
-    <TextView
-        android:id="@+id/textLikesCount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="4dp"
-        android:text="0 likes"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        tools:text="1,234 likes" />
+            <ImageButton
+                android:id="@+id/buttonComment"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Comment"
+                android:padding="12dp"
+                android:src="@drawable/ic_comment"
+                app:tint="?attr/colorOnSurface" />
 
-    <!-- Caption / Title -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+            <ImageButton
+                android:id="@+id/buttonSend"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Send"
+                android:padding="12dp"
+                android:src="@drawable/ic_send"
+                app:tint="?attr/colorPrimary" />
 
+            <ImageButton
+                android:id="@+id/buttonShare"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Share"
+                android:padding="12dp"
+                android:src="@drawable/ic_share"
+                app:tint="?attr/colorOnSurface" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/buttonSave"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Save"
+                android:padding="12dp"
+                android:src="@drawable/ic_bookmark_outline"
+                app:tint="?attr/colorOnSurface" />
+
+        </LinearLayout>
+
+        <!-- Details -->
         <TextView
-            android:id="@+id/textCaptionUsername"
+            android:id="@+id/textLikesCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="username"
+            android:layout_marginStart="16dp"
+            android:fontFamily="sans-serif-black"
+            android:text="1,234 likes"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            tools:text="foodie_chef" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/interactionBar" />
 
-        <TextView
-            android:id="@+id/textCaption"
+        <LinearLayout
+            android:id="@+id/captionContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Post caption here..."
-            android:textSize="14sp"
-            android:textColor="@color/text_primary"
-            android:maxLines="3"
-            android:ellipsize="end"
-            tools:text="Amazing homemade pasta recipe!" />
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textLikesCount">
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/textCaptionUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:text="chef_gourmet"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp" />
 
-    <!-- Timestamp -->
-    <TextView
-        android:id="@+id/textTimestamp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="12dp"
-        android:text="Just now"
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        tools:text="2 hours ago" />
+            <TextView
+                android:id="@+id/textCaption"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="The secret to the perfect carbonara is..."
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp" />
 
-</LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textTimestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif-light"
+            android:text="2 HOURS AGO"
+            android:textAllCaps="true"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="10sp"
+            android:letterSpacing="0.05"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/captionContainer" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

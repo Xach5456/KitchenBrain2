@@ -14,7 +14,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.kitchenbrain.ui.CreateRecipeFragment;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.kitchenbrain.repository.RecipeRepository;
+import com.example.kitchenbrain.util.RecipeOwnershipUtils;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -23,11 +27,12 @@ import java.util.List;
 
 public class AddRecipeFragment extends Fragment {
 
-    private FloatingActionButton fabAddRecipe;
+    private ExtendedFloatingActionButton fabAddRecipe;
     private RecyclerView recyclerView;
     private RecipeAdapter recipeAdapter;
     private List<Recipe> recipeList;
     private FirebaseFirestore db;
+    private FirebaseAuth auth;
 
     public AddRecipeFragment() {}
 
@@ -46,8 +51,10 @@ public class AddRecipeFragment extends Fragment {
 
         recipeList = new ArrayList<>();
         db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
 
         setupFabClick();
+        setupRecipeUpdatedListener();
         loadRecipes();
 
         return view;
@@ -78,7 +85,13 @@ public class AddRecipeFragment extends Fragment {
 
     private void loadRecipes() {
         if (db == null) return;
-        db.collection("recipes").get().addOnCompleteListener(task -> {
+        String currentUserId = auth != null && auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (currentUserId == null) {
+            recipeList.clear();
+            updateRecipeList();
+            return;
+        }
+        db.collection("recipes").whereEqualTo("authorId", currentUserId).get().addOnCompleteListener(task -> {
             if (!isAdded() || getContext() == null) return;
             if (task.isSuccessful()) {
                 recipeList.clear();
@@ -107,21 +120,32 @@ public class AddRecipeFragment extends Fragment {
             recipeAdapter = new RecipeAdapter(recipeList != null ? recipeList : new ArrayList<>(), new RecipeAdapter.OnRecipeClickListener() {
                 @Override 
                 public void onDeleteRecipe(Recipe recipe) {
-                    // Handle recipe deletion
-                    if (db != null && recipe.getId() != null) {
-                        db.collection("recipes").document(recipe.getId())
-                                .delete()
-                                .addOnSuccessListener(aVoid -> {
+                    if (!RecipeOwnershipUtils.isOwner(recipe, getCurrentUserId())) {
+                        Toast.makeText(getContext(), "You can only delete recipes you created", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (recipe.getId() != null) {
+                        new RecipeRepository().deleteRecipe(recipe.getId(), new RecipeRepository.RecipeCallback<>() {
+                            @Override
+                            public void onSuccess(Void result) {
                                     recipeList.remove(recipe);
                                     recipeAdapter.updateRecipes(recipeList);
                                     Toast.makeText(getContext(), "Recipe deleted", Toast.LENGTH_SHORT).show();
-                                })
-                                .addOnFailureListener(e -> {
-                                    Toast.makeText(getContext(), "Error deleting recipe", Toast.LENGTH_SHORT).show();
-                                });
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Toast.makeText(getContext(), "Error deleting recipe: " + error, Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 }
                 
+                @Override 
+                public void onEditRecipe(Recipe recipe) {
+                    openEditRecipe(recipe);
+                }
+
                 @Override 
                 public void onRecipeClick(Recipe recipe) {
                     // Handle recipe click - maybe show details
@@ -132,6 +156,29 @@ public class AddRecipeFragment extends Fragment {
         } else {
             recipeAdapter.updateRecipes(recipeList != null ? new ArrayList<>(recipeList) : new ArrayList<>());
         }
+    }
+
+    private void setupRecipeUpdatedListener() {
+        getParentFragmentManager().setFragmentResultListener("recipe_updated", getViewLifecycleOwner(), (requestKey, result) -> {
+            loadRecipes();
+            if (getView() != null) {
+                Snackbar.make(getView(), "Recipe updated", Snackbar.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void openEditRecipe(Recipe recipe) {
+        if (!isAdded() || recipe == null || getActivity() == null) return;
+        if (!RecipeOwnershipUtils.isOwner(recipe, getCurrentUserId())) {
+            Toast.makeText(getContext(), "You can only edit recipes you created", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        CreateRecipeFragment editFragment = CreateRecipeFragment.newInstance(recipe);
+        ((MainActivity) getActivity()).showFragment(editFragment, "edit_recipe_" + recipe.getId());
+    }
+
+    private String getCurrentUserId() {
+        return auth != null && auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
     }
 
     @Override

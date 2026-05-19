@@ -25,7 +25,6 @@ val grokApiKeyResolved = resolveApiKey("GROK_API_KEY")
 val geminiApiKeyResolved = resolveApiKey("GEMINI_API_KEY")
 val openaiApiKeyResolved = resolveApiKey("OPENAI_API_KEY")
 val deepseekApiKeyResolved = resolveApiKey("DEEPSEEK_API_KEY")
-val groqApiKeyResolved = resolveApiKey("GROQ_API_KEY")
 val youtubeApiKeyResolved = resolveApiKey("YOUTUBE_API_KEY")
 val cloudinaryApiKeyResolved = resolveApiKey("CLOUDINARY_API_KEY")
 
@@ -40,12 +39,12 @@ configurations.all {
 
 android {
     namespace = "com.example.kitchenbrain"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.kitchenbrain"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -57,7 +56,6 @@ android {
         buildConfigField("String", "GEMINI_API_KEY", "\"${formatForBuildConfig(geminiApiKeyResolved)}\"")
         buildConfigField("String", "OPENAI_API_KEY", "\"${formatForBuildConfig(openaiApiKeyResolved)}\"")
         buildConfigField("String", "DEEPSEEK_API_KEY", "\"${formatForBuildConfig(deepseekApiKeyResolved)}\"")
-        buildConfigField("String", "GROQ_API_KEY", "\"${formatForBuildConfig(groqApiKeyResolved)}\"")
         buildConfigField("String", "YOUTUBE_API_KEY", "\"${formatForBuildConfig(youtubeApiKeyResolved)}\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"${formatForBuildConfig(cloudinaryApiKeyResolved)}\"")
     }

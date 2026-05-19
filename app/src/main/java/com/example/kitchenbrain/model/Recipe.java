@@ -1,6 +1,7 @@
 package com.example.kitchenbrain.model;
 
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
@@ -10,11 +11,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Recipe model class for Firestore
  * Optimized to handle all field types and prevent deserialization crashes.
- * Consistent with the root Recipe model.
  */
 @Keep
 @IgnoreExtraProperties
@@ -22,6 +23,7 @@ public class Recipe implements Serializable {
     @Exclude private String id;
     @Exclude private String title;
     @Exclude private String description;
+    @Exclude private String notes;
     @Exclude private String category;
     @Exclude private int imageResId;
     @Exclude private double rating;
@@ -33,7 +35,9 @@ public class Recipe implements Serializable {
     @Exclude private long createdAtLong;
     @Exclude private String createdBy;
     @Exclude private int servings;
+    @Exclude private int calories;
     @Exclude private List<String> instructions;
+    @Exclude private List<String> steps;
     
     @Exclude private List<String> ingredients;
     @Exclude private String authorId;
@@ -58,6 +62,7 @@ public class Recipe implements Serializable {
 
     public Recipe() {
         this.instructions = new ArrayList<>();
+        this.steps = new ArrayList<>();
         this.ingredients = new ArrayList<>();
         this.ingredientIds = new ArrayList<>();
         this.ingredientIdsMap = new HashMap<>();
@@ -81,6 +86,11 @@ public class Recipe implements Serializable {
     public String getDescription() { return description; }
     @PropertyName("description")
     public void setDescription(String description) { this.description = description; }
+
+    @PropertyName("notes")
+    public String getNotes() { return notes; }
+    @PropertyName("notes")
+    public void setNotes(String notes) { this.notes = notes; }
 
     @PropertyName("category")
     public String getCategory() { return category; }
@@ -106,6 +116,11 @@ public class Recipe implements Serializable {
     public int getServings() { return servings; }
     @PropertyName("servings")
     public void setServings(Object value) { this.servings = convertToInt(value); }
+
+    @PropertyName("calories")
+    public int getCalories() { return calories; }
+    @PropertyName("calories")
+    public void setCalories(Object value) { this.calories = convertToInt(value); }
 
     @PropertyName("createdAt")
     public long getCreatedAt() { return createdAtLong; }
@@ -173,19 +188,44 @@ public class Recipe implements Serializable {
     public void setIngredientIds(List<String> ingredientIds) { this.ingredientIds = ingredientIds; }
 
     @PropertyName("instructions")
-    public List<String> getInstructions() { return instructions; }
+    public List<String> getInstructions() {
+        return instructions != null && !instructions.isEmpty() ? instructions : steps;
+    }
     @PropertyName("instructions")
     public void setInstructions(List<String> instructions) { this.instructions = instructions; }
+
+    @PropertyName("steps")
+    public List<String> getSteps() {
+        return steps != null && !steps.isEmpty() ? steps : instructions;
+    }
+    @PropertyName("steps")
+    public void setSteps(List<String> steps) { this.steps = steps; }
 
     @PropertyName("likedBy")
     public List<String> getLikedBy() { return likedBy; }
     @PropertyName("likedBy")
-    public void setLikedBy(List<String> likedBy) { this.likedBy = likedBy; }
+    public void setLikedBy(Object value) { 
+        if (value instanceof List) {
+            this.likedBy = (List<String>) value;
+        } else if (value instanceof Map) {
+            this.likedBy = new ArrayList<>(((Map<String, Object>) value).keySet());
+        } else {
+            this.likedBy = new ArrayList<>();
+        }
+    }
 
     @PropertyName("savedBy")
     public List<String> getSavedBy() { return savedBy; }
     @PropertyName("savedBy")
-    public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
+    public void setSavedBy(Object value) { 
+        if (value instanceof List) {
+            this.savedBy = (List<String>) value;
+        } else if (value instanceof Map) {
+            this.savedBy = new ArrayList<>(((Map<String, Object>) value).keySet());
+        } else {
+            this.savedBy = new ArrayList<>();
+        }
+    }
 
     @PropertyName("isDraft")
     public boolean isDraft() { return isDraft; }
@@ -241,5 +281,21 @@ public class Recipe implements Serializable {
             try { return Integer.parseInt((String) value); } catch (Exception e) { return 0; }
         }
         return 0;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Recipe recipe = (Recipe) o;
+        return Objects.equals(id, recipe.id) && 
+               Objects.equals(getTitle(), recipe.getTitle()) &&
+               cookingTime == recipe.cookingTime &&
+               Objects.equals(imageUrl, recipe.imageUrl);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, getTitle(), cookingTime, imageUrl);
     }
 }

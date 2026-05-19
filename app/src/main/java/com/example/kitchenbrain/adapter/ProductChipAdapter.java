@@ -1,10 +1,15 @@
 package com.example.kitchenbrain.adapter;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import android.widget.Filter;
 import android.widget.Filterable;
@@ -23,9 +28,10 @@ public class ProductChipAdapter extends RecyclerView.Adapter<ProductChipAdapter.
     private Context context;
     private List<FoodProduct> allProducts = new ArrayList<>();
     private List<FoodProduct> filteredProducts = new ArrayList<>();
-    private Set<String> selectedNames = new HashSet<>(); // Храним имена, так как в VM поиск по именам
+    private Set<String> selectedNames = new HashSet<>(); 
     private OnProductSelectionListener listener;
-    private boolean onlyShowSelected = false; // Show only selected ingredients
+    private boolean onlyShowSelected = false;
+    private int lastPosition = -1;
     
     public interface OnProductSelectionListener {
         void onProductToggle(FoodProduct product, boolean isSelected);
@@ -81,6 +87,16 @@ public class ProductChipAdapter extends RecyclerView.Adapter<ProductChipAdapter.
         FoodProduct product = filteredProducts.get(position);
         boolean isSelected = selectedNames.contains(product.getDisplayName());
         holder.bind(product, isSelected);
+        setAnimation(holder.itemView, position);
+    }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            Animation animation = AnimationUtils.loadAnimation(context, android.R.anim.fade_in);
+            animation.setDuration(400);
+            viewToAnimate.startAnimation(animation);
+            lastPosition = position;
+        }
     }
     
     @Override
@@ -142,14 +158,16 @@ public class ProductChipAdapter extends RecyclerView.Adapter<ProductChipAdapter.
         
         private void updateUI(boolean isSelected) {
             if (isSelected) {
-                cardView.setCardBackgroundColor(context.getResources().getColor(R.color.primary_blue));
-                textViewName.setTextColor(context.getResources().getColor(android.R.color.white));
+                cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_primary_light));
+                textViewName.setTextColor(Color.WHITE);
                 cardView.setStrokeWidth(0);
+                cardView.setCardElevation(4f);
             } else {
-                cardView.setCardBackgroundColor(context.getResources().getColor(android.R.color.white));
-                textViewName.setTextColor(context.getResources().getColor(R.color.text_primary));
-                cardView.setStrokeWidth(2);
-                cardView.setStrokeColor(context.getResources().getColor(R.color.divider_color));
+                cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_surface_container_low_light));
+                textViewName.setTextColor(ContextCompat.getColor(context, R.color.text_primary));
+                cardView.setStrokeWidth(1);
+                cardView.setStrokeColor(ContextCompat.getColor(context, R.color.divider));
+                cardView.setCardElevation(0f);
             }
         }
     }

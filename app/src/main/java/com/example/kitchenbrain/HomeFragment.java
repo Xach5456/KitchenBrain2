@@ -1,12 +1,11 @@
 package com.example.kitchenbrain;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -27,6 +26,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 /**
  * Home Fragment - Instagram-style Food Feed (Powered by Spoonacular Recipes)
+ * 🔥 UPDATED: Only updates on manual interaction (Click or Swipe).
  */
 public class HomeFragment extends Fragment {
 
@@ -37,6 +37,7 @@ public class HomeFragment extends Fragment {
     private LinearLayout layoutLoading;
     private LinearLayout layoutError;
     private LinearLayout layoutEmpty;
+    private ImageButton btnRefreshFeed;
 
     private HomeFeedViewModel viewModel;
     private FeedPostAdapter feedAdapter;
@@ -46,10 +47,6 @@ public class HomeFragment extends Fragment {
     private CommentsManager commentsManager;
     private FirebaseAuth auth;
     private String currentUserId;
-    
-    // Auto-refresh
-    private Handler autoRefreshHandler;
-    private static final int AUTO_REFRESH_INTERVAL = 60000; // 1 minute
     
     // 🔥 CRITICAL: Debounce protection for like clicks
     private boolean isLiking = false;
@@ -67,14 +64,14 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        Log.d(TAG, "🚀 HomeFragment - Instagram-style Edition");
+        Log.d(TAG, "🚀 HomeFragment - Manual Refresh Mode");
 
         initSocialFeatures();
         initViews(view);
         setupViewModel();
         setupRecyclerView();
         setupSwipeRefresh();
-        setupAutoRefresh();
+        setupRefreshButton();
         observeViewModel();
         
         // Initial load
@@ -82,26 +79,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void initSocialFeatures() {
-        Log.d(TAG, "🔥 Initializing Instagram-style social features");
-        
         // Firebase Auth
         auth = FirebaseAuth.getInstance();
         if (auth.getCurrentUser() != null) {
             currentUserId = auth.getCurrentUser().getUid();
-            Log.d(TAG, "✅ User authenticated: " + currentUserId);
         } else {
-            Log.w(TAG, "⚠️ User not authenticated");
             currentUserId = "anonymous";
         }
         
         // Social managers
         likeManager = new LikeManager();
         commentsManager = new CommentsManager();
-        
-        // Auto-refresh handler
-        autoRefreshHandler = new Handler(Looper.getMainLooper());
-        
-        Log.d(TAG, "✅ Social features initialized");
     }
 
     private void initViews(View view) {
@@ -110,6 +98,18 @@ public class HomeFragment extends Fragment {
         layoutLoading = view.findViewById(R.id.layoutLoading);
         layoutError = view.findViewById(R.id.layoutError);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
+        btnRefreshFeed = view.findViewById(R.id.btnRefreshFeed);
+        
+        view.findViewById(R.id.buttonRetry).setOnClickListener(v -> viewModel.refreshFeed());
+    }
+
+    private void setupRefreshButton() {
+        if (btnRefreshFeed != null) {
+            btnRefreshFeed.setOnClickListener(v -> {
+                Log.d(TAG, "🔄 Refresh button clicked");
+                viewModel.refreshFeed();
+            });
+        }
     }
 
     private void setupViewModel() {
@@ -131,7 +131,6 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onSendClick(FeedItem item, int position) {
-                // 🔥 FIXED: Now opens dedicated ShareNewsFragment for mutual followers
                 handleSendToChat(item);
             }
 
@@ -157,13 +156,7 @@ public class HomeFragment extends Fragment {
         recyclerViewFeed.setHasFixedSize(true);
     }
 
-    /**
-     * 🔥 Opens the dedicated ShareNewsFragment to pick a mutual follower to send the news to.
-     */
     private void handleSendToChat(FeedItem item) {
-        Log.d(TAG, "📤 Opening ShareNewsFragment for: " + item.getRecipe().getName());
-        
-        // Create the dedicated fragment for sharing with mutual followers
         ShareNewsFragment shareFragment = ShareNewsFragment.newInstance(
             item.getRecipe().getName(), 
             item.getRecipe().getVideoUrl()
@@ -175,8 +168,6 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupSwipeRefresh() {
-        Log.d(TAG, "🔄 Setting up SwipeRefreshLayout");
-        
         swipeRefreshLayout.setOnRefreshListener(() -> {
             Log.d(TAG, "🔄 Swipe refresh triggered");
             viewModel.refreshFeed();
@@ -188,34 +179,6 @@ public class HomeFragment extends Fragment {
             android.R.color.holo_orange_light,
             android.R.color.holo_red_light
         );
-        
-        Log.d(TAG, "✅ SwipeRefreshLayout setup complete");
-    }
-    
-    private void setupAutoRefresh() {
-        Log.d(TAG, "⏰ Setting up auto-refresh every " + AUTO_REFRESH_INTERVAL + "ms");
-        
-        Runnable refreshRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // 🔴 CRITICAL: Stop auto-refresh on API error
-                if (isApiError && lastErrorCode == 402) {
-                    Log.d(TAG, "🚫 Auto-refresh stopped due to API 402 error");
-                    return;
-                }
-                
-                if (isAdded() && !isDetached()) {
-                    Log.d(TAG, "⏰ Auto-refresh triggered");
-                    viewModel.refreshFeed();
-                    autoRefreshHandler.postDelayed(this, AUTO_REFRESH_INTERVAL);
-                }
-            }
-        };
-        
-        // Start auto-refresh after initial delay
-        autoRefreshHandler.postDelayed(refreshRunnable, AUTO_REFRESH_INTERVAL);
-        
-        Log.d(TAG, "✅ Auto-refresh setup complete");
     }
 
     private void observeViewModel() {
@@ -229,8 +192,6 @@ public class HomeFragment extends Fragment {
     }
     
     private void render(HomeUiState state) {
-        Log.d(TAG, "🎯 [RENDER] State: " + state.getStatus());
-            
         switch (state.getStatus()) {
             case LOADING:
                 showLoading();
@@ -242,16 +203,13 @@ public class HomeFragment extends Fragment {
                 }
                 showContent();
                 
-                // 🔥 Notify user if showing cached data due to API limits
                 if (state.isFromCache() && getContext() != null) {
                     Toast.makeText(getContext(), "Daily API quota reached. Showing cached recipes.", Toast.LENGTH_LONG).show();
                 }
 
-                // 🔴 CRITICAL: Reset API error state on success
                 if (isApiError) {
                     isApiError = false;
                     lastErrorCode = 0;
-                    Log.d(TAG, "✅ API error state reset");
                 }
                 break;
                     
@@ -260,12 +218,10 @@ public class HomeFragment extends Fragment {
                 break;
                     
             case ERROR:
-                // 🔴 CRITICAL: Check for 402 error
                 String errorMessage = state.getErrorMessage() != null ? state.getErrorMessage() : "Unknown Error";
                 if (errorMessage.contains("402")) {
                     isApiError = true;
                     lastErrorCode = 402;
-                    Log.d(TAG, "🚫 API 402 error detected, stopping auto-refresh");
                 }
                 showError(errorMessage);
                 break;
@@ -327,13 +283,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void handleLikeClick(FeedItem item, int position) {
-        Log.d(TAG, "❤️ Like clicked: position=" + position);
-        
-        // 🔥 CRITICAL: Debounce protection
-        if (isLiking) {
-            Log.d(TAG, "⏳ Like already in progress, ignoring click");
-            return;
-        }
+        if (isLiking) return;
         
         String postId = generatePostId(item);
         isLiking = true;
@@ -341,28 +291,21 @@ public class HomeFragment extends Fragment {
         likeManager.toggleLike(postId, currentUserId, new LikeManager.LikeCallback() {
             @Override
             public void onSuccess(LikeManager.LikeResult result) {
-                Log.d(TAG, "✅ Like toggle success: " + result.toString());
-                // Update UI through ViewModel
                 viewModel.toggleLike(item.getStableId());
-                isLiking = false; // Reset debounce
+                isLiking = false;
             }
             
             @Override
             public void onError(String error) {
-                Log.e(TAG, "❌ Like toggle failed: " + error);
-                isLiking = false; // Reset debounce on error
+                isLiking = false;
                 Toast.makeText(getContext(), "Like failed: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void handleCommentClick(FeedItem item, int position) {
-        Log.d(TAG, "💬 Comment clicked: position=" + position);
-        
         String postId = generatePostId(item);
         String postTitle = item.getRecipe() != null ? item.getRecipe().getName() : "Recipe";
-        
-        // Open Instagram-style comments bottom sheet
         CommentsBottomSheet commentsSheet = CommentsBottomSheet.newInstance(postId, postTitle);
         commentsSheet.show(getChildFragmentManager(), "CommentsBottomSheet");
     }
@@ -378,21 +321,5 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (feedAdapter != null) feedAdapter.clear();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        
-        // Stop auto-refresh
-        if (autoRefreshHandler != null) {
-            autoRefreshHandler.removeCallbacksAndMessages(null);
-        }
-        
-        viewModel = null;
-        likeManager = null;
-        commentsManager = null;
-        
-        Log.d(TAG, "🏳️ HomeFragment destroyed - social features cleaned up");
     }
 }

@@ -1,7 +1,6 @@
 package com.example.kitchenbrain;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,6 +9,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +19,6 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -25,11 +26,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.kitchenbrain.manager.FollowGraphRepository;
+import com.example.kitchenbrain.repository.RecipeRepository;
 import com.example.kitchenbrain.utils.CloudinaryHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -44,6 +48,7 @@ import com.google.firebase.Timestamp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Modern Material 3 Profile & Settings Fragment
@@ -74,21 +79,29 @@ public class ProfileFragment extends Fragment {
     private TextView textViewEmail;
     private TextView textFollowersCount;
     private TextView textFollowingCount;
+    private TextView textMutualCount;
     private MaterialButton buttonEditProfile;
+    private MaterialButton buttonShareProfile;
+    private MaterialButton buttonOpenSettings;
+    private MaterialButton buttonAddRecipe;
     private View buttonChangePhoto;
+    private NestedScrollView profileScrollView;
+    private View textPreferencesHeader;
     private LinearLayout layoutEditUsername;
     private LinearLayout layoutDeleteAccount;
     private LinearLayout layoutMessagePermissions;
-    private LinearLayout layoutBlockedUsers;
+    private LinearLayout layoutLogout;
     private TextView textCurrentUsername;
     private TextView textMessagePermission;
-    private TextView textBlockedCount;
     private SwitchMaterial switchDarkMode;
     private SwitchMaterial switchNotifications;
     private SwitchMaterial switchMessaging;
+    private EditText editTextSearchRecipes;
     private RecyclerView recyclerViewPosts;
     private PostAdapter postAdapter;
+    private List<Recipe> allUserPosts;
     private List<Recipe> userPosts;
+    private boolean followStatsObserved;
 
     // Modern Activity Result Launchers
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
@@ -156,24 +169,25 @@ public class ProfileFragment extends Fragment {
         textViewEmail = view.findViewById(R.id.textViewEmail);
         textFollowersCount = view.findViewById(R.id.textFollowersCount);
         textFollowingCount = view.findViewById(R.id.textFollowingCount);
+        textMutualCount = view.findViewById(R.id.textMutualCount);
         buttonEditProfile = view.findViewById(R.id.buttonEditProfile);
+        buttonShareProfile = view.findViewById(R.id.buttonShareProfile);
+        buttonOpenSettings = view.findViewById(R.id.buttonOpenSettings);
+        buttonAddRecipe = view.findViewById(R.id.buttonAddRecipe);
         buttonChangePhoto = view.findViewById(R.id.buttonChangePhoto);
+        profileScrollView = view.findViewById(R.id.profileScrollView);
+        textPreferencesHeader = view.findViewById(R.id.textPreferencesHeader);
         layoutEditUsername = view.findViewById(R.id.layoutEditUsername);
         layoutDeleteAccount = view.findViewById(R.id.layoutDeleteAccount);
         layoutMessagePermissions = view.findViewById(R.id.layoutMessagePermissions);
-        layoutBlockedUsers = view.findViewById(R.id.layoutBlockedUsers);
+        layoutLogout = view.findViewById(R.id.layoutLogout);
         textCurrentUsername = view.findViewById(R.id.textCurrentUsername);
         textMessagePermission = view.findViewById(R.id.textMessagePermission);
-        textBlockedCount = view.findViewById(R.id.textBlockedCount);
         switchDarkMode = view.findViewById(R.id.switchDarkMode);
         switchNotifications = view.findViewById(R.id.switchNotifications);
         switchMessaging = view.findViewById(R.id.switchMessaging);
+        editTextSearchRecipes = view.findViewById(R.id.etSearchRecipes);
         recyclerViewPosts = view.findViewById(R.id.recyclerViewPosts);
-        
-        MaterialButton buttonLogout = view.findViewById(R.id.buttonLogout);
-        if (buttonLogout != null) {
-            buttonLogout.setOnClickListener(v -> showLogoutConfirmation());
-        }
     }
     
     private void setupClickListeners() {
@@ -181,11 +195,14 @@ public class ProfileFragment extends Fragment {
             buttonChangePhoto.setOnClickListener(v -> handleImagePickerClick());
         }
         
-        if (buttonEditProfile != null) buttonEditProfile.setOnClickListener(v -> showEditUsernameDialog());
+        if (buttonEditProfile != null) buttonEditProfile.setOnClickListener(v -> showEditProfileOptionsDialog());
+        if (buttonShareProfile != null) buttonShareProfile.setOnClickListener(v -> shareProfile());
+        if (buttonOpenSettings != null) buttonOpenSettings.setOnClickListener(v -> scrollToSettings());
+        if (buttonAddRecipe != null) buttonAddRecipe.setOnClickListener(v -> openCreateRecipe());
         if (layoutEditUsername != null) layoutEditUsername.setOnClickListener(v -> showEditUsernameDialog());
         if (layoutDeleteAccount != null) layoutDeleteAccount.setOnClickListener(v -> showDeleteAccountConfirmation());
         if (layoutMessagePermissions != null) layoutMessagePermissions.setOnClickListener(v -> showMessagePermissionsDialog());
-        if (layoutBlockedUsers != null) layoutBlockedUsers.setOnClickListener(v -> showBlockedUsersDialog());
+        if (layoutLogout != null) layoutLogout.setOnClickListener(v -> showLogoutConfirmation());
         
         if (switchDarkMode != null) {
             switchDarkMode.setOnCheckedChangeListener((b, isChecked) -> {
@@ -208,12 +225,102 @@ public class ProfileFragment extends Fragment {
             });
         }
 
+        if (editTextSearchRecipes != null) {
+            editTextSearchRecipes.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    filterRecipes(s != null ? s.toString() : "");
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+        }
+
         if (textFollowersCount != null) {
             ((View)textFollowersCount.getParent()).setOnClickListener(v -> openFriendsFragment(FriendsFragment.TAB_FOLLOWERS));
         }
         if (textFollowingCount != null) {
             ((View)textFollowingCount.getParent()).setOnClickListener(v -> openFriendsFragment(FriendsFragment.TAB_FOLLOWING));
         }
+        if (textMutualCount != null) {
+            ((View) textMutualCount.getParent()).setOnClickListener(v -> openFriendsFragment(FriendsFragment.TAB_MUTUAL));
+        }
+
+        updateOwnerOnlyControls();
+    }
+
+    private void updateOwnerOnlyControls() {
+        boolean ownProfile = isOwnProfile();
+        setVisible(buttonChangePhoto, ownProfile);
+        setVisible(buttonEditProfile, ownProfile);
+        setVisible(buttonOpenSettings, ownProfile);
+        setVisible(buttonAddRecipe, ownProfile);
+        setVisible(layoutEditUsername, ownProfile);
+        setVisible(layoutMessagePermissions, ownProfile);
+        setVisible(layoutLogout, ownProfile);
+        setVisible(layoutDeleteAccount, ownProfile);
+        if (switchDarkMode != null) switchDarkMode.setEnabled(ownProfile);
+        if (switchNotifications != null) switchNotifications.setEnabled(ownProfile);
+        if (switchMessaging != null) switchMessaging.setEnabled(ownProfile);
+    }
+
+    private void setVisible(View view, boolean visible) {
+        if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean isOwnProfile() {
+        return mAuth != null
+                && mAuth.getCurrentUser() != null
+                && !TextUtils.isEmpty(currentUserId)
+                && currentUserId.equals(mAuth.getCurrentUser().getUid());
+    }
+
+    private void shareProfile() {
+        if (!isAdded()) return;
+        String username = currentUser != null ? currentUser.getUsername() : null;
+        if (TextUtils.isEmpty(username)) username = "Kitchen Brain profile";
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, username);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, "Check out " + username + " on Kitchen Brain.");
+        startActivity(Intent.createChooser(shareIntent, "Share Profile"));
+    }
+
+    private void scrollToSettings() {
+        if (profileScrollView == null || textPreferencesHeader == null) return;
+        profileScrollView.post(() -> profileScrollView.smoothScrollTo(0, textPreferencesHeader.getTop()));
+    }
+
+    private void openCreateRecipe() {
+        if (!isOwnProfile()) {
+            showSnackbar("You can add recipes only from your own profile.");
+            return;
+        }
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).showFragment(new CreateRecipeFragment(), "create_recipe");
+        }
+    }
+
+    private void showEditProfileOptionsDialog() {
+        if (!isOwnProfile() || !isAdded()) return;
+        String[] options = {"Edit Username", "Change Photo"};
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Edit Profile")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showEditUsernameDialog();
+                    } else {
+                        handleImagePickerClick();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void handleImagePickerClick() {
@@ -271,6 +378,16 @@ public class ProfileFragment extends Fragment {
     
     private void loadUserData() {
         if (currentUserId == null || getContext() == null) return;
+
+        observeFollowStats();
+        if (userDataListener != null) {
+            userDataListener.remove();
+            userDataListener = null;
+        }
+        if (userRecipesListener != null) {
+            userRecipesListener.remove();
+            userRecipesListener = null;
+        }
         
         userDataListener = db.collection("users").document(currentUserId)
                 .addSnapshotListener((document, error) -> {
@@ -292,6 +409,29 @@ public class ProfileFragment extends Fragment {
         
         loadUserRecipes();
     }
+
+    private void observeFollowStats() {
+        if (followStatsObserved || currentUserId == null || !isAdded()) return;
+        followStatsObserved = true;
+
+        FollowGraphRepository graph = FollowGraphRepository.getInstance();
+        graph.initialize(currentUserId);
+        graph.getFollowersLiveData().observe(getViewLifecycleOwner(), users -> {
+            if (textFollowersCount != null && users != null) {
+                textFollowersCount.setText(String.valueOf(users.size()));
+            }
+        });
+        graph.getFollowingLiveData().observe(getViewLifecycleOwner(), users -> {
+            if (textFollowingCount != null && users != null) {
+                textFollowingCount.setText(String.valueOf(users.size()));
+            }
+        });
+        graph.getMutualLiveData().observe(getViewLifecycleOwner(), users -> {
+            if (textMutualCount != null && users != null) {
+                textMutualCount.setText(String.valueOf(users.size()));
+            }
+        });
+    }
     
     private void updateUIWithUserData(User user) {
         if (!isAdded()) return;
@@ -309,11 +449,17 @@ public class ProfileFragment extends Fragment {
             textFollowingCount.setText(String.valueOf(user.getFollowingCount()));
         
         if (imageViewProfile != null) {
-            Glide.with(this)
-                .load(user.getAvatarUrl())
-                .placeholder(R.drawable.ic_default_avatar)
-                .circleCrop()
-                .into(imageViewProfile);
+            String avatarUrl = user.getAvatarUrl();
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_default_avatar)
+                    .error(R.drawable.ic_default_avatar)
+                    .circleCrop()
+                    .into(imageViewProfile);
+            } else {
+                imageViewProfile.setImageResource(R.drawable.ic_default_avatar);
+            }
         }
     }
     
@@ -326,16 +472,19 @@ public class ProfileFragment extends Fragment {
                     
                     if (error != null) return;
                     
-                    if (userPosts != null && queryDocumentSnapshots != null) {
-                        userPosts.clear();
+                    if (allUserPosts != null && queryDocumentSnapshots != null) {
+                        allUserPosts.clear();
                         for (DocumentSnapshot doc : queryDocumentSnapshots) {
                             Recipe recipe = doc.toObject(Recipe.class);
                             if (recipe != null) {
                                 recipe.setId(doc.getId());
-                                userPosts.add(recipe);
+                                allUserPosts.add(recipe);
                             }
                         }
-                        if (postAdapter != null) postAdapter.notifyDataSetChanged();
+                        String query = editTextSearchRecipes != null
+                                ? editTextSearchRecipes.getText().toString()
+                                : "";
+                        filterRecipes(query);
                     }
                 });
     }
@@ -348,7 +497,6 @@ public class ProfileFragment extends Fragment {
         
         String permission = prefs.getString("message_permission", "everyone");
         updateMessagePermissionText(permission);
-        updateBlockedUsersCount();
     }
     
     private void saveSettings() {
@@ -379,17 +527,13 @@ public class ProfileFragment extends Fragment {
         }
     }
     
-    private void updateBlockedUsersCount() {
-        if (textBlockedCount != null && isAdded())
-            textBlockedCount.setText("0 users blocked");
-    }
-    
     private void showEditUsernameDialog() {
         if (!isAdded() || getContext() == null) return;
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_edit_profile, null);
         EditText editText = dialogView.findViewById(R.id.editTextUsername);
         if (currentUser != null) editText.setText(currentUser.getUsername());
         
+        // Material dialog colors follow the active light/dark theme.
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Edit Username")
                 .setView(dialogView)
@@ -477,25 +621,115 @@ public class ProfileFragment extends Fragment {
                 .show();
     }
     
-    private void showBlockedUsersDialog() {
-        if (!isAdded()) return;
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Blocked Users")
-                .setMessage("No blocked users yet.")
-                .setPositiveButton("OK", null)
-                .show();
-    }
-    
     private void setupRecyclerView() {
         if (getContext() == null) return;
+        allUserPosts = new ArrayList<>();
         userPosts = new ArrayList<>();
-        postAdapter = new PostAdapter(userPosts, this);
+        postAdapter = new PostAdapter(userPosts, this, currentUserId, new PostAdapter.OnPostActionListener() {
+            @Override
+            public void onViewRecipe(Recipe recipe) {
+                openRecipeDetail(recipe);
+            }
+
+            @Override
+            public void onEditRecipe(Recipe recipe) {
+                openEditRecipe(recipe);
+            }
+
+            @Override
+            public void onDeleteRecipe(Recipe recipe) {
+                confirmDeleteRecipe(recipe);
+            }
+        });
         if (recyclerViewPosts != null) {
             recyclerViewPosts.setLayoutManager(new LinearLayoutManager(getContext()));
             recyclerViewPosts.setAdapter(postAdapter);
         }
     }
-    
+
+    private void filterRecipes(String query) {
+        if (allUserPosts == null || userPosts == null) return;
+
+        String normalizedQuery = query != null
+                ? query.trim().toLowerCase(Locale.getDefault())
+                : "";
+        List<Recipe> filteredRecipes = new ArrayList<>();
+
+        if (normalizedQuery.isEmpty()) {
+            filteredRecipes.addAll(allUserPosts);
+        } else {
+            for (Recipe recipe : allUserPosts) {
+                String title = recipe != null ? recipe.getTitle() : null;
+                if (!TextUtils.isEmpty(title)
+                        && title.toLowerCase(Locale.getDefault()).contains(normalizedQuery)) {
+                    filteredRecipes.add(recipe);
+                }
+            }
+        }
+
+        if (postAdapter != null) {
+            postAdapter.updateRecipes(filteredRecipes);
+        }
+        userPosts.clear();
+        userPosts.addAll(filteredRecipes);
+    }
+
+    private void openRecipeDetail(Recipe recipe) {
+        if (recipe == null || !isAdded()) return;
+        getParentFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, RecipeDetailFragment.newInstance(recipe))
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void openEditRecipe(Recipe recipe) {
+        if (recipe == null || !isOwnProfile()) {
+            showSnackbar("You can edit only recipes you created.");
+            return;
+        }
+        String recipeId = recipe.getId();
+        if (TextUtils.isEmpty(recipeId)) {
+            showSnackbar("Recipe is missing an ID.");
+            return;
+        }
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).showFragment(CreateRecipeFragment.newInstance(recipe), "edit_recipe_" + recipeId);
+        }
+    }
+
+    private void confirmDeleteRecipe(Recipe recipe) {
+        if (recipe == null || !isOwnProfile()) {
+            showSnackbar("You can delete only recipes you created.");
+            return;
+        }
+        String recipeId = recipe.getId();
+        if (TextUtils.isEmpty(recipeId)) {
+            showSnackbar("Recipe is missing an ID.");
+            return;
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Recipe")
+                .setMessage("Are you sure you want to delete this recipe?")
+                .setPositiveButton("Delete", (dialog, which) -> deleteRecipe(recipeId))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteRecipe(String recipeId) {
+        new RecipeRepository().deleteRecipe(recipeId, new RecipeRepository.RecipeCallback<>() {
+            @Override
+            public void onSuccess(Void result) {
+                if (isAdded()) showSnackbar("Recipe deleted");
+            }
+
+            @Override
+            public void onError(String error) {
+                if (isAdded()) showSnackbar("Delete failed: " + error);
+            }
+        });
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();

@@ -30,10 +30,12 @@ public class TelegramChatAdapter extends ListAdapter<ChatMessage, RecyclerView.V
     private final OnMessageRetryClickListener retryClickListener;
     private RecyclerView recyclerView;
     
+    @FunctionalInterface
     public interface OnMessageLongClickListener {
         void onMessageLongClick(ChatMessage message, int position);
     }
     
+    @FunctionalInterface
     public interface OnMessageRetryClickListener {
         void onRetryMessage(ChatMessage message);
     }

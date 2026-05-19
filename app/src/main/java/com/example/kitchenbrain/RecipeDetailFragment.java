@@ -17,74 +17,60 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
-import com.example.kitchenbrain.R;
-import com.example.kitchenbrain.model.Recipe;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.example.kitchenbrain.model.SocialRecipe;
+import com.example.kitchenbrain.repository.RecipeRepository;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * 🔥 RECIPE DETAIL FRAGMENT - Universal recipe viewer
- * 
- * Works with BOTH:
- * - com.example.kitchenbrain.Recipe (Legacy / AddRecipe)
- * - com.example.kitchenbrain.model.Recipe (Firestore)
+ * 🔥 UNIVERSAL RECIPE DETAIL FRAGMENT - Premium Redesign 2026
+ * Handles both local and social recipes with a polished, high-end UI.
  */
 public class RecipeDetailFragment extends Fragment {
 
     private static final String TAG = "RecipeDetailFragment";
     private static final String ARG_RECIPE = "recipe";
     
-    // UI Components
     private Toolbar toolbar;
     private ImageView imgRecipeDetail;
-    private TextView txtTitleDetail;
-    private TextView txtDescriptionDetail;
-    private TextView txtTimeDetail;
-    private TextView txtDifficultyDetail;
-    private TextView txtServingsDetail;
-    private TextView txtIngredientsDetail;
-    private TextView txtInstructionsDetail;
-    private TextView txtCategoryDetail;
-    private TextView txtLikesDetail;
-    private TextView txtAuthorName;
-    private TextView txtCreatedAt;
+    private TextView txtTitleDetail, txtDescriptionDetail, txtTimeDetail, txtDifficultyDetail;
+    private TextView txtServingsDetail, txtIngredientsDetail, txtInstructionsDetail, txtCategoryDetail;
+    private TextView txtLikesDetail, txtAuthorName, txtCreatedAt, txtCaloriesDetail;
     
-    private ImageView imgAuthorAvatar;
+    private TextView labelIngredients, labelInstructions;
     private ImageView imgLikeDetail;
-    private LinearLayout layoutLikes;
-    private LinearLayout layoutAuthor;
+    private LinearLayout layoutLikes, layoutAuthor;
     private ChipGroup chipGroupTags;
     private Button btnWatchVideo;
     
-    // Data
-    private Object recipe; // Use Object to accept both Recipe types
+    private Object recipe;
     private boolean isLiked = false;
+    private RecipeRepository repository;
+    private String currentUserId;
+    private int currentLikesCount = 0;
 
-    public RecipeDetailFragment() {
-        // Required empty constructor
-    }
+    public RecipeDetailFragment() {}
 
-    /**
-     * 🔥 FACTORY METHOD - Create fragment with ANY recipe type
-     */
     public static RecipeDetailFragment newInstance(Object recipe) {
         RecipeDetailFragment fragment = new RecipeDetailFragment();
-        
         Bundle args = new Bundle();
         if (recipe instanceof java.io.Serializable) {
             args.putSerializable(ARG_RECIPE, (java.io.Serializable) recipe);
         }
-        
         fragment.setArguments(args);
         return fragment;
     }
@@ -92,35 +78,25 @@ public class RecipeDetailFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // 🔥 RESTORE RECIPE FROM ARGUMENTS
+        repository = new RecipeRepository();
+        currentUserId = FirebaseAuth.getInstance().getUid();
         if (getArguments() != null) {
             recipe = getArguments().getSerializable(ARG_RECIPE);
-            Log.d(TAG, "🔥 Recipe loaded: " + (recipe != null ? recipe.getClass().getSimpleName() : "null"));
         }
+        Log.d(TAG, "onCreate: Recipe detail opened. User ID: " + currentUserId);
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "🔥 ===== UNIVERSAL RECIPE DETAIL FRAGMENT START =====");
-        
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_recipe_detail, container, false);
-        
         initViews(view);
         setupToolbar();
         setupData();
         setupListeners();
-        
-        Log.d(TAG, "🔥 ===== UNIVERSAL RECIPE DETAIL FRAGMENT COMPLETE =====");
         return view;
     }
     
-    /**
-     * 🔥 INITIALIZE VIEWS
-     */
     private void initViews(View view) {
         toolbar = view.findViewById(R.id.toolbar);
         imgRecipeDetail = view.findViewById(R.id.imgRecipeDetail);
@@ -132,10 +108,12 @@ public class RecipeDetailFragment extends Fragment {
         txtIngredientsDetail = view.findViewById(R.id.txtIngredientsDetail);
         txtInstructionsDetail = view.findViewById(R.id.txtInstructionsDetail);
         txtCategoryDetail = view.findViewById(R.id.txtCategoryDetail);
+        txtCaloriesDetail = view.findViewById(R.id.txtCaloriesDetail);
         
-        // Author & Engagement
+        labelIngredients = view.findViewById(R.id.labelIngredients);
+        labelInstructions = view.findViewById(R.id.labelInstructions);
+        
         layoutAuthor = view.findViewById(R.id.layoutAuthor);
-        imgAuthorAvatar = view.findViewById(R.id.imgAuthorAvatar);
         txtAuthorName = view.findViewById(R.id.txtAuthorName);
         txtCreatedAt = view.findViewById(R.id.txtCreatedAt);
         
@@ -150,86 +128,128 @@ public class RecipeDetailFragment extends Fragment {
     private void setupToolbar() {
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(v -> {
-                if (getActivity() != null) {
-                    getActivity().getSupportFragmentManager().popBackStack();
+                if (isAdded()) {
+                    requireActivity().getSupportFragmentManager().popBackStack();
                 }
             });
         }
     }
 
     private void setupListeners() {
-        // Like button toggle logic
         if (layoutLikes != null) {
             layoutLikes.setOnClickListener(v -> {
+                if (currentUserId == null) {
+                    Toast.makeText(getContext(), "Please login to like recipes", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                String recipeId = getRecipeId();
+                if (recipeId == null || recipeId.isEmpty()) {
+                    Log.e(TAG, "Cannot like: recipeId is null or empty");
+                    return;
+                }
+                
+                // Optimistic UI update
                 isLiked = !isLiked;
+                if (isLiked) currentLikesCount++;
+                else currentLikesCount = Math.max(0, currentLikesCount - 1);
+                
                 updateLikeUI();
-                String msg = isLiked ? "Added to favorites" : "Removed from favorites";
-                Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-                // Note: Real persistence (Firestore/Local DB) should be added here
+                txtLikesDetail.setText(String.valueOf(currentLikesCount));
+                
+                Log.d(TAG, "Toggling like for recipe: " + recipeId);
+                repository.toggleLike(recipeId, currentUserId, new RecipeRepository.RecipeCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean result) {
+                        if (!isAdded()) return;
+                        Log.d(TAG, "Like toggled successfully. New state: " + result);
+                        isLiked = result;
+                        updateLikeUI();
+                        // Refresh full data to ensure sync
+                        refreshRecipeData();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        if (!isAdded()) return;
+                        Log.e(TAG, "Error toggling like: " + error);
+                        // Revert optimistic update
+                        isLiked = !isLiked;
+                        if (isLiked) currentLikesCount++;
+                        else currentLikesCount = Math.max(0, currentLikesCount - 1);
+                        
+                        updateLikeUI();
+                        txtLikesDetail.setText(String.valueOf(currentLikesCount));
+                        Toast.makeText(getContext(), "Failed to update like: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
             });
         }
 
-        // Watch Video logic
         if (btnWatchVideo != null) {
             btnWatchVideo.setOnClickListener(v -> {
-                String videoUrl = getRecipeVideoUrl();
-                if (videoUrl != null && !videoUrl.isEmpty()) {
+                String url = getRecipeVideoUrl();
+                if (url != null && !url.isEmpty()) {
                     try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl));
-                        startActivity(intent);
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                     } catch (Exception e) {
-                        Toast.makeText(getContext(), "Could not open video URL", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Error opening video", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Toast.makeText(getContext(), "No video tutorial available", Toast.LENGTH_SHORT).show();
                 }
             });
         }
 
-        // Author click - Open Profile
         if (layoutAuthor != null) {
             layoutAuthor.setOnClickListener(v -> {
                 String authorId = getRecipeAuthorId();
-                if (authorId != null && !authorId.isEmpty()) {
-                    openAuthorProfile(authorId);
+                if (authorId != null && isAdded()) {
+                    OtherUserProfileFragment profileFragment = OtherUserProfileFragment.newInstance(authorId);
+                    requireActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, profileFragment)
+                            .addToBackStack(null).commit();
                 }
             });
         }
     }
 
-    private void updateLikeUI() {
-        if (imgLikeDetail != null) {
-            // Check if R.drawable.ic_heart_filled exists, fallback to filled with tint if not
-            imgLikeDetail.setColorFilter(isLiked ? 
-                    getResources().getColor(R.color.primary_blue) : 
-                    getResources().getColor(R.color.text_secondary));
-        }
+    private void refreshRecipeData() {
+        String recipeId = getRecipeId();
+        if (recipeId == null) return;
+        
+        repository.getRecipe(recipeId, new RecipeRepository.RecipeCallback<SocialRecipe>() {
+            @Override
+            public void onSuccess(SocialRecipe updatedRecipe) {
+                if (updatedRecipe != null && isAdded()) {
+                    recipe = updatedRecipe;
+                    setupData();
+                }
+            }
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error refreshing recipe: " + error);
+            }
+        });
     }
 
-    private void openAuthorProfile(String authorId) {
-        try {
-            OtherUserProfileFragment profileFragment = OtherUserProfileFragment.newInstance(authorId);
-            requireActivity().getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, profileFragment)
-                    .addToBackStack(null)
-                    .commit();
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening profile fragment", e);
+    private void updateLikeUI() {
+        if (imgLikeDetail != null && isAdded()) {
+            if (isLiked) {
+                imgLikeDetail.setImageResource(R.drawable.ic_heart_filled);
+                imgLikeDetail.setColorFilter(ContextCompat.getColor(requireContext(), R.color.heart_red));
+            } else {
+                imgLikeDetail.setImageResource(R.drawable.ic_heart_outline);
+                imgLikeDetail.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_secondary));
+            }
+            
+            imgLikeDetail.animate().scaleX(1.3f).scaleY(1.3f).setDuration(120).withEndAction(() -> 
+                imgLikeDetail.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+            ).start();
         }
     }
     
-    /**
-     * 🔥 SETUP RECIPE DATA - Universal handler for both Recipe types
-     */
     private void setupData() {
-        if (recipe == null) {
-            Log.e(TAG, "🔥 ERROR: Recipe is null");
-            return;
-        }
+        if (recipe == null) return;
         
-        Log.d(TAG, "🔥 Setting up recipe data for: " + recipe.getClass().getSimpleName());
-        
-        // Basic Info
         txtTitleDetail.setText(getRecipeTitle());
         
         String desc = getRecipeDescription();
@@ -241,150 +261,150 @@ public class RecipeDetailFragment extends Fragment {
         }
         
         long cookingTime = getRecipeCookingTime();
-        if (cookingTime > 0) {
-            txtTimeDetail.setText(cookingTime + " min");
-            txtTimeDetail.setVisibility(View.VISIBLE);
-        } else {
-            txtTimeDetail.setVisibility(View.GONE);
-        }
+        txtTimeDetail.setText(cookingTime > 0 ? cookingTime + " min" : "--");
         
-        String difficulty = getRecipeDifficulty();
-        if (difficulty != null && !difficulty.trim().isEmpty()) {
-            txtDifficultyDetail.setText(difficulty);
-            txtDifficultyDetail.setVisibility(View.VISIBLE);
-        } else {
-            txtDifficultyDetail.setVisibility(View.GONE);
-        }
+        String diff = getRecipeDifficulty();
+        txtDifficultyDetail.setText(diff != null ? diff : "Easy");
         
         int servings = getRecipeServings();
-        if (servings > 0) {
-            txtServingsDetail.setText(servings + " ppl");
-            txtServingsDetail.setVisibility(View.VISIBLE);
-        } else {
-            txtServingsDetail.setVisibility(View.GONE);
-        }
-        
-        String category = getRecipeCategory();
-        if (category != null && !category.trim().isEmpty()) {
-            txtCategoryDetail.setText(category);
-            txtCategoryDetail.setVisibility(View.VISIBLE);
-            addTagChip(category);
-        } else {
-            txtCategoryDetail.setVisibility(View.GONE);
+        txtServingsDetail.setText(servings > 0 ? servings + " ppl" : "--");
+
+        int calories = getRecipeCalories();
+        if (txtCaloriesDetail != null) {
+            txtCaloriesDetail.setText(calories > 0 ? calories + " kcal" : "--");
         }
 
-        // Author & Engagement
         txtAuthorName.setText(getRecipeAuthorName());
         txtCreatedAt.setText(getFormattedDate());
-        txtLikesDetail.setText(String.valueOf(getRecipeLikesCount()));
         
-        // Video Button visibility
+        currentLikesCount = getRecipeLikesCount();
+        txtLikesDetail.setText(String.valueOf(currentLikesCount));
+        
+        String category = getRecipeCategory();
+        if (txtCategoryDetail != null) {
+            if (category != null && !category.isEmpty()) {
+                txtCategoryDetail.setText(category);
+                txtCategoryDetail.setVisibility(View.VISIBLE);
+            } else {
+                txtCategoryDetail.setVisibility(View.GONE);
+            }
+        }
+        
         String videoUrl = getRecipeVideoUrl();
-        btnWatchVideo.setVisibility(videoUrl != null && !videoUrl.isEmpty() ? View.VISIBLE : View.GONE);
+        if (btnWatchVideo != null) {
+            btnWatchVideo.setVisibility(videoUrl != null && !videoUrl.isEmpty() ? View.VISIBLE : View.GONE);
+        }
         
-        // Ingredients
         List<String> ingredients = getRecipeIngredients();
         if (ingredients != null && !ingredients.isEmpty()) {
-            StringBuilder ingredientsText = new StringBuilder();
-            for (int i = 0; i < ingredients.size(); i++) {
-                String ingredient = ingredients.get(i);
-                if (ingredient != null && !ingredient.trim().isEmpty()) {
-                    ingredientsText.append("• ").append(ingredient.trim());
-                    if (i < ingredients.size() - 1) {
-                        ingredientsText.append("\n");
-                    }
-                }
-            }
-            txtIngredientsDetail.setText(ingredientsText.toString());
+            StringBuilder sb = new StringBuilder();
+            for (String ing : ingredients) sb.append("• ").append(ing).append("\n");
+            txtIngredientsDetail.setText(sb.toString().trim());
             txtIngredientsDetail.setVisibility(View.VISIBLE);
+            if (labelIngredients != null) labelIngredients.setVisibility(View.VISIBLE);
         } else {
-            txtIngredientsDetail.setText("No ingredients listed");
+            txtIngredientsDetail.setVisibility(View.GONE);
+            if (labelIngredients != null) labelIngredients.setVisibility(View.GONE);
         }
         
-        // Instructions
         List<String> instructions = getRecipeInstructions();
         if (instructions != null && !instructions.isEmpty()) {
-            StringBuilder instructionsText = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < instructions.size(); i++) {
-                String instruction = instructions.get(i);
-                if (instruction != null && !instruction.trim().isEmpty()) {
-                    instructionsText.append(i + 1).append(". ").append(instruction.trim());
-                    if (i < instructions.size() - 1) {
-                        instructionsText.append("\n\n");
-                    }
-                }
+                sb.append(i + 1).append(". ").append(instructions.get(i)).append("\n\n");
             }
-            txtInstructionsDetail.setText(instructionsText.toString());
+            txtInstructionsDetail.setText(sb.toString().trim());
             txtInstructionsDetail.setVisibility(View.VISIBLE);
+            if (labelInstructions != null) labelInstructions.setVisibility(View.VISIBLE);
         } else {
-            txtInstructionsDetail.setText("No instructions available");
+            txtInstructionsDetail.setVisibility(View.GONE);
+            if (labelInstructions != null) labelInstructions.setVisibility(View.GONE);
         }
         
-        // Load image (URL has priority, then Resource ID)
         String imageUrl = getRecipeImageUrl();
-        int imageResId = getRecipeImageResId();
-        
         if (imageUrl != null && !imageUrl.isEmpty()) {
-            Glide.with(requireContext())
+            Glide.with(this)
                     .load(imageUrl)
-                    .centerCrop()
+                    .transition(DrawableTransitionOptions.withCrossFade())
                     .placeholder(R.drawable.ic_placeholder)
                     .error(R.drawable.ic_placeholder)
-                    .into(imgRecipeDetail);
-        } else if (imageResId != 0) {
-            Glide.with(requireContext())
-                    .load(imageResId)
-                    .centerCrop()
-                    .placeholder(R.drawable.ic_placeholder)
                     .into(imgRecipeDetail);
         } else {
             imgRecipeDetail.setImageResource(R.drawable.ic_placeholder);
         }
+
+        checkIfLiked();
     }
 
-    private void addTagChip(String tag) {
-        if (chipGroupTags != null) {
-            Chip chip = new Chip(requireContext());
-            chip.setText(tag);
-            chip.setChipBackgroundColorResource(R.color.bg_input_field);
-            chip.setTextColor(getResources().getColor(R.color.text_primary));
-            chip.setChipStrokeWidth(0);
-            chipGroupTags.addView(chip);
+    private void checkIfLiked() {
+        if (recipe == null) return;
+        
+        if (currentUserId == null) {
+            isLiked = false;
+        } else {
+            if (recipe instanceof com.example.kitchenbrain.model.Recipe) {
+                List<String> likedBy = ((com.example.kitchenbrain.model.Recipe) recipe).getLikedBy();
+                isLiked = likedBy != null && likedBy.contains(currentUserId);
+            } else if (recipe instanceof com.example.kitchenbrain.Recipe) {
+                List<String> likedBy = ((com.example.kitchenbrain.Recipe) recipe).getLikedBy();
+                isLiked = likedBy != null && likedBy.contains(currentUserId);
+            } else if (recipe instanceof SocialRecipe) {
+                Map<String, Boolean> likedBy = ((SocialRecipe) recipe).likedBy;
+                isLiked = likedBy != null && likedBy.containsKey(currentUserId);
+            }
         }
+        updateLikeUI();
     }
-    
-    // 🔥 UNIVERSAL GETTER METHODS - Extract data from multiple model types
-    
+
+    private String getRecipeId() {
+        if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getId();
+        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getId();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getId();
+        return null;
+    }
+
     private String getRecipeTitle() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getTitle();
-        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getName();
-        return "Untitled Recipe";
+        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getTitle();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getTitle();
+        return "Recipe";
     }
-
+    
     private String getRecipeDescription() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getDescription();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getDescription();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getDescription();
         return null;
     }
-
+    
     private long getRecipeCookingTime() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getCookingTime();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getCookingTime();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getCookingTime();
         return 0;
     }
-
+    
     private String getRecipeDifficulty() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getDifficulty();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getDifficulty();
-        return null;
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getDifficulty();
+        return "Easy";
     }
-
+    
     private int getRecipeServings() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getServings();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getServings();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getServings();
         return 0;
     }
-
+    
+    private int getRecipeCalories() {
+        if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getCalories();
+        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getCalories();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getCalories();
+        return 0;
+    }
+    
     private String getRecipeCategory() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getCategory();
         return null;
@@ -393,9 +413,10 @@ public class RecipeDetailFragment extends Fragment {
     private List<String> getRecipeIngredients() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getIngredients();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getIngredients();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getIngredients();
         return null;
     }
-
+    
     private List<String> getRecipeInstructions() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) {
             List<String> inst = ((com.example.kitchenbrain.model.Recipe) recipe).getInstructions();
@@ -407,65 +428,68 @@ public class RecipeDetailFragment extends Fragment {
             String single = ((com.example.kitchenbrain.Recipe) recipe).getCookingInstructions();
             if (single != null) { List<String> l = new ArrayList<>(); l.add(single); return l; }
         }
+        if (recipe instanceof SocialRecipe) {
+            List<String> steps = ((SocialRecipe) recipe).getSteps();
+            if (steps != null && !steps.isEmpty()) return steps;
+            String single = ((SocialRecipe) recipe).getCookingInstructions();
+            if (single != null) { List<String> l = new ArrayList<>(); l.add(single); return l; }
+        }
         return null;
     }
-
+    
     private String getRecipeImageUrl() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getImageUrl();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getImageUrl();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getImageUrl();
         return null;
     }
-
-    private int getRecipeImageResId() {
-        if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getImageResId();
-        return 0;
-    }
-
+    
     private String getRecipeAuthorName() {
-        if (recipe instanceof com.example.kitchenbrain.model.Recipe) {
-            String name = ((com.example.kitchenbrain.model.Recipe) recipe).getUsername();
-            return name != null ? name : ((com.example.kitchenbrain.model.Recipe) recipe).getCreatedBy();
-        }
-        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getUsername();
-        return "Anonymous Chef";
+        if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getUsername();
+        if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getAuthorName();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getAuthorName();
+        return "Chef";
     }
-
+    
     private String getRecipeAuthorId() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getAuthorId();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getAuthorId();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getAuthorId();
         return null;
     }
-
+    
     private String getRecipeVideoUrl() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getVideoUrl();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getVideoUrl();
+        if (recipe instanceof SocialRecipe) return ((SocialRecipe) recipe).getVideoUrl();
         return null;
     }
-
+    
     private int getRecipeLikesCount() {
         if (recipe instanceof com.example.kitchenbrain.model.Recipe) return ((com.example.kitchenbrain.model.Recipe) recipe).getLikesCount();
         if (recipe instanceof com.example.kitchenbrain.Recipe) return ((com.example.kitchenbrain.Recipe) recipe).getLikesCount();
+        if (recipe instanceof SocialRecipe) return (int)((SocialRecipe) recipe).getLikes();
         return 0;
     }
 
     private String getFormattedDate() {
         try {
-            long timestamp = 0;
+            long ts = 0;
             if (recipe instanceof com.example.kitchenbrain.model.Recipe) {
-                timestamp = ((com.example.kitchenbrain.model.Recipe) recipe).getCreatedAt();
+                ts = ((com.example.kitchenbrain.model.Recipe) recipe).getCreatedAt();
             } else if (recipe instanceof com.example.kitchenbrain.Recipe) {
-                Object created = ((com.example.kitchenbrain.Recipe) recipe).getCreatedAt();
-                if (created instanceof Long) timestamp = (Long) created;
-                else if (created instanceof Timestamp) timestamp = ((Timestamp) created).toDate().getTime();
+                Object c = ((com.example.kitchenbrain.Recipe) recipe).getCreatedAt();
+                if (c instanceof Long) ts = (Long) c;
+                else if (c instanceof Timestamp) ts = ((Timestamp) c).toDate().getTime();
+                else if (c instanceof Integer) ts = (Integer) c;
+            } else if (recipe instanceof SocialRecipe) {
+                Date d = ((SocialRecipe) recipe).getCreatedAt();
+                if (d != null) ts = d.getTime();
             }
-            
-            if (timestamp > 0) {
-                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                return "Published " + sdf.format(new Date(timestamp));
+            if (ts > 0) {
+                return "Published " + new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date(ts));
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error formatting date", e);
-        }
-        return "Recently published";
+        } catch (Exception ignored) {}
+        return "Published recently";
     }
 }

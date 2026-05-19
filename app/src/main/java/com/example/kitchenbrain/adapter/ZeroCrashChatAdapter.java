@@ -1,19 +1,12 @@
 package com.example.kitchenbrain.adapter;
 
-import android.media.MediaPlayer;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.ScaleAnimation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
-import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
@@ -23,14 +16,13 @@ import com.example.kitchenbrain.R;
 import com.example.kitchenbrain.model.ChatMessage;
 import com.example.kitchenbrain.model.DeliveryState;
 import com.example.kitchenbrain.state.ChatStateManager;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 🔥 ZERO-CRASH CHAT ADAPTER - Media Support Added
+ * 🔥 ZERO-CRASH CHAT ADAPTER - Voice Support Removed
  */
 public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     implements ChatStateManager.StateListener {
@@ -38,8 +30,6 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
     private static final String TAG = "ZeroCrashAdapter";
     private static final int TYPE_MY_TEXT = 1;
     private static final int TYPE_OTHER_TEXT = 2;
-    private static final int TYPE_MY_VOICE = 3;
-    private static final int TYPE_OTHER_VOICE = 4;
     private static final int TYPE_MY_IMAGE = 5;
     private static final int TYPE_OTHER_IMAGE = 6;
     
@@ -52,13 +42,6 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
     
     private final List<OnMessagesChangeListener> stateListeners = new CopyOnWriteArrayList<>();
     private int lastAnimatedPosition = -1;
-
-    // Audio Playback Management
-    private MediaPlayer mediaPlayer;
-    private String currentlyPlayingUrl = null;
-    private VoiceViewHolder currentlyPlayingHolder = null;
-    private Handler progressHandler = new Handler(Looper.getMainLooper());
-    private Runnable progressRunnable;
 
     public interface OnMessageLongClickListener {
         void onMessageLongClick(ChatMessage message, int position);
@@ -126,11 +109,9 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
         String type = message.getMessageType();
         
         if (isMine) {
-            if ("voice".equals(type)) return TYPE_MY_VOICE;
             if ("image".equals(type)) return TYPE_MY_IMAGE;
             return TYPE_MY_TEXT;
         } else {
-            if ("voice".equals(type)) return TYPE_OTHER_VOICE;
             if ("image".equals(type)) return TYPE_OTHER_IMAGE;
             return TYPE_OTHER_TEXT;
         }
@@ -148,16 +129,13 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         switch (viewType) {
-            case TYPE_MY_VOICE:
-                return new MyVoiceViewHolder(inflater.inflate(R.layout.item_voice_my, parent, false));
-            case TYPE_OTHER_VOICE:
-                return new OtherVoiceViewHolder(inflater.inflate(R.layout.item_voice_other, parent, false));
             case TYPE_MY_IMAGE:
                 return new MyImageViewHolder(inflater.inflate(R.layout.item_image_my, parent, false));
             case TYPE_OTHER_IMAGE:
                 return new OtherImageViewHolder(inflater.inflate(R.layout.item_image_other, parent, false));
             case TYPE_MY_TEXT:
                 return new MyMessageViewHolder(inflater.inflate(R.layout.item_message_my, parent, false));
+            case TYPE_OTHER_TEXT:
             default:
                 return new OtherMessageViewHolder(inflater.inflate(R.layout.item_message_other, parent, false));
         }
@@ -176,8 +154,6 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
             ((MyMessageViewHolder) holder).bind(message, isFirstInGroup);
         } else if (holder instanceof OtherMessageViewHolder) {
             ((OtherMessageViewHolder) holder).bind(message, isFirstInGroup, isFirstInGroup);
-        } else if (holder instanceof VoiceViewHolder) {
-            ((VoiceViewHolder) holder).bind(message, isFirstInGroup, holder instanceof OtherVoiceViewHolder);
         } else if (holder instanceof MyImageViewHolder) {
             ((MyImageViewHolder) holder).bind(message, isFirstInGroup);
         } else if (holder instanceof OtherImageViewHolder) {
@@ -196,14 +172,8 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     private void startAppearanceAnimation(View view) {
-        AnimationSet set = new AnimationSet(true);
-        ScaleAnimation scale = new ScaleAnimation(0.95f, 1.0f, 0.95f, 1.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        scale.setDuration(200);
-        AlphaAnimation fade = new AlphaAnimation(0.0f, 1.0f);
-        fade.setDuration(200);
-        set.addAnimation(scale);
-        set.addAnimation(fade);
-        view.startAnimation(set);
+        Animation fade = AnimationUtils.loadAnimation(view.getContext(), R.anim.fade_in);
+        view.startAnimation(fade);
     }
     
     @Override
@@ -231,9 +201,11 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
         }
         private void updateStatus(ChatMessage m) {
-            if (m.getStatus() == ChatMessage.MessageStatus.SENDING) statusText.setText("⏳");
-            else if (m.getStatus() == ChatMessage.MessageStatus.FAILED) statusText.setText("❗");
-            else statusText.setText(m.isRead() ? "✔✔" : m.getDeliveryState() == DeliveryState.DELIVERED ? "✔✔" : "✔");
+            if (m != null) {
+                statusText.setText(formatStatus(m));
+                return;
+            }
+            statusText.setText("");
         }
     }
 
@@ -275,9 +247,11 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
             applyMargins(itemView, isFirst);
         }
         private void updateStatus(ChatMessage m) {
-            if (m.getStatus() == ChatMessage.MessageStatus.SENDING) statusText.setText("⏳");
-            else if (m.getStatus() == ChatMessage.MessageStatus.FAILED) statusText.setText("❗");
-            else statusText.setText(m.isRead() ? "✔✔" : m.getDeliveryState() == DeliveryState.DELIVERED ? "✔✔" : "✔");
+            if (m != null) {
+                statusText.setText(formatStatus(m));
+                return;
+            }
+            statusText.setText("");
         }
     }
 
@@ -299,151 +273,23 @@ public class ZeroCrashChatAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    private abstract class VoiceViewHolder extends RecyclerView.ViewHolder {
-        protected ImageButton playPauseButton;
-        protected ProgressBar progressBar;
-        protected TextView textDuration, timestampText;
-        public VoiceViewHolder(@NonNull View itemView) {
-            super(itemView);
-            playPauseButton = itemView.findViewById(R.id.buttonPlayPause);
-            progressBar = itemView.findViewById(R.id.voiceProgress);
-            textDuration = itemView.findViewById(R.id.textDuration);
-            timestampText = itemView.findViewById(R.id.timestampText);
-        }
-        public void bind(ChatMessage message, boolean isFirst, boolean showName) {
-            textDuration.setText(formatDuration(message.getDuration()));
-            timestampText.setText(formatTimestamp(message.getTimestamp()));
-            timestampText.setVisibility(View.VISIBLE);
-            applyMargins(itemView, isFirst);
-            
-            boolean isPlaying = message.getMediaUrl() != null && message.getMediaUrl().equals(currentlyPlayingUrl);
-            playPauseButton.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play_arrow);
-            
-            playPauseButton.setOnClickListener(v -> handleVoicePlay(message, this));
-        }
-        public void updateProgress(int current, int total) {
-            progressBar.setProgress((int) ((float) current / total * 100));
-            textDuration.setText(formatDuration(current / 1000));
-        }
-        public void resetUI(long duration) {
-            playPauseButton.setImageResource(R.drawable.ic_play_arrow);
-            progressBar.setProgress(0);
-            textDuration.setText(formatDuration(duration));
-        }
-    }
-
-    private class MyVoiceViewHolder extends VoiceViewHolder {
-        private TextView statusText;
-        public MyVoiceViewHolder(@NonNull View itemView) {
-            super(itemView);
-            statusText = itemView.findViewById(R.id.statusText);
-        }
-        @Override
-        public void bind(ChatMessage message, boolean isFirst, boolean showName) {
-            super.bind(message, isFirst, showName);
-            if (message.getStatus() == ChatMessage.MessageStatus.SENDING) statusText.setText("⏳");
-            else statusText.setText(message.isRead() ? "✔✔" : "✔");
-        }
-    }
-
-    private class OtherVoiceViewHolder extends VoiceViewHolder {
-        private TextView senderNameText;
-        public OtherVoiceViewHolder(@NonNull View itemView) {
-            super(itemView);
-            senderNameText = itemView.findViewById(R.id.senderNameText);
-        }
-        @Override
-        public void bind(ChatMessage message, boolean isFirst, boolean showName) {
-            super.bind(message, isFirst, showName);
-            senderNameText.setVisibility(showName ? View.VISIBLE : View.GONE);
-            senderNameText.setText(message.getSenderName());
-        }
-    }
-
-    private void handleVoicePlay(ChatMessage message, VoiceViewHolder holder) {
-        String url = message.getMediaUrl();
-        if (url == null) return;
-
-        if (url.equals(currentlyPlayingUrl)) {
-            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                mediaPlayer.pause();
-                holder.playPauseButton.setImageResource(R.drawable.ic_play_arrow);
-                stopProgressUpdates();
-            } else if (mediaPlayer != null) {
-                mediaPlayer.start();
-                holder.playPauseButton.setImageResource(R.drawable.ic_pause);
-                startProgressUpdates();
-            }
-        } else {
-            stopVoice();
-            currentlyPlayingUrl = url;
-            currentlyPlayingHolder = holder;
-            startVoice(url, message.getDuration());
-        }
-    }
-
-    private void startVoice(String url, long duration) {
-        mediaPlayer = new MediaPlayer();
-        try {
-            mediaPlayer.setDataSource(url);
-            mediaPlayer.prepareAsync();
-            mediaPlayer.setOnPreparedListener(mp -> {
-                mp.start();
-                if (currentlyPlayingHolder != null) {
-                    currentlyPlayingHolder.playPauseButton.setImageResource(R.drawable.ic_pause);
-                    startProgressUpdates();
-                }
-            });
-            mediaPlayer.setOnCompletionListener(mp -> stopVoice());
-        } catch (IOException e) {
-            Log.e(TAG, "Error playing voice", e);
-            stopVoice();
-        }
-    }
-
-    private void stopVoice() {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-        stopProgressUpdates();
-        if (currentlyPlayingHolder != null) {
-            currentlyPlayingHolder.resetUI(0); 
-            currentlyPlayingHolder = null;
-        }
-        currentlyPlayingUrl = null;
-    }
-
-    private void startProgressUpdates() {
-        progressRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (mediaPlayer != null && mediaPlayer.isPlaying() && currentlyPlayingHolder != null) {
-                    currentlyPlayingHolder.updateProgress(mediaPlayer.getCurrentPosition(), mediaPlayer.getDuration());
-                    progressHandler.postDelayed(this, 100);
-                }
-            }
-        };
-        progressHandler.post(progressRunnable);
-    }
-
-    private void stopProgressUpdates() {
-        if (progressRunnable != null) progressHandler.removeCallbacks(progressRunnable);
-    }
-
     private static void applyMargins(View view, boolean isFirst) {
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
         params.topMargin = (int) ((isFirst ? 12 : 2) * view.getResources().getDisplayMetrics().density);
         view.setLayoutParams(params);
     }
 
+    private static String formatStatus(ChatMessage message) {
+        if (message.getStatus() == ChatMessage.MessageStatus.SENDING) return "...";
+        if (message.getStatus() == ChatMessage.MessageStatus.FAILED) return "!";
+        return message.isRead() || message.getDeliveryState() == DeliveryState.DELIVERED
+                ? "\u2713\u2713"
+                : "\u2713";
+    }
+
     private static String formatTimestamp(com.google.firebase.Timestamp timestamp) {
         if (timestamp == null) return "";
         return new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(timestamp.toDate());
-    }
-
-    private static String formatDuration(long seconds) {
-        return String.format("%d:%02d", seconds / 60, seconds % 60);
     }
 
     private static class ChatDiffCallback extends DiffUtil.Callback {

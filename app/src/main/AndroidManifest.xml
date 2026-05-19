@@ -12,6 +12,9 @@
     <!-- CRITICAL FIX: Add VIBRATE permission for haptic feedback -->
     <uses-permission android:name="android.permission.VIBRATE"/>
 
+    <queries>
+        <package android:name="com.google.android.gms" />
+    </queries>
 
     <application
         android:name=".MyApplication"
@@ -25,16 +28,22 @@
         android:theme="@style/Theme.KitchenBrain">
 
         <activity
-            android:name=".LoginActivity"
-            android:label="KitchenBrain"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/Theme.App.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".LoginActivity"
+            android:label="KitchenBrain"
+            android:theme="@style/Theme.KitchenBrain"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
         </activity>
 
         <activity
@@ -50,7 +59,7 @@
         <activity
             android:name=".RegisterActivity"
             android:label="Register"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:theme="@style/Theme.KitchenBrain"
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize" />
@@ -58,7 +67,7 @@
         <activity
             android:name=".WaitingForConfirmationActivity"
             android:label="Email Confirmation"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:theme="@style/Theme.KitchenBrain"
             android:exported="true" />
 
         <activity

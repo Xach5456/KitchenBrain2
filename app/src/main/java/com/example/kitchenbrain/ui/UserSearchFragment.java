@@ -1,12 +1,15 @@
 package com.example.kitchenbrain.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,18 +30,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fullscreen Fragment for user search.
+ * Premium Fullscreen Fragment for user search.
  * Uses SearchViewModel (Activity Scope) to access search results.
  */
 public class UserSearchFragment extends Fragment {
 
-    private static final String TAG = "UserSearchFragment";
-    
     private SearchViewModel viewModel;
     private UserSearchAdapter adapter;
     private TextInputEditText editTextSearch;
     private RecyclerView recyclerView;
-    private ImageButton buttonBack;
+    private ImageButton buttonClearSearch;
+    private View searchBarContainer;
+    private View shimmerView;
+    private View layoutEmpty;
 
     @Nullable
     @Override
@@ -50,26 +54,36 @@ public class UserSearchFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Use requireActivity() to access the same ViewModel as in SearchFragment
         viewModel = new ViewModelProvider(requireActivity()).get(SearchViewModel.class);
 
         initViews(view);
         setupAdapter();
         setupListeners();
         observeViewModel();
+        
+        showLoading(false);
     }
 
     private void initViews(View view) {
         editTextSearch = view.findViewById(R.id.editTextUserSearch);
         recyclerView = view.findViewById(R.id.recyclerViewUserResults);
-        buttonBack = view.findViewById(R.id.buttonBack);
+        buttonClearSearch = view.findViewById(R.id.buttonClearSearch);
+        searchBarContainer = view.findViewById(R.id.searchBarContainer);
+        shimmerView = view.findViewById(R.id.shimmerUserSearch);
+        layoutEmpty = view.findViewById(R.id.layoutEmptyUser);
+
+        androidx.appcompat.widget.Toolbar toolbar = view.findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> {
+                if (getActivity() != null) getActivity().onBackPressed();
+            });
+        }
     }
 
     private void setupAdapter() {
         adapter = new UserSearchAdapter(getContext(), new UserSearchAdapter.OnUserInteractionListener() {
             @Override
             public void onUserClick(User user) {
-                // On click, open user profile
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).navigateToFragment(
                             OtherUserProfileFragment.newInstance(user.getUserId()), true);
@@ -77,13 +91,10 @@ public class UserSearchFragment extends Fragment {
             }
 
             @Override
-            public void onFollowToggle(User user, boolean isFollowing) {
-                // Follow logic is already in the adapter (via FollowRepository)
-            }
+            public void onFollowToggle(User user, boolean isFollowing) {}
 
             @Override
             public void onMessageClick(User user) {
-                // Open chat with user
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).openChat(user.getUserId(), user.getUsername());
                 }
@@ -95,32 +106,38 @@ public class UserSearchFragment extends Fragment {
     }
 
     private void setupListeners() {
-        // Back button
-        buttonBack.setOnClickListener(v -> {
-            if (getActivity() != null) {
-                getActivity().onBackPressed();
-            }
-        });
-
-        // Search with debounce
         editTextSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = s.toString().trim();
+                if (buttonClearSearch != null) {
+                    buttonClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+                
+                if (!query.isEmpty()) {
+                    showLoading(true);
+                }
                 viewModel.searchUsers(query);
             }
+            @Override public void afterTextChanged(Editable s) {}
+        });
 
-            @Override
-            public void afterTextChanged(Editable s) {}
+        if (buttonClearSearch != null) {
+            buttonClearSearch.setOnClickListener(v -> editTextSearch.setText(""));
+        }
+
+        editTextSearch.setOnFocusChangeListener((v, hasFocus) -> {
+            if (searchBarContainer != null) {
+                searchBarContainer.setBackgroundResource(hasFocus ? 
+                        R.drawable.bg_input_field_focused : R.drawable.bg_input_field);
+            }
         });
     }
 
     private void observeViewModel() {
         viewModel.getSearchResults().observe(getViewLifecycleOwner(), items -> {
-            // Convert SearchItem back to User for the current adapter
+            showLoading(false);
             List<User> users = new ArrayList<>();
             for (com.example.kitchenbrain.model.SearchItem item : items) {
                 if (item.getType() == com.example.kitchenbrain.model.SearchItem.Type.USER) {
@@ -128,6 +145,30 @@ public class UserSearchFragment extends Fragment {
                 }
             }
             adapter.setUsers(users);
+            
+            if (layoutEmpty != null) {
+                String query = editTextSearch.getText().toString().trim();
+                layoutEmpty.setVisibility(!query.isEmpty() && users.isEmpty() ? View.VISIBLE : View.GONE);
+            }
         });
+    }
+
+    private void showLoading(boolean isLoading) {
+        if (shimmerView != null) shimmerView.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (recyclerView != null) recyclerView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+        if (isLoading && layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        hideKeyboard();
+    }
+
+    private void hideKeyboard() {
+        if (getView() != null) {
+            InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(getView().getWindowToken(), 0);
+        }
     }
 }

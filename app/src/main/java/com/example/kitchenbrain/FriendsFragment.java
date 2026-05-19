@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 
+import com.example.kitchenbrain.User;
 import com.example.kitchenbrain.adapter.FriendsAdapter;
 import com.example.kitchenbrain.repository.FollowRepository;
 import com.example.kitchenbrain.manager.FollowGraphRepository;
@@ -110,6 +111,11 @@ public class FriendsFragment extends Fragment {
         if (recyclerView == null) return;
         
         adapter = new FriendsAdapter(userList, currentUserId, new FriendsAdapter.OnFriendActionListener() {
+            @Override
+            public void onUserClick(User user) {
+                openUserProfile(user);
+            }
+
             @Override
             public void onMessageClick(User user) {
                 openChat(user);
@@ -224,6 +230,14 @@ public class FriendsFragment extends Fragment {
             if (textFriendsCount != null) {
                 textFriendsCount.setText(users.size() + " " + type);
             }
+        }
+    }
+
+    private void openUserProfile(User user) {
+        if (user == null || user.getUserId() == null) return;
+        if (getActivity() instanceof MainActivity) {
+            OtherUserProfileFragment fragment = OtherUserProfileFragment.newInstance(user.getUserId());
+            ((MainActivity) getActivity()).showFragment(fragment, "other_user_profile");
         }
     }
 

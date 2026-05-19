@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Premium Notification Adapter with Material 3 styling
- * Displays follow notifications with Reject and Follow Back actions
+ * Updated to use correct Firestore pathing: notifications/{userId}/user_notifications
  */
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
 
@@ -147,14 +147,24 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         }
 
         private void deleteNotification(Notification notification) {
+            String currentUserId = FirebaseAuth.getInstance().getUid();
+            if (currentUserId == null) return;
+
             FirebaseFirestore.getInstance().collection("notifications")
+                    .document(currentUserId)
+                    .collection("user_notifications")
                     .document(notification.getId())
                     .delete()
                     .addOnFailureListener(e -> Log.e(TAG, "Failed to delete notification", e));
         }
 
         private void markAsRead(Notification notification) {
+            String currentUserId = FirebaseAuth.getInstance().getUid();
+            if (currentUserId == null) return;
+
             FirebaseFirestore.getInstance().collection("notifications")
+                    .document(currentUserId)
+                    .collection("user_notifications")
                     .document(notification.getId())
                     .update("isRead", true);
         }

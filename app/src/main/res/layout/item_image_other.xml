@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="12dp"
-    android:paddingVertical="1dp"
+    android:paddingVertical="3dp"
     android:gravity="start">
 
     <!-- Sender Name -->
@@ -17,7 +17,7 @@
         android:layout_marginStart="14dp"
         android:text="User Name"
         android:textSize="11sp"
-        android:textColor="#8E8E8E"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
 
     <LinearLayout
@@ -51,7 +51,7 @@
                 android:layout_height="wrap_content"
                 android:text="12:30"
                 android:textSize="10sp"
-                android:textColor="#8E8E8E"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginEnd="4dp" />
 
         </LinearLayout>

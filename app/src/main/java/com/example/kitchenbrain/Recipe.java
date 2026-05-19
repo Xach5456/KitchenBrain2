@@ -9,6 +9,7 @@ import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ✅ UNIVERSAL RECIPE MODEL
@@ -22,6 +23,7 @@ public class Recipe implements Parcelable, Serializable {
     @Exclude private String name;
     @Exclude private String title;
     @Exclude private String description;
+    @Exclude private String notes;
     @Exclude private long cookingTime;
     @Exclude private long cookTime;
     @Exclude private String formattedCookTime;
@@ -55,7 +57,7 @@ public class Recipe implements Parcelable, Serializable {
     @Exclude private boolean fromFollower;
     @Exclude private boolean fromMutualFollower;
     @Exclude private boolean isFromFollower;
-    @Exclude private boolean isFromMutualFollower;
+    @Exclude boolean isFromMutualFollower;
     
     @Exclude private int servings;
     @Exclude private int calories;
@@ -94,6 +96,11 @@ public class Recipe implements Parcelable, Serializable {
     public String getDescription() { return description; }
     @PropertyName("description")
     public void setDescription(String description) { this.description = description; }
+
+    @PropertyName("notes")
+    public String getNotes() { return notes; }
+    @PropertyName("notes")
+    public void setNotes(String notes) { this.notes = notes; }
 
     @PropertyName("cookingTime")
     public long getCookingTime() { return cookingTime != 0 ? cookingTime : cookTime; }
@@ -153,7 +160,15 @@ public class Recipe implements Parcelable, Serializable {
     @PropertyName("likedBy")
     public List<String> getLikedBy() { return likedBy; }
     @PropertyName("likedBy")
-    public void setLikedBy(List<String> likedBy) { this.likedBy = likedBy; }
+    public void setLikedBy(Object value) { 
+        if (value instanceof List) {
+            this.likedBy = (List<String>) value;
+        } else if (value instanceof Map) {
+            this.likedBy = new ArrayList<>(((Map<String, Object>) value).keySet());
+        } else {
+            this.likedBy = new ArrayList<>();
+        }
+    }
 
     @PropertyName("saves")
     public int getSaves() { return saves; }
@@ -163,7 +178,15 @@ public class Recipe implements Parcelable, Serializable {
     @PropertyName("savedBy")
     public List<String> getSavedBy() { return savedBy; }
     @PropertyName("savedBy")
-    public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
+    public void setSavedBy(Object value) { 
+        if (value instanceof List) {
+            this.savedBy = (List<String>) value;
+        } else if (value instanceof Map) {
+            this.savedBy = new ArrayList<>(((Map<String, Object>) value).keySet());
+        } else {
+            this.savedBy = new ArrayList<>();
+        }
+    }
 
     @PropertyName("comments")
     public int getComments() { return comments; }
@@ -279,6 +302,7 @@ public class Recipe implements Parcelable, Serializable {
         name = in.readString();
         title = in.readString();
         description = in.readString();
+        notes = in.readString();
         cookingTime = in.readLong();
         cookTime = in.readLong();
         formattedCookTime = in.readString();
@@ -319,6 +343,7 @@ public class Recipe implements Parcelable, Serializable {
         dest.writeString(name);
         dest.writeString(title);
         dest.writeString(description);
+        dest.writeString(notes);
         dest.writeLong(cookingTime);
         dest.writeLong(cookTime);
         dest.writeString(formattedCookTime);

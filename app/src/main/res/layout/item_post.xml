@@ -1,36 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:layout_marginBottom="8dp"
-    android:background="@drawable/rounded_container">
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:cardBackgroundColor="?attr/colorSurface">
 
-    <ImageView
-        android:id="@+id/imageViewPost"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_placeholder"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/textViewPostTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Post Title"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:layout_marginBottom="4dp" />
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/textViewPostDescription"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Post description here..."
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp">
 
-</LinearLayout>
+            <ImageView
+                android:id="@+id/imageViewPost"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_placeholder"
+                tools:src="@drawable/recipe_hero_image" />
+
+            <!-- Sublte scrim at the top for status icons if any,
+                 or just to give depth -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:background="@drawable/gradient_overlay_dark"
+                android:alpha="0.4" />
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/textViewPostTitle"
+                style="@style/Premium.TextAppearance.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Post Title"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/textViewPostDescription"
+                style="@style/Premium.TextAppearance.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Post description here..."
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:alpha="0.7" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonViewRecipe"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="View Details"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorPrimary"
+                    app:icon="@drawable/ic_arrow_right"
+                    app:iconGravity="textEnd"
+                    app:iconSize="14dp"
+                    android:paddingStart="0dp"
+                    android:insetLeft="0dp" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:id="@+id/layoutRecipeOwnerActions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonEditRecipe"
+                        style="@style/Widget.KitchenBrain.Button.Edit"
+                        android:layout_width="96dp"
+                        android:layout_height="44dp"
+                        android:text="@string/edit"
+                        android:textAllCaps="false"
+                        app:icon="@drawable/ic_edit"
+                        app:iconPadding="6dp"
+                        app:iconSize="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonDeleteRecipe"
+                        style="@style/Widget.KitchenBrain.Button.Delete"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/delete_recipe_button"
+                        app:icon="@drawable/ic_delete_outline"
+                        app:iconSize="20dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

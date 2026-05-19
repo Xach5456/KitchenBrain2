@@ -67,6 +67,7 @@
     <color name="background_primary">#121212</color>
     <color name="background_secondary">#1A1A1A</color>
     <color name="background_tertiary">#202020</color>
+    <color name="bg_input_field">#1A1A1A</color>
     
     <color name="text_primary">#E6E1E5</color>
     <color name="text_secondary">#C4C7CF</color>

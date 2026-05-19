@@ -1,114 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="16dp"
-    android:gravity="center_vertical"
-    android:background="?attr/selectableItemBackground">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/divider"
+    android:clickable="true"
+    android:focusable="true"
+    app:rippleColor="@color/white_alpha_20">
 
-    <!-- Profile Picture - Circular like Instagram -->
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/imageProfile"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:src="@drawable/ic_profile_placeholder"
-        android:contentDescription="Profile picture"
-        app:civ_border_width="0dp"
-        app:civ_border_color="@color/divider_color" />
-
-    <!-- User Info -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="8dp"
-        android:orientation="vertical">
-
-        <!-- Username - Bold like Instagram -->
-        <TextView
-            android:id="@+id/textUsername"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="username"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <!-- Email/Full Name -->
-        <TextView
-            android:id="@+id/textEmail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="user@example.com"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="2dp" />
-
-        <!-- Recipe Count -->
-        <TextView
-            android:id="@+id/textRecipeCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 recipes"
-            android:textSize="12sp"
-            android:textColor="@color/text_tertiary"
-            android:maxLines="1"
-            android:layout_marginTop="1dp" />
-
-    </LinearLayout>
-
-    <!-- Buttons Container -->
-    <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="end">
+        android:padding="12dp"
+        android:gravity="center_vertical">
 
-        <!-- Main Action Button (Follow/Message) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonFollow"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="Follow"
-            android:textAllCaps="false"
-            android:textSize="13sp"
-            android:minWidth="80dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            app:cornerRadius="8dp"
-            app:backgroundTint="@color/primary_blue"
-            android:textColor="@color/white"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            style="@style/Widget.MaterialComponents.Button" />
+        <!-- Avatar with Premium Ring -->
+        <FrameLayout
+            android:layout_width="60dp"
+            android:layout_height="60dp">
 
-        <!-- Unfollow Button (Shown only when Message is visible) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonUnfollow"
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/story_ring_background"
+                android:padding="2dp" />
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imageProfile"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="3dp"
+                android:src="@drawable/ic_profile_placeholder"
+                app:civ_border_width="0dp" />
+        </FrameLayout>
+
+        <!-- User Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="Chef Gordon"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/textEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="chef.g@example.com"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginTop="1dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_meta_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp">
+
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/ic_recipe"
+                    app:tint="@color/md_primary_light" />
+
+                <TextView
+                    android:id="@+id/textRecipeCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    tools:text="42 recipes"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/md_primary_light"
+                    android:letterSpacing="0.02" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Action Buttons (Follow/Message) -->
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:layout_marginStart="6dp"
-            android:text="Unfollow"
-            android:textAllCaps="false"
-            android:textSize="13sp"
-            android:minWidth="80dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            app:cornerRadius="8dp"
-            app:backgroundTint="@color/md_secondary_light"
-            android:textColor="@color/white"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:visibility="gone"
-            style="@style/Widget.MaterialComponents.Button" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonFollow"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="Follow"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="12dp"
+                android:minWidth="90dp"
+                android:paddingHorizontal="12dp"
+                android:fontFamily="sans-serif-medium" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonUnfollow"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginStart="6dp"
+                android:text="Unfollow"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="12dp"
+                android:minWidth="90dp"
+                android:paddingHorizontal="12dp"
+                android:visibility="gone"
+                app:strokeColor="@color/divider"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
 
     </LinearLayout>
 
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

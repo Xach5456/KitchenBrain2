@@ -1,107 +1,98 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read any user profile for discovery features
+    // Allow users to read any user profile
     match /users/{userId} {
       allow read: if request.auth != null;
-      // Allow users to write only to their own profile
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // 🔥 SERVER-AUTHORITATIVE: Following collection
-    // CRITICAL: Clients CANNOT write follows directly
-    // ALL follow operations MUST go through Cloud Functions
+    // Following/Followers (Server-Authoritative)
     match /following/{userId}/userFollowing/{otherUserId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      // ❌ NO client writes - server creates follows via Cloud Functions
-      allow write: if false; // SERVER ONLY
+      allow write: if false;
     }
     
-    // 🔥 SERVER-AUTHORITATIVE: Followers collection
-    // CRITICAL: Clients CANNOT write followers directly
-    // Followers are created AUTOMATICALLY by server when someone follows
-    match /following/{userId}/userFollowers/{otherUserId} {
+    match /followers/{userId}/userFollowers/{otherUserId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      // ❌ NO client writes - server creates followers via Cloud Functions
-      allow write: if false; // SERVER ONLY
+      allow write: if false;
     }
     
-    // 🔥 SERVER-AUTHORITATIVE: Chats collection
-    // CRITICAL: Clients CANNOT create/modify chats
-    // Chat creation is ONLY done by server (Cloud Functions)
+    // Notifications (New Nested Path)
+    match /notifications/{userId}/user_notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // Legacy Notifications (Top-level)
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.receiverId;
+      allow create: if request.auth != null;
+    }
+
+    // Chats
+    match /chat_rooms/{roomId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.user1Id || request.auth.uid == resource.data.user2Id);
+      allow write: if request.auth != null;
+    }
+
     match /chats/{chatId} {
-      // ✅ Users can read chats they participate in
-      allow read: if request.auth != null && 
-        request.auth.uid in resource.data.participants;
+      allow read: if request.auth != null && request.auth.uid in resource.data.participants;
+      allow write: if request.auth != null;
       
-      // ❌ NO client writes - server creates chats atomically via Cloud Functions
-      allow write: if false; // SERVER ONLY
-      
-      // Subcollection for messages
       match /messages/{messageId} {
-        // ✅ Users can read messages in their chats
-        allow read: if request.auth != null && 
-          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        
-        // ❌ NO client writes - server handles message creation
-        // This prevents spam, ensures ordering, enables delivery tracking
-        allow write: if false; // SERVER ONLY
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
       }
     }
     
-    // Recipes collection - users can read all, but only delete their own
+    // Recipes
     match /recipes/{recipeId} {
+      function existingRecipeOwnerId() {
+        return resource.data.authorId != null ? resource.data.authorId : resource.data.createdBy;
+      }
+
+      function incomingRecipeOwnerId() {
+        return request.resource.data.authorId != null ? request.resource.data.authorId : request.resource.data.createdBy;
+      }
+
+      function isRecipeOwner() {
+        return request.auth != null && existingRecipeOwnerId() == request.auth.uid;
+      }
+
+      function keepsRecipeOwner() {
+        return incomingRecipeOwnerId() == existingRecipeOwnerId();
+      }
+
+      function isSocialRecipeUpdate() {
+        return request.auth != null
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['likedBy', 'likes', 'likesCount', 'savedBy', 'saves', 'comments', 'updatedAt']);
+      }
+
       allow read: if request.auth != null;
-      // Allow creation if authenticated and user is setting themselves as author
-      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-      // Allow update only if user is the author
-      allow update: if request.auth != null && (resource.data.authorId == request.auth.uid || resource.data.authorId == null);
-      // Allow deletion - user must be authenticated (author check removed to prevent race conditions)
-      allow delete: if request.auth != null;
+      allow create: if request.auth != null && incomingRecipeOwnerId() == request.auth.uid;
+      allow update: if (isRecipeOwner() && keepsRecipeOwner()) || isSocialRecipeUpdate();
+      allow delete: if isRecipeOwner();
+
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      }
+
+      match /ratings/{ratingUserId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && ratingUserId == request.auth.uid
+          && request.resource.data.userId == request.auth.uid;
+        allow delete: if request.auth != null && ratingUserId == request.auth.uid;
+      }
     }
     
-    // Friend requests collection
-    match /friend_requests/{requestId} {
-      // Users can read requests they sent or received
-      allow read: if request.auth != null && 
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
-      // Allow creating requests if authenticated and sender is the current user
-      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      // Allow updating only if user is the receiver (accepting/declining)
-      allow update: if request.auth != null && request.auth.uid == resource.data.receiverId;
-      // Allow deleting only if user is the sender
-      allow delete: if request.auth != null && request.auth.uid == resource.data.senderId;
-    }
-    
-    // Friends collection
-    match /friends/{friendId} {
-      // Users can read friendships they participate in
-      allow read: if request.auth != null && 
-        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
-      // Allow creating if authenticated and user is the initiator
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      // Allow updating only if user is part of the friendship
-      allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
-      // Allow deleting only if user is part of the friendship
-      allow delete: if request.auth != null && 
-        (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.friendId);
-    }
-    
-    // Notifications collection
-    match /notifications/{notificationId} {
-      // Only the receiver can read their notifications
-      allow read: if request.auth != null && request.auth.uid == resource.data.receiverId;
-      // Allow creating if authenticated and sender is the current user
-      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
-      // Only the receiver can update (mark as read) or delete their notifications
-      allow update: if request.auth != null && request.auth.uid == resource.data.receiverId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.receiverId;
-    }
-    
-    // Allow full access for authenticated users for general app functionality
     match /{document=**} {
-      allow read, write: if false;  // More restrictive default
+      allow read: if request.auth != null;
+      allow write: if false;
     }
   }
 }

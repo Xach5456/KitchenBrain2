@@ -21,6 +21,6 @@
 		android:layout_height="wrap_content"
 		android:text="Выбрать"
 		android:layout_marginTop="8dp"
-		android:backgroundTint="?android:attr/colorAccent"
-		android:textColor="@android:color/white"/>
+		android:backgroundTint="?attr/colorPrimary"
+		android:textColor="?attr/colorOnPrimary"/>
 </LinearLayout>

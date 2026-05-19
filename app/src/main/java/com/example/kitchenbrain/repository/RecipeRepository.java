@@ -1,13 +1,15 @@
 package com.example.kitchenbrain.repository;
 
 import android.util.Log;
+import android.text.TextUtils;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.firestore.Transaction;
 import com.example.kitchenbrain.model.SocialRecipe;
 
 import java.util.ArrayList;
@@ -17,21 +19,12 @@ import java.util.Map;
 
 /**
  * RecipeRepository - Firestore operations for social recipes
- * 
- * 🔥 SOCIAL COOKING ARCHITECTURE:
- * - User-generated recipes with social features
- * - Priority ranking: mutual followers > followers > everyone
- * - Atomic operations for likes/comments/saves
  */
 public class RecipeRepository {
     
     private static final String TAG = "RecipeRepository";
     
-    // Firestore Collections
     private static final String COLLECTION_RECIPES = "recipes";
-    private static final String COLLECTION_RECIPE_LIKES = "recipe_likes";
-    private static final String COLLECTION_RECIPE_COMMENTS = "recipe_comments";
-    private static final String COLLECTION_SAVED_RECIPES = "saved_recipes";
     
     private final FirebaseFirestore db;
     private final CollectionReference recipesCollection;
@@ -41,97 +34,160 @@ public class RecipeRepository {
         this.recipesCollection = db.collection(COLLECTION_RECIPES);
     }
     
-    /**
-     * Create a new recipe
-     */
     public void createRecipe(SocialRecipe recipe, RecipeCallback<String> callback) {
-        Log.d(TAG, "🔥 Creating recipe: " + recipe.getTitle());
-        
-        // Generate unique recipe ID
         DocumentReference recipeRef = recipesCollection.document();
         recipe.setRecipeId(recipeRef.getId());
         
         recipeRef.set(recipe)
-            .addOnSuccessListener(documentReference -> {
-                Log.d(TAG, "✅ Recipe created successfully: " + recipe.getRecipeId());
-                callback.onSuccess(recipe.getRecipeId());
+            .addOnSuccessListener(documentReference -> callback.onSuccess(recipe.getRecipeId()))
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void updateRecipe(SocialRecipe recipe, RecipeCallback<Void> callback) {
+        if (recipe.getRecipeId() == null || recipe.getRecipeId().isEmpty()) {
+            callback.onError("Recipe ID is missing");
+            return;
+        }
+        recipe.setAuthorId(FirebaseAuth.getInstance().getUid());
+
+        runOwnerValidatedWrite(recipe.getRecipeId(), callback, documentReference ->
+            documentReference
+                .set(recipe, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()))
+        );
+    }
+
+    public void updateRecipeFields(String recipeId, Map<String, Object> updates, RecipeCallback<Void> callback) {
+        if (recipeId == null || recipeId.isEmpty()) {
+            callback.onError("Recipe ID is missing");
+            return;
+        }
+        if (updates == null || updates.isEmpty()) {
+            callback.onError("No recipe changes to save");
+            return;
+        }
+        updates.remove("authorId");
+        updates.remove("createdBy");
+
+        runOwnerValidatedWrite(recipeId, callback, documentReference ->
+            documentReference
+                .update(updates)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()))
+        );
+    }
+
+    public void deleteRecipe(String recipeId, RecipeCallback<Void> callback) {
+        if (recipeId == null || recipeId.isEmpty()) {
+            callback.onError("Recipe ID is missing");
+            return;
+        }
+
+        runOwnerValidatedWrite(recipeId, callback, documentReference ->
+            documentReference
+                .delete()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()))
+        );
+    }
+
+    private void runOwnerValidatedWrite(
+            String recipeId,
+            RecipeCallback<Void> callback,
+            OwnerValidatedWrite write
+    ) {
+        String currentUserId = FirebaseAuth.getInstance().getUid();
+        if (TextUtils.isEmpty(currentUserId)) {
+            callback.onError("You must be signed in to modify recipes");
+            return;
+        }
+
+        DocumentReference recipeRef = recipesCollection.document(recipeId);
+        recipeRef.get()
+            .addOnSuccessListener(snapshot -> {
+                if (!snapshot.exists()) {
+                    callback.onError("Recipe not found");
+                    return;
+                }
+
+                String ownerId = getRecipeOwnerId(snapshot);
+                if (TextUtils.isEmpty(ownerId) || !currentUserId.equals(ownerId)) {
+                    callback.onError("You can only modify recipes you created");
+                    return;
+                }
+
+                write.execute(recipeRef);
             })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "❌ Failed to create recipe", e);
-                callback.onError(e.getMessage());
-            });
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    private String getRecipeOwnerId(DocumentSnapshot snapshot) {
+        String authorId = snapshot.getString("authorId");
+        if (!TextUtils.isEmpty(authorId)) return authorId;
+        return snapshot.getString("createdBy");
+    }
+
+    private interface OwnerValidatedWrite {
+        void execute(DocumentReference documentReference);
     }
     
-    /**
-     * Search recipes with social priority
-     * 🔥 PRIORITY: mutual followers > followers > global
-     */
-    public void searchRecipes(String currentUserId, List<String> userIngredients, 
-                           List<String> mutualFollowers, List<String> followers,
-                           RecipeCallback<List<SocialRecipe>> callback) {
-        
-        Log.d(TAG, "🔥 Searching recipes with ingredients: " + userIngredients);
-        
-        // Create queries for different priority levels
-        List<Query> queries = new ArrayList<>();
-        
-        // 1. Mutual followers recipes (highest priority)
-        if (!mutualFollowers.isEmpty()) {
-            Query mutualQuery = recipesCollection
-                .whereIn("authorId", mutualFollowers)
-                .whereArrayContainsAny("ingredients", userIngredients)
-                .orderBy("likes", Query.Direction.DESCENDING)
-                .limit(10);
-            queries.add(mutualQuery);
-        }
-        
-        // 2. Followers recipes (medium priority)
-        if (!followers.isEmpty()) {
-            Query followersQuery = recipesCollection
-                .whereIn("authorId", followers)
-                .whereArrayContainsAny("ingredients", userIngredients)
-                .orderBy("likes", Query.Direction.DESCENDING)
-                .limit(20);
-            queries.add(followersQuery);
-        }
-        
-        // 3. Global recipes (lowest priority)
-        Query globalQuery = recipesCollection
-            .whereArrayContainsAny("ingredients", userIngredients)
-            .orderBy("likes", Query.Direction.DESCENDING)
-            .limit(50);
-        queries.add(globalQuery);
-        
-        // Execute all queries and merge results
-        executeMultipleQueries(queries, callback);
-    }
-    
-    /**
-     * Get recipe by ID
-     */
     public void getRecipe(String recipeId, RecipeCallback<SocialRecipe> callback) {
-        Log.d(TAG, "🔥 Getting recipe: " + recipeId);
-        
         recipesCollection.document(recipeId)
             .get()
             .addOnSuccessListener(documentSnapshot -> {
                 if (documentSnapshot.exists()) {
                     SocialRecipe recipe = documentSnapshot.toObject(SocialRecipe.class);
-                    Log.d(TAG, "✅ Recipe loaded: " + recipe.getTitle());
+                    if (recipe != null) recipe.setId(documentSnapshot.getId());
                     callback.onSuccess(recipe);
                 } else {
-                    Log.w(TAG, "⚠️ Recipe not found: " + recipeId);
                     callback.onError("Recipe not found");
                 }
             })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "❌ Failed to load recipe", e);
-                callback.onError(e.getMessage());
-            });
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Search recipes based on ingredients and social context.
+     */
+    public void searchRecipes(String currentUserId, List<String> ingredients, List<String> mutualFollowers, List<String> followers, RecipeCallback<List<SocialRecipe>> callback) {
+        Query query = recipesCollection;
+        
+        // Basic filtering by ingredients
+        if (ingredients != null && !ingredients.isEmpty()) {
+            // Firestore array-contains-any can take up to 10 items
+            List<String> limitedIngredients = ingredients.subList(0, Math.min(ingredients.size(), 10));
+            query = query.whereArrayContainsAny("ingredients", limitedIngredients);
+        }
+        
+        // Filter by authors if provided
+        List<String> authors = new ArrayList<>();
+        if (mutualFollowers != null && !mutualFollowers.isEmpty()) authors.addAll(mutualFollowers);
+        if (followers != null && !followers.isEmpty()) authors.addAll(followers);
+        
+        if (!authors.isEmpty()) {
+            // Firestore 'in' query can take up to 10 items
+            query = query.whereIn("authorId", authors.subList(0, Math.min(authors.size(), 10)));
+        }
+
+        query.limit(50).get()
+            .addOnSuccessListener(querySnapshot -> {
+                List<SocialRecipe> recipes = new ArrayList<>();
+                for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                    SocialRecipe recipe = doc.toObject(SocialRecipe.class);
+                    if (recipe != null) {
+                        recipe.setId(doc.getId());
+                        recipes.add(recipe);
+                    }
+                }
+                callback.onSuccess(recipes);
+            })
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
     
     /**
-     * Toggle like on recipe with atomic transaction
+     * 🔥 SCHEMA-AGNOSTIC TOGGLE LIKE
+     * Handles both List<String> and Map<String, Boolean> formats for likedBy field.
      */
     public void toggleLike(String recipeId, String userId, RecipeCallback<Boolean> callback) {
         Log.d(TAG, "🔥 Toggling like: recipe=" + recipeId + ", user=" + userId);
@@ -139,180 +195,84 @@ public class RecipeRepository {
         DocumentReference recipeRef = recipesCollection.document(recipeId);
         
         db.runTransaction(transaction -> {
-            SocialRecipe recipe = transaction.get(recipeRef).toObject(SocialRecipe.class);
+            DocumentSnapshot snapshot = transaction.get(recipeRef);
             
-            if (recipe == null) {
+            if (!snapshot.exists()) {
                 throw new RuntimeException("Recipe not found");
             }
             
-            Map<String, Boolean> likedBy = recipe.getLikedBy();
-            if (likedBy == null) {
-                likedBy = new HashMap<>();
+            Object likedByObj = snapshot.get("likedBy");
+            long likes = 0;
+            if (snapshot.contains("likes")) {
+                likes = snapshot.getLong("likes");
+            } else if (snapshot.contains("likesCount")) {
+                likes = snapshot.getLong("likesCount");
             }
             
-            boolean isLiked = likedBy.containsKey(userId);
-            long likes = recipe.getLikes();
+            boolean isLiked;
+            Map<String, Object> updates = new HashMap<>();
             
-            if (isLiked) {
-                // Remove like
-                likedBy.remove(userId);
-                likes--;
+            if (likedByObj instanceof List) {
+                List<String> likedByList = new ArrayList<>((List<String>) likedByObj);
+                isLiked = likedByList.contains(userId);
+                if (isLiked) {
+                    likedByList.remove(userId);
+                    likes--;
+                } else {
+                    likedByList.add(userId);
+                    likes++;
+                }
+                updates.put("likedBy", likedByList);
             } else {
-                // Add like
-                likedBy.put(userId, true);
-                likes++;
+                // Map format or empty
+                Map<String, Boolean> likedByMap;
+                if (likedByObj instanceof Map) {
+                    likedByMap = new HashMap<>((Map<String, Boolean>) likedByObj);
+                } else {
+                    likedByMap = new HashMap<>();
+                }
+                
+                isLiked = likedByMap.containsKey(userId);
+                if (isLiked) {
+                    likedByMap.remove(userId);
+                    likes--;
+                } else {
+                    likedByMap.put(userId, true);
+                    likes++;
+                }
+                updates.put("likedBy", likedByMap);
             }
             
-            // Update with merge to prevent "document doesn't exist" errors
-            Map<String, Object> updateData = new HashMap<>();
-            updateData.put("likedBy", likedBy);
-            updateData.put("likes", likes);
-            updateData.put("updatedAt", FieldValue.serverTimestamp());
+            updates.put("likes", likes);
+            updates.put("likesCount", (int)likes);
+            updates.put("updatedAt", FieldValue.serverTimestamp());
             
-            transaction.set(recipeRef, updateData, SetOptions.merge());
+            transaction.update(recipeRef, updates);
             
-            return !isLiked; // Return new like status
-        }).addOnSuccessListener(isLiked -> {
-            Log.d(TAG, "✅ Like toggled successfully: " + isLiked);
-            callback.onSuccess(isLiked);
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "❌ Failed to toggle like", e);
-            callback.onError(e.getMessage());
-        });
+            return !isLiked; // New status
+        }).addOnSuccessListener(callback::onSuccess)
+          .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
     
-    /**
-     * Toggle save on recipe
-     */
-    public void toggleSave(String recipeId, String userId, RecipeCallback<Boolean> callback) {
-        Log.d(TAG, "🔥 Toggling save: recipe=" + recipeId + ", user=" + userId);
-        
-        DocumentReference recipeRef = recipesCollection.document(recipeId);
-        
-        db.runTransaction(transaction -> {
-            SocialRecipe recipe = transaction.get(recipeRef).toObject(SocialRecipe.class);
-            
-            if (recipe == null) {
-                throw new RuntimeException("Recipe not found");
-            }
-            
-            Map<String, Boolean> savedBy = recipe.getSavedBy();
-            if (savedBy == null) {
-                savedBy = new HashMap<>();
-            }
-            
-            boolean isSaved = savedBy.containsKey(userId);
-            long saves = recipe.getSaves();
-            
-            if (isSaved) {
-                // Remove save
-                savedBy.remove(userId);
-                saves--;
-            } else {
-                // Add save
-                savedBy.put(userId, true);
-                saves++;
-            }
-            
-            // Update with merge
-            Map<String, Object> updateData = new HashMap<>();
-            updateData.put("savedBy", savedBy);
-            updateData.put("saves", saves);
-            updateData.put("updatedAt", FieldValue.serverTimestamp());
-            
-            transaction.set(recipeRef, updateData, SetOptions.merge());
-            
-            return !isSaved; // Return new save status
-        }).addOnSuccessListener(isSaved -> {
-            Log.d(TAG, "✅ Save toggled successfully: " + isSaved);
-            callback.onSuccess(isSaved);
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "❌ Failed to toggle save", e);
-            callback.onError(e.getMessage());
-        });
-    }
-    
-    /**
-     * Get user's created recipes
-     */
     public void getUserRecipes(String userId, RecipeCallback<List<SocialRecipe>> callback) {
-        Log.d(TAG, "🔥 Getting user recipes: " + userId);
-        
         recipesCollection
             .whereEqualTo("authorId", userId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .get()
             .addOnSuccessListener(querySnapshot -> {
                 List<SocialRecipe> recipes = new ArrayList<>();
-                for (var doc : querySnapshot.getDocuments()) {
+                for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                     SocialRecipe recipe = doc.toObject(SocialRecipe.class);
-                    recipes.add(recipe);
+                    if (recipe != null) {
+                        recipe.setId(doc.getId());
+                        recipes.add(recipe);
+                    }
                 }
-                Log.d(TAG, "✅ Loaded " + recipes.size() + " user recipes");
                 callback.onSuccess(recipes);
             })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "❌ Failed to load user recipes", e);
-                callback.onError(e.getMessage());
-            });
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
     
-    /**
-     * Get user's saved recipes
-     */
-    public void getSavedRecipes(String userId, RecipeCallback<List<SocialRecipe>> callback) {
-        Log.d(TAG, "🔥 Getting saved recipes: " + userId);
-        
-        recipesCollection
-            .whereEqualTo("savedBy." + userId, true)
-            .orderBy("updatedAt", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                List<SocialRecipe> recipes = new ArrayList<>();
-                for (var doc : querySnapshot.getDocuments()) {
-                    SocialRecipe recipe = doc.toObject(SocialRecipe.class);
-                    recipes.add(recipe);
-                }
-                Log.d(TAG, "✅ Loaded " + recipes.size() + " saved recipes");
-                callback.onSuccess(recipes);
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "❌ Failed to load saved recipes", e);
-                callback.onError(e.getMessage());
-            });
-    }
-    
-    /**
-     * Execute multiple queries and merge results
-     */
-    private void executeMultipleQueries(List<Query> queries, RecipeCallback<List<SocialRecipe>> callback) {
-        List<SocialRecipe> allRecipes = new ArrayList<>();
-        int[] completedQueries = {0};
-        
-        for (Query query : queries) {
-            query.get()
-                .addOnSuccessListener(querySnapshot -> {
-                    for (var doc : querySnapshot.getDocuments()) {
-                        SocialRecipe recipe = doc.toObject(SocialRecipe.class);
-                        if (recipe != null && !allRecipes.contains(recipe)) {
-                            allRecipes.add(recipe);
-                        }
-                    }
-                    
-                    completedQueries[0]++;
-                    if (completedQueries[0] == queries.size()) {
-                        Log.d(TAG, "✅ Search completed: " + allRecipes.size() + " recipes found");
-                        callback.onSuccess(allRecipes);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "❌ Query failed", e);
-                    callback.onError(e.getMessage());
-                });
-        }
-    }
-    
-    // Callback interface
     public interface RecipeCallback<T> {
         void onSuccess(T result);
         void onError(String error);

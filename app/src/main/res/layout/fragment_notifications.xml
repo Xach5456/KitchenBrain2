@@ -1,111 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Premium Notifications Fragment - Material 3 Expressive Design -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_primary">
+    android:background="?attr/colorSurface">
 
-    <!-- App Bar with Premium Styling -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
+        android:background="?attr/colorSurface"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@android:color/transparent"
             app:navigationIcon="@drawable/ic_arrow_back"
-            app:navigationIconTint="@color/text_primary"
+            app:navigationIconTint="?attr/colorOnSurface"
             app:title="Notifications"
-            app:titleTextColor="@color/text_primary"
-            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineMedium" />
+            app:titleCentered="true"
+            app:titleTextAppearance="@style/Premium.TextAppearance.Title" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Main Content Container -->
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
+        android:fillViewport="true"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- Empty State - Beautiful Illustration -->
-        <LinearLayout
-            android:id="@+id/layoutEmpty"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="@dimen/spacing_xl"
-            android:visibility="gone">
+            android:layout_height="match_parent">
 
-            <ImageView
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:src="@drawable/ic_notifications"
-                android:alpha="0.3"
-                android:contentDescription="No notifications"
-                app:tint="@color/text_tertiary" />
+            <!-- Notifications RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewNotifications"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingVertical="8dp"
+                tools:listitem="@layout/item_notification" />
 
-            <TextView
+            <!-- Empty State -->
+            <LinearLayout
+                android:id="@+id/layoutEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    app:cardCornerRadius="60dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_notifications"
+                        app:tint="?attr/colorPrimary"
+                        android:alpha="0.5" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/Premium.TextAppearance.Headline2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="All caught up!"
+                    android:textSize="20sp" />
+
+                <TextView
+                    style="@style/Premium.TextAppearance.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="When someone follows you, you'll see it here"
+                    android:textAlignment="center"
+                    android:alpha="0.7" />
+
+            </LinearLayout>
+
+            <!-- Loading State -->
+            <ProgressBar
+                android:id="@+id/progressLoading"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_xl"
-                android:text="No notifications yet"
-                android:textSize="@dimen/text_xl"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:fontFamily="sans-serif-medium" />
+                android:layout_gravity="center"
+                android:indeterminateTint="?attr/colorPrimary" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_m"
-                android:text="When someone follows you, you'll see it here"
-                android:textSize="@dimen/text_m"
-                android:textColor="@color/text_secondary"
-                android:fontFamily="sans-serif" />
+        </FrameLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        </LinearLayout>
-
-        <!-- Loading State -->
-        <ProgressBar
-            android:id="@+id/progressLoading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="@dimen/spacing_xl"
-            android:indeterminateTint="@color/primary" />
-
-        <!-- Notifications RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewNotifications"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="@dimen/spacing_s"
-            android:scrollbars="vertical"
-            android:overScrollMode="ifContentScrolls" />
-
-    </LinearLayout>
-
-    <!-- Refresh Button - FAB Style -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabRefresh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/spacing_l"
+        android:layout_margin="24dp"
         android:src="@drawable/ic_refresh"
-        android:contentDescription="Refresh notifications"
-        app:tint="@color/on_primary"
-        app:backgroundTint="@color/primary"
-        app:elevation="@dimen/elevation_m"
-        app:fabSize="mini" />
+        app:tint="?attr/colorOnPrimary"
+        app:backgroundTint="?attr/colorPrimary"
+        app:fabSize="mini"
+        android:contentDescription="Refresh" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

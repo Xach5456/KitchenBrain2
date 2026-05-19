@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="20dp"
-    app:cardBackgroundColor="@android:color/white"
+    app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="20dp"
     app:cardElevation="6dp"
     app:strokeWidth="0dp">
@@ -39,7 +39,7 @@
                 android:layout_height="40dp"
                 android:layout_gravity="top|end"
                 android:layout_margin="12dp"
-                android:background="@drawable/circle_white_background"
+                android:background="@drawable/circle_surface_background"
                 android:padding="8dp"
                 android:src="@drawable/ic_heart_outline"
                 app:tint="@color/error_color" />
@@ -80,7 +80,7 @@
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="4dp"
                 android:text="Italian"
-                android:textColor="@color/primary_blue"
+                android:textColor="?attr/colorPrimary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -93,7 +93,7 @@
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:text="Creamy Tuscan Chicken"
-                android:textColor="@color/text_primary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -106,7 +106,7 @@
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:text="Rich and creamy chicken with sun-dried tomatoes and spinach"
-                android:textColor="@color/text_secondary"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="14sp" />
 
             <!-- Rating and Difficulty -->
@@ -137,7 +137,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:text="4.8"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -152,7 +152,7 @@
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="4dp"
                     android:text="Easy"
-                    android:textColor="@color/success_color"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
 

@@ -8,11 +8,13 @@ import com.example.kitchenbrain.api.NewsApiService
 import com.example.kitchenbrain.database.KitchenBrainDatabase
 import com.example.kitchenbrain.database.NewsArticleEntity
 import com.example.kitchenbrain.database.NewsDao
+import com.example.kitchenbrain.database.toDomain
 import com.example.kitchenbrain.models.Article
-import com.example.kitchenbrain.models.NewsResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,13 +31,29 @@ class NewsRepositoryImpl(context: Context) {
     private val apiService: NewsApiService = NewsApiClient.getApiService()
     
     private val CACHE_EXPIRATION_MS = TimeUnit.MINUTES.toMillis(30)
-    // 🔥 ENHANCED: More specific culinary query to filter out non-food news
-    private val FOOD_QUERY = "culinary OR gastronomy OR \"food recipes\" OR \"cooking tips\""
+    
+    // 🔥 STRICT FILTERING: Focused strictly on food, cooking, and culinary arts
+    private val FOOD_QUERY = "food OR recipe OR cooking OR restaurant OR kitchen OR chef OR meal OR dish OR baking OR culinary"
+    
+    // 🌐 TARGETED DOMAINS: Only fetch news from trusted culinary sources
+    private val DOMAINS = "allrecipes.com,seriouseats.com,bonappetit.com,foodnetwork.com,simplyrecipes.com,epicurious.com,thekitchn.com,food52.com,delish.com,cookinglight.com,bettycrocker.com,tasteofhome.com,bbcgoodfood.com,nytimes.com"
+
+    private val FOOD_KEYWORDS = listOf(
+        "food", "recipe", "cooking", "kitchen", "restaurant", "meal", "dish",
+        "chef", "breakfast", "lunch", "dinner", "baking", "culinary", "cuisine",
+        "ingredient", "grocery", "dining", "nutrition"
+    )
 
     /**
      * Get news stream from database
      */
-    fun getNewsFlow(): Flow<List<NewsArticleEntity>> = newsDao.getAllNewsFlow()
+    fun getNewsFlow(): Flow<List<Article>> {
+        return newsDao.getAllNewsFlow().map { cachedArticles ->
+            cachedArticles
+                .map { it.toDomain() }
+                .filter { it.isFoodNews() }
+        }
+    }
 
     /**
      * Refresh news from API
@@ -52,18 +70,23 @@ class NewsRepositoryImpl(context: Context) {
                 return@withContext Result.success(Unit)
             }
 
-            // 🎯 Improved sorting to 'relevancy' to ensure culinary focus
+            // 🎯 Fixed: Added queryInTitle to match the updated NewsApiService interface
             val response = apiService.getFoodNews(
-                FOOD_QUERY,
-                "en",
-                "relevancy",
-                100,
-                1,
-                BuildConfig.NEWS_API_KEY
+                FOOD_QUERY,      // q
+                FOOD_QUERY,      // qInTitle
+                DOMAINS,         // domains
+                "en",            // language
+                "relevancy",     // sortBy
+                100,             // pageSize
+                1,               // page
+                BuildConfig.NEWS_API_KEY // apiKey
             ).execute()
 
             if (response.isSuccessful) {
-                val articles = response.body()?.articles ?: emptyList()
+                val articles = response.body()?.articles
+                    ?.filter { it.hasRequiredNewsFields() }
+                    ?.filter { it.isFoodNews() }
+                    ?: emptyList()
                 if (articles.isNotEmpty()) {
                     val entities = articles.map { it.toEntity() }
                     newsDao.clearAllNews()
@@ -89,7 +112,7 @@ class NewsRepositoryImpl(context: Context) {
      */
     private fun Article.toEntity(): NewsArticleEntity {
         return NewsArticleEntity(
-            url = url ?: "",
+            url = url,
             title = title,
             author = author,
             description = description,
@@ -101,8 +124,24 @@ class NewsRepositoryImpl(context: Context) {
         )
     }
 
+    private fun Article.hasRequiredNewsFields(): Boolean {
+        return !url.isNullOrBlank() && !title.isNullOrBlank()
+    }
+
+    private fun Article.isFoodNews(): Boolean {
+        val searchableText = listOfNotNull(title, description, content, source?.name)
+            .joinToString(separator = " ")
+            .lowercase(Locale.US)
+
+        return FOOD_KEYWORDS.any { searchableText.contains(it) }
+    }
+
     /**
      * Get random cached news for "Surprise Me" or filling gaps
      */
-    suspend fun getRandomNews(limit: Int): List<NewsArticleEntity> = newsDao.getRandomNews(limit)
+    suspend fun getRandomNews(limit: Int): List<Article> {
+        return newsDao.getRandomNews(limit)
+            .map { it.toDomain() }
+            .filter { it.isFoodNews() }
+    }
 }

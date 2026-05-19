@@ -32,7 +32,8 @@ public class NewsRepository {
     private static final String KEY_TIMESTAMP = "last_fetch_ms";
     
     // Requirements: Strictly Food, Cook, Restaurant/Restoran
-    private static final String FOOD_QUERY = "food OR cook OR restaurant OR restoran";
+    private static final String FOOD_QUERY = "food OR recipe OR cooking OR restaurant OR kitchen OR chef OR meal OR dish OR baking OR culinary";
+    private static final String DOMAINS = "allrecipes.com,seriouseats.com,bonappetit.com,foodnetwork.com,simplyrecipes.com,epicurious.com,thekitchn.com,food52.com,delish.com,cookinglight.com,bettycrocker.com,tasteofhome.com,bbcgoodfood.com,nytimes.com";
     private static final long CACHE_EXPIRATION = TimeUnit.MINUTES.toMillis(15); 
     private static final int PAGE_SIZE = 50;
     
@@ -85,7 +86,8 @@ public class NewsRepository {
             return;
         }
 
-        apiService.getFoodNews(FOOD_QUERY, "en", "publishedAt", PAGE_SIZE, page, apiKey)
+        // 🔥 FIXED: Passing all 8 required parameters (q, qInTitle, domains, language, sortBy, pageSize, page, apiKey)
+        apiService.getFoodNews(FOOD_QUERY, FOOD_QUERY, DOMAINS, "en", "publishedAt", PAGE_SIZE, page, apiKey)
                 .enqueue(new Callback<NewsResponse>() {
             @Override
             public void onResponse(@NonNull Call<NewsResponse> call, @NonNull Response<NewsResponse> response) {
@@ -111,23 +113,8 @@ public class NewsRepository {
     private void handleSuccess(List<Article> freshArticles, int page, NewsCallback callback) {
         // 🔥 STRICT FILTERING: Food, Cook, Restaurant/Restoran
         List<Article> filtered = new ArrayList<>();
-        String[] keywords = {"food", "cook", "restaurant", "restoran", "recipe", "chef", "cooking", "dish", "meal", "kitchen"};
-
-        for (Article a : freshArticles) {
-            if (a.getTitle() == null || a.getUrlToImage() == null || !a.getUrlToImage().startsWith("http")) continue;
-
-            String content = (a.getTitle() + " " + (a.getDescription() != null ? a.getDescription() : "")).toLowerCase();
-            boolean isFoodRelated = false;
-            for (String kw : keywords) {
-                if (content.contains(kw)) {
-                    isFoodRelated = true;
-                    break;
-                }
-            }
-
-            if (isFoodRelated) {
-                filtered.add(a);
-            }
+        for (Article article : freshArticles) {
+            if (isFoodNews(article)) filtered.add(article);
         }
 
         if (page == 1) {
@@ -167,11 +154,38 @@ public class NewsRepository {
                 if (diskList != null) {
                     synchronized (memoryCache) {
                         memoryCache.clear();
-                        memoryCache.addAll(diskList);
+                        for (Article article : diskList) {
+                            if (isFoodNews(article)) memoryCache.add(article);
+                        }
                     }
                     lastUpdateMs = prefs.getLong(KEY_TIMESTAMP, 0);
                 }
             } catch (Exception ignored) {}
         }
+    }
+
+    private boolean isFoodNews(Article article) {
+        if (article == null || article.getTitle() == null || article.getUrl() == null || article.getUrl().isEmpty()) return false;
+        String text = (
+                safe(article.getTitle()) + " " +
+                safe(article.getDescription()) + " " +
+                safe(article.getContent()) + " " +
+                (article.getSource() != null ? safe(article.getSource().getName()) : "")
+        ).toLowerCase();
+
+        String[] keywords = {
+                "food", "recipe", "cooking", "kitchen", "restaurant", "meal", "dish",
+                "chef", "breakfast", "lunch", "dinner", "baking", "culinary", "cuisine",
+                "ingredient", "grocery", "dining", "nutrition"
+        };
+
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) return true;
+        }
+        return false;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }

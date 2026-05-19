@@ -1,19 +1,22 @@
 package com.example.kitchenbrain.ui;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -24,54 +27,66 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.kitchenbrain.R;
 import com.example.kitchenbrain.ModernIngredientsPickerFragment;
+import com.example.kitchenbrain.Recipe;
 import com.example.kitchenbrain.model.SocialRecipe;
 import com.example.kitchenbrain.repository.RecipeRepository;
+import com.example.kitchenbrain.util.RecipeOwnershipUtils;
 import com.example.kitchenbrain.utils.CloudinaryHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * 🔥 UNIVERSAL CREATE RECIPE FRAGMENT
- * Optimized for performance and proper data storage.
+ * 🔥 UNIVERSAL CREATE/EDIT RECIPE FRAGMENT
  */
 public class CreateRecipeFragment extends Fragment {
 
     private static final String TAG = "CreateRecipeFragment";
+    private static final String ARG_RECIPE = "recipe_to_edit";
 
     private ImageView recipeImageView;
     private ImageView videoIcon;
     private TextView textVideoUrl;
-    private EditText titleEditText, descriptionEditText, ingredientsEditText, stepEditText;
-    private Button publishButton, addStepButton, addIngredientButton;
+    private EditText titleEditText, descriptionEditText, notesEditText, ingredientsEditText, stepEditText;
+    private Button publishButton, addStepButton, deleteStepButton, addIngredientButton;
     private ProgressBar progressBar;
-    private NestedScrollView scrollView;
-    private LinearLayout stepsContainer;
     
     private Spinner difficultySpinner;
     private EditText cookTimeEditText, servingsEditText, caloriesEditText;
     private ChipGroup tagsChipGroup, ingredientsChipGroup;
+    private RecyclerView stepsRecyclerView;
+    private StepsAdapter stepsAdapter;
 
     private Uri selectedImageUri;
     private Uri selectedVideoUri;
     private final List<String> selectedIngredientNames = new ArrayList<>();
     private final Set<String> selectedIngredientIds = new HashSet<>();
     private final List<String> stepsList = new ArrayList<>();
+    private int editingIngredientIndex = RecyclerView.NO_POSITION;
     
     private RecipeRepository recipeRepository;
+    private Object recipeToEdit;
+    private boolean isEditMode = false;
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -79,7 +94,7 @@ public class CreateRecipeFragment extends Fragment {
                 if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
                     selectedImageUri = result.getData().getData();
                     if (recipeImageView != null && selectedImageUri != null) {
-                        Glide.with(this).load(selectedImageUri).into(recipeImageView);
+                        Glide.with(this).load(selectedImageUri).centerCrop().into(recipeImageView);
                     }
                 }
             }
@@ -96,11 +111,25 @@ public class CreateRecipeFragment extends Fragment {
     );
 
     public CreateRecipeFragment() {}
+    
+    public static CreateRecipeFragment newInstance(Object recipe) {
+        CreateRecipeFragment fragment = new CreateRecipeFragment();
+        Bundle args = new Bundle();
+        if (recipe instanceof Serializable) {
+            args.putSerializable(ARG_RECIPE, (Serializable) recipe);
+        }
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         recipeRepository = new RecipeRepository();
+        if (getArguments() != null) {
+            recipeToEdit = getArguments().getSerializable(ARG_RECIPE);
+            isEditMode = recipeToEdit != null;
+        }
     }
 
     @Nullable
@@ -108,24 +137,35 @@ public class CreateRecipeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_create_recipe, container, false);
         initializeViews(view);
+        setupRecyclerView();
         setupSpinners();
         setupClickListeners();
         setupIngredientResultListener();
+        
+        if (isEditMode) {
+            if (!canEditCurrentRecipe()) {
+                Toast.makeText(getContext(), "You can only edit recipes you created", Toast.LENGTH_SHORT).show();
+                if (publishButton != null) publishButton.setEnabled(false);
+                view.post(() -> {
+                    if (isAdded()) getParentFragmentManager().popBackStack();
+                });
+                return view;
+            }
+            prefillData();
+        }
+        
         return view;
     }
 
     private void initializeViews(View view) {
-        scrollView = view.findViewById(R.id.main_scroll_view);
-        if (scrollView == null && view instanceof NestedScrollView) {
-            scrollView = (NestedScrollView) view;
-        }
-        
         recipeImageView = view.findViewById(R.id.recipeImage);
+        MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
         videoIcon = view.findViewById(R.id.recipeVideo);
         textVideoUrl = view.findViewById(R.id.textVideoUrl);
         
         titleEditText = view.findViewById(R.id.titleEditText);
         descriptionEditText = view.findViewById(R.id.descriptionEditText);
+        notesEditText = view.findViewById(R.id.notesEditText);
         ingredientsEditText = view.findViewById(R.id.ingredientsEditText);
         stepEditText = view.findViewById(R.id.stepEditText);
         
@@ -134,6 +174,7 @@ public class CreateRecipeFragment extends Fragment {
         View btnSaveRecipe = view.findViewById(R.id.btnSaveRecipe);
         publishButton = view.findViewById(R.id.publishButton);
         addStepButton = view.findViewById(R.id.addStepButton);
+        deleteStepButton = view.findViewById(R.id.deleteStepButton);
         
         difficultySpinner = view.findViewById(R.id.difficultySpinner);
         cookTimeEditText = view.findViewById(R.id.cookTimeEditText);
@@ -142,11 +183,122 @@ public class CreateRecipeFragment extends Fragment {
         
         tagsChipGroup = view.findViewById(R.id.tagsChipGroup);
         ingredientsChipGroup = view.findViewById(R.id.ingredientsChipGroup);
-        stepsContainer = view.findViewById(R.id.stepsContainer);
+        stepsRecyclerView = view.findViewById(R.id.stepsRecyclerView);
         progressBar = view.findViewById(R.id.progressBar);
 
         if (btnIngredients != null) btnIngredients.setOnClickListener(v -> openIngredientsPicker());
         if (btnSaveRecipe != null) btnSaveRecipe.setOnClickListener(v -> saveDraft());
+        
+        if (toolbar != null) {
+            toolbar.setTitle(isEditMode ? "Edit Recipe" : "Create Recipe");
+        }
+        if (isEditMode && publishButton != null) {
+            publishButton.setText(R.string.edit_recipe_button);
+        }
+    }
+
+    private void setupRecyclerView() {
+        stepsAdapter = new StepsAdapter(stepsList);
+        stepsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        stepsRecyclerView.setAdapter(stepsAdapter);
+        stepsRecyclerView.setNestedScrollingEnabled(false);
+    }
+
+    private void prefillData() {
+        if (recipeToEdit == null) return;
+        
+        String title = "";
+        String desc = "";
+        String diff = "Easy";
+        long cookTime = 0;
+        int servings = 0;
+        int calories = 0;
+        String imageUrl = null;
+        List<String> ingredients = new ArrayList<>();
+        List<String> ingredientIds = new ArrayList<>();
+        List<String> steps = new ArrayList<>();
+        List<String> tags = new ArrayList<>();
+
+        if (recipeToEdit instanceof Recipe r) {
+            title = r.getTitle();
+            desc = r.getDescription();
+            if (notesEditText != null) notesEditText.setText(r.getNotes());
+            diff = r.getDifficulty();
+            cookTime = r.getCookingTime();
+            servings = r.getServings();
+            calories = r.getCalories();
+            imageUrl = r.getImageUrl();
+            ingredients = r.getIngredients();
+            ingredientIds = r.getIngredientIds();
+            steps = r.getSteps();
+            tags = r.getTags();
+        } else if (recipeToEdit instanceof com.example.kitchenbrain.model.Recipe r) {
+            title = r.getTitle();
+            desc = r.getDescription();
+            if (notesEditText != null) notesEditText.setText(r.getNotes());
+            diff = r.getDifficulty();
+            cookTime = r.getCookingTime();
+            servings = r.getServings();
+            calories = r.getCalories();
+            imageUrl = r.getImageUrl();
+            ingredients = r.getIngredients();
+            ingredientIds = r.getIngredientIds();
+            steps = r.getInstructions();
+        } else if (recipeToEdit instanceof SocialRecipe r) {
+            title = r.getTitle();
+            desc = r.getDescription();
+            if (notesEditText != null) notesEditText.setText(r.getNotes());
+            diff = r.getDifficulty();
+            cookTime = r.getCookTime();
+            servings = r.getServings();
+            calories = r.getCalories();
+            imageUrl = r.getImageUrl();
+            ingredients = r.getIngredients();
+            ingredientIds = r.getIngredientIds();
+            steps = r.getSteps();
+            tags = r.getTags();
+        }
+
+        if (titleEditText != null) titleEditText.setText(title);
+        if (descriptionEditText != null) descriptionEditText.setText(desc);
+        if (cookTimeEditText != null) cookTimeEditText.setText(String.valueOf(cookTime));
+        if (servingsEditText != null) servingsEditText.setText(String.valueOf(servings));
+        if (caloriesEditText != null) caloriesEditText.setText(String.valueOf(calories));
+        
+        if (imageUrl != null && recipeImageView != null) {
+            Glide.with(this).load(imageUrl).centerCrop().into(recipeImageView);
+        }
+
+        if (ingredients != null) {
+            selectedIngredientNames.addAll(ingredients);
+            updateIngredientsChips();
+        }
+        if (ingredientIds != null) selectedIngredientIds.addAll(ingredientIds);
+
+        if (steps != null) {
+            stepsList.addAll(steps);
+            stepsAdapter.notifyDataSetChanged();
+        }
+        
+        if (difficultySpinner != null && difficultySpinner.getAdapter() != null) {
+            for (int i = 0; i < difficultySpinner.getCount(); i++) {
+                if (difficultySpinner.getItemAtPosition(i).toString().equalsIgnoreCase(diff)) {
+                    difficultySpinner.setSelection(i);
+                    break;
+                }
+            }
+        }
+        
+        if (tags != null && tagsChipGroup != null) {
+            for (int i = 0; i < tagsChipGroup.getChildCount(); i++) {
+                View child = tagsChipGroup.getChildAt(i);
+                if (child instanceof Chip chip) {
+                    if (tags.contains(chip.getText().toString())) {
+                        chip.setChecked(true);
+                    }
+                }
+            }
+        }
     }
 
     private void setupSpinners() {
@@ -160,7 +312,7 @@ public class CreateRecipeFragment extends Fragment {
     }
 
     private void setupTags() {
-        if (tagsChipGroup == null) return;
+        if (tagsChipGroup == null || tagsChipGroup.getChildCount() > 0) return;
         String[] tagArray = getResources().getStringArray(R.array.recipe_tags);
         for (String tag : tagArray) {
             Chip chip = new Chip(requireContext());
@@ -176,11 +328,18 @@ public class CreateRecipeFragment extends Fragment {
         
         if (addIngredientButton != null) {
             addIngredientButton.setOnClickListener(v -> {
+                if (ingredientsEditText == null) return;
                 String ingredient = ingredientsEditText.getText().toString().trim();
                 if (!TextUtils.isEmpty(ingredient)) {
-                    selectedIngredientNames.add(ingredient);
+                    if (editingIngredientIndex >= 0 && editingIngredientIndex < selectedIngredientNames.size()) {
+                        selectedIngredientNames.set(editingIngredientIndex, ingredient);
+                    } else {
+                        selectedIngredientNames.add(ingredient);
+                    }
+                    editingIngredientIndex = RecyclerView.NO_POSITION;
                     updateIngredientsChips();
                     ingredientsEditText.setText("");
+                    addIngredientButton.setText("Add");
                 }
             });
         }
@@ -190,37 +349,27 @@ public class CreateRecipeFragment extends Fragment {
                 if (stepEditText == null) return;
                 String step = stepEditText.getText().toString().trim();
                 if (!TextUtils.isEmpty(step)) {
-                    addStepToLayout(step);
+                    stepsList.add(step);
+                    stepsAdapter.notifyItemInserted(stepsList.size() - 1);
                     stepEditText.setText("");
+                    stepsRecyclerView.post(() -> stepsRecyclerView.smoothScrollToPosition(stepsList.size() - 1));
                 } else {
-                    Toast.makeText(getContext(), "Please enter step description", Toast.LENGTH_SHORT).show();
+                    stepEditText.setError("Please enter step description");
+                }
+            });
+        }
+
+        if (deleteStepButton != null) {
+            deleteStepButton.setOnClickListener(v -> {
+                if (!stepsList.isEmpty()) {
+                    int pos = stepsList.size() - 1;
+                    stepsList.remove(pos);
+                    stepsAdapter.notifyItemRemoved(pos);
                 }
             });
         }
 
         if (publishButton != null) publishButton.setOnClickListener(v -> publishRecipe());
-    }
-
-    private void addStepToLayout(String step) {
-        stepsList.add(step);
-        
-        TextView stepView = new TextView(getContext());
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, 0, 0, 16);
-        stepView.setLayoutParams(params);
-        stepView.setText(getString(R.string.step_format, stepsList.size(), step));
-        stepView.setTextAppearance(android.R.style.TextAppearance_Medium);
-        stepView.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
-        
-        if (stepsContainer != null) {
-            stepsContainer.addView(stepView);
-            stepsContainer.post(() -> {
-                if (scrollView != null && addStepButton != null) {
-                    scrollView.smoothScrollTo(0, addStepButton.getBottom());
-                }
-            });
-        }
     }
 
     private void openImagePicker() {
@@ -262,16 +411,47 @@ public class CreateRecipeFragment extends Fragment {
     private void updateIngredientsChips() {
         if (ingredientsChipGroup == null) return;
         ingredientsChipGroup.removeAllViews();
-        for (String ingredient : selectedIngredientNames) {
+        for (int i = 0; i < selectedIngredientNames.size(); i++) {
+            String ingredient = selectedIngredientNames.get(i);
+            int index = i;
             Chip chip = new Chip(getContext());
             chip.setText(ingredient);
             chip.setCloseIconVisible(true);
+            chip.setClickable(true);
+            chip.setFocusable(false);
+            chip.setOnClickListener(v -> beginIngredientEdit(index));
             chip.setOnCloseIconClickListener(v -> {
-                selectedIngredientNames.remove(ingredient);
+                selectedIngredientNames.remove(index);
+                if (editingIngredientIndex == index) {
+                    editingIngredientIndex = RecyclerView.NO_POSITION;
+                    if (ingredientsEditText != null) ingredientsEditText.setText("");
+                    if (addIngredientButton != null) addIngredientButton.setText("Add");
+                } else if (editingIngredientIndex > index) {
+                    editingIngredientIndex--;
+                }
                 updateIngredientsChips();
             });
             ingredientsChipGroup.addView(chip);
         }
+    }
+
+    private void beginIngredientEdit(int index) {
+        if (ingredientsEditText == null || index < 0 || index >= selectedIngredientNames.size()) return;
+        editingIngredientIndex = index;
+        ingredientsEditText.setText(selectedIngredientNames.get(index));
+        ingredientsEditText.setSelection(ingredientsEditText.length());
+        if (addIngredientButton != null) addIngredientButton.setText("Update");
+        showKeyboard(ingredientsEditText);
+    }
+
+    private void showKeyboard(EditText editText) {
+        editText.requestFocus();
+        editText.post(() -> {
+            InputMethodManager imm = (InputMethodManager) editText.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
     }
 
     private void updateVideoUrlDisplay() {
@@ -319,24 +499,38 @@ public class CreateRecipeFragment extends Fragment {
 
     private void uploadMediaAndPublish(String uid, String username) {
         if (selectedImageUri != null) {
-            CloudinaryHelper.uploadImage(requireContext(), selectedImageUri, url -> createRecipeObject(uid, username, url), error -> {
+            CloudinaryHelper.uploadImage(requireContext(), selectedImageUri, url -> createAndPublishRecipe(uid, username, url), error -> {
                 showLoading(false);
                 Toast.makeText(getContext(), "Image Upload Failed: " + error, Toast.LENGTH_SHORT).show();
             });
         } else {
-            createRecipeObject(uid, username, null);
+            String existingUrl = null;
+            if (isEditMode) {
+                if (recipeToEdit instanceof Recipe r) existingUrl = r.getImageUrl();
+                else if (recipeToEdit instanceof com.example.kitchenbrain.model.Recipe r) existingUrl = r.getImageUrl();
+                else if (recipeToEdit instanceof SocialRecipe r) existingUrl = r.getImageUrl();
+            }
+            createAndPublishRecipe(uid, username, existingUrl);
         }
     }
 
-    private void createRecipeObject(String uid, String username, String imageUrl) {
-        SocialRecipe recipe = new SocialRecipe();
+    private void createAndPublishRecipe(String uid, String username, String imageUrl) {
+        if (isEditMode) {
+            updateExistingRecipe(imageUrl);
+            return;
+        }
+
+        SocialRecipe recipe;
+        recipe = new SocialRecipe();
         recipe.setAuthorId(uid);
         recipe.setAuthorName(username);
+        
         recipe.setTitle(titleEditText.getText().toString().trim());
         recipe.setDescription(descriptionEditText.getText().toString().trim());
+        recipe.setNotes(notesEditText != null ? notesEditText.getText().toString().trim() : "");
         recipe.setImageUrl(imageUrl);
-        recipe.setIngredients(new ArrayList<>(selectedIngredientNames));
-        recipe.setSteps(new ArrayList<>(stepsList));
+        recipe.setIngredients(getCleanTextList(selectedIngredientNames));
+        recipe.setSteps(getCleanTextList(stepsList));
         
         if (difficultySpinner != null && difficultySpinner.getSelectedItem() != null) {
             recipe.setDifficulty(difficultySpinner.getSelectedItem().toString());
@@ -358,22 +552,135 @@ public class CreateRecipeFragment extends Fragment {
 
         recipe.setTimestamp(System.currentTimeMillis());
 
-        recipeRepository.createRecipe(recipe, new RecipeRepository.RecipeCallback<String>() {
-            @Override
-            public void onSuccess(String result) {
+        recipeRepository.createRecipe(recipe, new RecipeRepository.RecipeCallback<>() {
+            @Override public void onSuccess(String result) {
                 showLoading(false);
                 Toast.makeText(getContext(), "Recipe published!", Toast.LENGTH_SHORT).show();
-                if (isAdded()) {
-                    getParentFragmentManager().popBackStack();
-                }
+                if (isAdded()) getParentFragmentManager().popBackStack();
             }
-
-            @Override
-            public void onError(String error) {
+            @Override public void onError(String error) {
                 showLoading(false);
                 Toast.makeText(getContext(), "Failed to publish: " + error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void updateExistingRecipe(String imageUrl) {
+        if (!canEditCurrentRecipe()) {
+            showLoading(false);
+            Toast.makeText(getContext(), "You can only edit recipes you created", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String recipeId = getEditableRecipeId();
+        Map<String, Object> updates = new HashMap<>();
+        String title = titleEditText.getText().toString().trim();
+        String description = descriptionEditText.getText().toString().trim();
+        List<String> ingredients = getCleanTextList(selectedIngredientNames);
+        List<String> steps = getCleanTextList(stepsList);
+
+        updates.put("title", title);
+        updates.put("name", title);
+        updates.put("description", description);
+        updates.put("notes", notesEditText != null ? notesEditText.getText().toString().trim() : "");
+        updates.put("ingredients", ingredients);
+        updates.put("ingredientIds", new ArrayList<>(selectedIngredientIds));
+        updates.put("steps", steps);
+        updates.put("instructions", steps);
+        updates.put("cookingInstructions", buildInstructionsText(steps));
+        updates.put("updatedAt", FieldValue.serverTimestamp());
+
+        if (imageUrl != null) {
+            updates.put("imageUrl", imageUrl);
+        }
+        if (difficultySpinner != null && difficultySpinner.getSelectedItem() != null) {
+            updates.put("difficulty", difficultySpinner.getSelectedItem().toString());
+        }
+
+        updates.put("cookingTime", parseLong(cookTimeEditText));
+        updates.put("cookTime", parseLong(cookTimeEditText));
+        updates.put("servings", parseInt(servingsEditText));
+        updates.put("calories", parseInt(caloriesEditText));
+        updates.put("tags", getSelectedTags());
+
+        recipeRepository.updateRecipeFields(recipeId, updates, new RecipeRepository.RecipeCallback<>() {
+            @Override public void onSuccess(Void result) {
+                showLoading(false);
+                if (getView() != null) {
+                    Snackbar.make(getView(), "Recipe updated", Snackbar.LENGTH_SHORT).show();
+                }
+                Bundle resultBundle = new Bundle();
+                resultBundle.putString("recipe_id", recipeId);
+                getParentFragmentManager().setFragmentResult("recipe_updated", resultBundle);
+                if (isAdded()) getParentFragmentManager().popBackStack();
+            }
+
+            @Override public void onError(String error) {
+                showLoading(false);
+                Toast.makeText(getContext(), "Failed to update: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private String getEditableRecipeId() {
+        if (recipeToEdit instanceof Recipe r) return r.getId();
+        if (recipeToEdit instanceof com.example.kitchenbrain.model.Recipe r) return r.getId();
+        if (recipeToEdit instanceof SocialRecipe r) return r.getRecipeId();
+        return null;
+    }
+
+    private boolean canEditCurrentRecipe() {
+        return RecipeOwnershipUtils.isOwner(recipeToEdit, FirebaseAuth.getInstance().getUid());
+    }
+
+    private String buildInstructionsText(List<String> steps) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < steps.size(); i++) {
+            builder.append(i + 1).append(". ").append(steps.get(i));
+            if (i < steps.size() - 1) builder.append('\n');
+        }
+        return builder.toString();
+    }
+
+    private List<String> getSelectedTags() {
+        List<String> selectedTags = new ArrayList<>();
+        if (tagsChipGroup == null) return selectedTags;
+        for (int i = 0; i < tagsChipGroup.getChildCount(); i++) {
+            View child = tagsChipGroup.getChildAt(i);
+            if (child instanceof Chip chip && chip.isChecked()) {
+                selectedTags.add(chip.getText().toString());
+            }
+        }
+        return selectedTags;
+    }
+
+    private List<String> getCleanTextList(List<String> source) {
+        List<String> clean = new ArrayList<>();
+        if (source == null) return clean;
+        for (String item : source) {
+            if (!TextUtils.isEmpty(item) && !TextUtils.isEmpty(item.trim())) {
+                clean.add(item.trim());
+            }
+        }
+        return clean;
+    }
+
+    private long parseLong(EditText editText) {
+        if (editText == null || TextUtils.isEmpty(editText.getText())) return 0;
+        try {
+            return Long.parseLong(editText.getText().toString().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private int parseInt(EditText editText) {
+        if (editText == null || TextUtils.isEmpty(editText.getText())) return 0;
+        try {
+            return Integer.parseInt(editText.getText().toString().trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private boolean validateInputs() {
@@ -381,11 +688,11 @@ public class CreateRecipeFragment extends Fragment {
             if (titleEditText != null) titleEditText.setError("Title required");
             return false;
         }
-        if (selectedIngredientNames.isEmpty()) {
+        if (getCleanTextList(selectedIngredientNames).isEmpty()) {
             Toast.makeText(getContext(), "Add at least one ingredient", Toast.LENGTH_SHORT).show();
             return false;
         }
-        if (stepsList.isEmpty()) {
+        if (getCleanTextList(stepsList).isEmpty()) {
             Toast.makeText(getContext(), "Add at least one step", Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -395,5 +702,58 @@ public class CreateRecipeFragment extends Fragment {
     private void showLoading(boolean isLoading) {
         if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         if (publishButton != null) publishButton.setEnabled(!isLoading);
+    }
+
+    private static class StepsAdapter extends RecyclerView.Adapter<StepsAdapter.StepViewHolder> {
+        private final List<String> steps;
+        StepsAdapter(List<String> steps) { this.steps = steps; }
+        @NonNull @Override public StepViewHolder onCreateViewHolder(@NonNull ViewGroup p, int t) {
+            View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_editable_cooking_step, p, false);
+            return new StepViewHolder(v);
+        }
+        @Override public void onBindViewHolder(@NonNull StepViewHolder h, int p) {
+            h.bind(steps.get(p), p, steps, this);
+        }
+        @Override public int getItemCount() { return steps.size(); }
+        static class StepViewHolder extends RecyclerView.ViewHolder {
+            EditText editStep;
+            TextView number;
+            Button deleteButton;
+            TextWatcher watcher;
+            StepViewHolder(View v) { 
+                super(v); 
+                editStep = v.findViewById(R.id.editStep);
+                number = v.findViewById(R.id.textStepNumber);
+                deleteButton = v.findViewById(R.id.btnDeleteStep);
+            }
+
+            void bind(String step, int position, List<String> steps, RecyclerView.Adapter<?> adapter) {
+                if (watcher != null) {
+                    editStep.removeTextChangedListener(watcher);
+                }
+                number.setText(String.valueOf(position + 1));
+                editStep.setText(step);
+                editStep.setSelection(editStep.length());
+                watcher = new TextWatcher() {
+                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override public void afterTextChanged(Editable editable) {
+                        int adapterPosition = getBindingAdapterPosition();
+                        if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < steps.size()) {
+                            steps.set(adapterPosition, editable.toString());
+                        }
+                    }
+                };
+                editStep.addTextChangedListener(watcher);
+                deleteButton.setOnClickListener(v -> {
+                    int adapterPosition = getBindingAdapterPosition();
+                    if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < steps.size()) {
+                        steps.remove(adapterPosition);
+                        adapter.notifyItemRemoved(adapterPosition);
+                        adapter.notifyItemRangeChanged(adapterPosition, steps.size() - adapterPosition);
+                    }
+                });
+            }
+        }
     }
 }

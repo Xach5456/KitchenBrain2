@@ -3,7 +3,7 @@ package com.example.kitchenbrain.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.kitchenbrain.database.NewsArticleEntity
+import com.example.kitchenbrain.models.Article
 import com.example.kitchenbrain.repository.NewsRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,8 +24,8 @@ class NewsViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
-    private val _news = MutableStateFlow<List<NewsArticleEntity>>(emptyList())
-    val news: StateFlow<List<NewsArticleEntity>> = _news.asStateFlow()
+    private val _news = MutableStateFlow<List<Article>>(emptyList())
+    val news: StateFlow<List<Article>> = _news.asStateFlow()
 
     init {
         observeNews()

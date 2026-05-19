@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="12dp"
-    android:paddingVertical="1dp"
+    android:paddingVertical="3dp"
     android:gravity="end">
 
     <LinearLayout
@@ -39,7 +39,8 @@
                 android:layout_height="wrap_content"
                 android:text="12:30"
                 android:textSize="10sp"
-                android:textColor="#CCFFFFFF"
+                android:textColor="?attr/colorOnPrimary"
+                android:alpha="0.72"
                 android:layout_marginEnd="4dp" />
 
             <TextView
@@ -48,7 +49,8 @@
                 android:layout_height="wrap_content"
                 android:text="✔"
                 android:textSize="10sp"
-                android:textColor="#CCFFFFFF" />
+                android:textColor="?attr/colorOnPrimary"
+                android:alpha="0.72" />
 
         </LinearLayout>
 

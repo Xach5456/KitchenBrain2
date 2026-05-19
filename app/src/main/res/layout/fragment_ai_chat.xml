@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="?attr/colorSurface">
 
     <!-- Instagram Style AI Header -->
     <LinearLayout
@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:gravity="center_vertical"
         android:paddingHorizontal="8dp">
 
@@ -23,7 +23,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
 
         <com.google.android.material.imageview.ShapeableImageView
             android:layout_width="32dp"
@@ -31,7 +31,7 @@
             android:layout_marginStart="4dp"
             android:src="@drawable/ic_ai_robot"
             app:shapeAppearanceOverlay="@style/CircleAppearanceOverlay"
-            android:background="#F0F0F0"
+            android:background="?attr/colorSurfaceVariant"
             android:padding="4dp"
             android:scaleType="centerInside" />
 
@@ -49,14 +49,14 @@
                 android:text="AI Kitchen Assistant"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#262626" />
+                android:textColor="?attr/colorOnSurface" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Online"
                 android:textSize="11sp"
-                android:textColor="#3797EF"
+                android:textColor="?attr/colorPrimary"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -67,13 +67,13 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_more_vert"
             android:contentDescription="Info"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="#DBDBDB" />
+        android:background="?attr/colorOutlineVariant" />
 
     <!-- Messages RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
@@ -126,7 +126,7 @@
                 android:layout_marginStart="4dp"
                 android:background="@drawable/bg_circle_blue"
                 android:src="@drawable/ic_ai_robot"
-                app:tint="#FFFFFF"
+                app:tint="@color/white"
                 android:padding="8dp"
                 android:scaleType="centerInside"
                 android:contentDescription="AI" />
@@ -143,15 +143,15 @@
                 android:maxLines="5"
                 android:inputType="textMultiLine|textCapSentences"
                 android:textSize="15sp"
-                android:textColor="#262626"
-                android:textColorHint="#8E8E8E" />
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant" />
 
             <TextView
                 android:id="@+id/buttonSend"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:text="Send"
-                android:textColor="#0095F6"
+                android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:paddingHorizontal="12dp"

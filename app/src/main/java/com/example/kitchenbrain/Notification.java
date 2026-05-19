@@ -15,7 +15,7 @@ public class Notification {
     private String receiverId;
     private String senderId;
     private String senderUsername;
-    private String senderNickname; // 🔥 NEW: Nickname of the sender
+    private String senderNickname; // Nickname of the sender
     private String senderAvatarUrl;
     private String type;
     private String message;
@@ -106,7 +106,6 @@ public class Notification {
         return isRead;
     }
 
-    // Explicit getter/setter for Firestore to avoid warnings
     @PropertyName("isRead")
     public boolean getIsRead() {
         return isRead;

@@ -2,17 +2,17 @@ package com.example.kitchenbrain.model;
 
 import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * SocialRecipe - Unified model for recipe creation and storage.
- * 
- * Fields are public for direct Kotlin access in FeedRankingAlgorithm,
- * while methods are maintained for Java compatibility.
  */
-public class SocialRecipe {
+public class SocialRecipe implements Serializable {
     
     @PropertyName("id")
     public String id;
@@ -20,9 +20,11 @@ public class SocialRecipe {
     public String username;   
     public String name;       
     public String description;
+    public String notes;
     public String imageUrl;
     public String videoUrl;
     public List<String> ingredients;
+    public List<String> ingredientIds; 
     public List<String> steps;
     public String cookingInstructions; 
     public long cookingTime;   
@@ -49,9 +51,17 @@ public class SocialRecipe {
     
     public String socialPriority; 
     
-    public SocialRecipe() {}
+    public SocialRecipe() {
+        this.ingredients = new ArrayList<>();
+        this.ingredientIds = new ArrayList<>();
+        this.steps = new ArrayList<>();
+        this.tags = new ArrayList<>();
+        this.likedBy = new HashMap<>();
+        this.savedBy = new HashMap<>();
+    }
     
     public SocialRecipe(String authorId, String username, String name, String description) {
+        this();
         this.authorId = authorId;
         this.username = username;
         this.name = name;
@@ -61,7 +71,6 @@ public class SocialRecipe {
         this.socialPriority = "global";
     }
 
-    // --- ID Accessors ---
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     
@@ -70,7 +79,6 @@ public class SocialRecipe {
     @PropertyName("recipeId")
     public void setRecipeId(String id) { this.id = id; }
 
-    // --- Author Accessors ---
     public String getAuthorId() { return authorId; }
     public void setAuthorId(String authorId) { this.authorId = authorId; }
     
@@ -82,7 +90,6 @@ public class SocialRecipe {
     @PropertyName("authorName")
     public void setAuthorName(String authorName) { this.username = authorName; }
 
-    // --- Content Accessors ---
     @PropertyName("name")
     public String getName() { return name; }
     @PropertyName("name")
@@ -95,6 +102,9 @@ public class SocialRecipe {
     
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
     
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
@@ -104,6 +114,11 @@ public class SocialRecipe {
     
     public List<String> getIngredients() { return ingredients; }
     public void setIngredients(List<String> ingredients) { this.ingredients = ingredients; }
+
+    @PropertyName("ingredientIds")
+    public List<String> getIngredientIds() { return ingredientIds; }
+    @PropertyName("ingredientIds")
+    public void setIngredientIds(List<String> ingredientIds) { this.ingredientIds = ingredientIds; }
     
     public List<String> getSteps() { return steps; }
     public void setSteps(List<String> steps) { 
@@ -120,7 +135,6 @@ public class SocialRecipe {
     public String getCookingInstructions() { return cookingInstructions; }
     public void setCookingInstructions(String cookingInstructions) { this.cookingInstructions = cookingInstructions; }
 
-    // --- Metadata Accessors ---
     @PropertyName("cookingTime")
     public long getCookingTime() { return cookingTime; }
     @PropertyName("cookingTime")
@@ -132,62 +146,62 @@ public class SocialRecipe {
     public void setCookTime(long cookTime) { this.cookingTime = cookTime; }
 
     public String getFormattedCookTime() {
-        if (cookingTime == 0) return "Time unknown";
-        if (cookingTime < 60) return cookingTime + " min";
-        long hours = cookingTime / 60;
-        long minutes = cookingTime % 60;
-        if (minutes == 0) return hours + " hr";
-        return hours + " hr " + minutes + " min";
+        return cookingTime > 0 ? cookingTime + " min" : "--";
     }
 
-    public String getDifficulty() { return difficulty != null ? difficulty : "Medium"; }
-    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+    @PropertyName("likes")
+    public long getLikes() { return likes; }
+    @PropertyName("likes")
+    public void setLikes(long likes) { this.likes = likes; }
     
-    public int getCalories() { return calories; }
-    public void setCalories(int calories) { this.calories = calories; }
+    @PropertyName("likesCount")
+    public void setLikesCount(long likes) { this.likes = likes; }
+
+    @PropertyName("likedBy")
+    public Map<String, Boolean> getLikedBy() { return likedBy; }
     
+    @PropertyName("likedBy")
+    public void setLikedBy(Object value) { 
+        if (value instanceof Map) {
+            this.likedBy = (Map<String, Boolean>) value;
+        } else if (value instanceof List) {
+            this.likedBy = new HashMap<>();
+            for (Object id : (List) value) {
+                if (id != null) this.likedBy.put(id.toString(), true);
+            }
+        }
+    }
+    
+    @PropertyName("savedBy")
+    public Map<String, Boolean> getSavedBy() { return savedBy; }
+    
+    @PropertyName("savedBy")
+    public void setSavedBy(Object value) { 
+        if (value instanceof Map) {
+            this.savedBy = (Map<String, Boolean>) value;
+        } else if (value instanceof List) {
+            this.savedBy = new HashMap<>();
+            for (Object id : (List) value) {
+                if (id != null) this.savedBy.put(id.toString(), true);
+            }
+        }
+    }
+
     public int getServings() { return servings; }
     public void setServings(int servings) { this.servings = servings; }
     
+    public int getCalories() { return calories; }
+    public void setCalories(int calories) { this.calories = calories; }
+
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
-    
-    public boolean isDraft() { return isDraft; }
-    public void setDraft(boolean draft) { isDraft = draft; }
 
-    // --- Social Metrics Accessors ---
-    public long getLikes() { return likes; }
-    public void setLikes(long likes) { this.likes = likes; }
-    
-    public long getComments() { return comments; }
-    public void setComments(long comments) { this.comments = comments; }
-    
-    public long getSaves() { return saves; }
-    public void setSaves(long saves) { this.saves = saves; }
-    
-    public Map<String, Boolean> getLikedBy() { return likedBy; }
-    public void setLikedBy(Map<String, Boolean> likedBy) { this.likedBy = likedBy; }
-    
-    public Map<String, Boolean> getSavedBy() { return savedBy; }
-    public void setSavedBy(Map<String, Boolean> savedBy) { this.savedBy = savedBy; }
+    public String getDifficulty() { return difficulty != null ? difficulty : "Medium"; }
+    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
 
-    // --- Social Priority Accessors ---
-    public boolean isFromMutualFollower() { return isFromMutualFollower; }
-    public void setFromMutualFollower(boolean fromMutualFollower) { isFromMutualFollower = fromMutualFollower; }
-    
-    public boolean isFromFollower() { return isFromFollower; }
-    public void setFromFollower(boolean fromFollower) { isFromFollower = fromFollower; }
-    
-    public String getSocialPriority() { return socialPriority; }
-    public void setSocialPriority(String socialPriority) { this.socialPriority = socialPriority; }
-
-    // --- Timestamps Accessors ---
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     
-    public Date getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
-
     public void setTimestamp(long timestamp) {
         this.createdAt = new Date(timestamp);
     }

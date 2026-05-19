@@ -54,7 +54,7 @@ class CulinaryNewsFragment : Fragment() {
             // Handle sharing to chat or external
             val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                 type = "text/plain"
-                putExtra(android.content.Intent.EXTRA_TEXT, "${news.title}\n\n${news.url}")
+                putExtra(android.content.Intent.EXTRA_TEXT, listOfNotNull(news.title, news.url).joinToString("\n\n"))
             }
             startActivity(android.content.Intent.createChooser(shareIntent, "Share News"))
         }

@@ -177,6 +177,16 @@ public class HomeFeedViewModel extends AndroidViewModel {
         r.setServings(s.servings);
         r.setCookingInstructions(s.instructions);
         r.setVideoUrl(s.sourceUrl);
+        
+        // 🔥 FIX: Map ingredients to ensure they show in detail fragment
+        if (s.extendedIngredients != null) {
+            List<String> ingList = new ArrayList<>();
+            for (SpoonacularRecipe.Ingredient ing : s.extendedIngredients) {
+                ingList.add(ing.original);
+            }
+            r.setIngredients(ingList);
+        }
+
         return r;
     }
 

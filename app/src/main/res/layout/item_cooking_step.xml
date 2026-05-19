@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cooking Step Item Layout -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,12 +6,11 @@
     android:orientation="horizontal"
     android:paddingVertical="12dp">
 
-    <!-- Step Number -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="32dp"
         android:layout_height="32dp"
-        app:cardCornerRadius="16dp"
         app:cardBackgroundColor="@color/primary_blue"
+        app:cardCornerRadius="16dp"
         app:cardElevation="0dp">
 
         <TextView
@@ -20,21 +18,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:textColor="@color/white"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/white" />
-
+            android:textStyle="bold" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Step Text -->
     <TextView
         android:id="@+id/textStep"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:layout_marginStart="12dp"
-        android:textSize="14sp"
+        android:layout_weight="1"
+        android:lineSpacingExtra="4dp"
         android:textColor="@color/text_primary"
-        android:lineSpacingExtra="4dp" />
+        android:textSize="14sp" />
 
 </LinearLayout>

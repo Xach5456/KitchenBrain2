@@ -10,17 +10,16 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.example.kitchenbrain.R
-import com.example.kitchenbrain.database.NewsArticleEntity
 import com.example.kitchenbrain.databinding.ItemCulinaryNewsBinding
-import java.text.SimpleDateFormat
+import com.example.kitchenbrain.models.Article
 import java.util.*
 
 /**
  * ModernNewsAdapter - Telegram-Grade News Feed
  */
 class ModernNewsAdapter(
-    private val onSendToChat: (NewsArticleEntity) -> Unit
-) : ListAdapter<NewsArticleEntity, ModernNewsAdapter.ViewHolder>(DiffCallback()) {
+    private val onSendToChat: (Article) -> Unit
+) : ListAdapter<Article, ModernNewsAdapter.ViewHolder>(DiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemCulinaryNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -32,10 +31,10 @@ class ModernNewsAdapter(
     }
 
     inner class ViewHolder(private val binding: ItemCulinaryNewsBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(news: NewsArticleEntity) {
+        fun bind(news: Article) {
             binding.textViewTitle.text = news.title
             binding.textViewDescription.text = news.description
-            binding.textViewSource.text = news.sourceName
+            binding.textViewSource.text = news.source?.name
             
             // Format time (e.g., "2 hours ago")
             binding.textViewTime.text = formatPublishedDate(news.publishedAt)
@@ -48,7 +47,8 @@ class ModernNewsAdapter(
                 .into(binding.imageViewNews)
 
             binding.root.setOnClickListener {
-                it.context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(news.url)))
+                val articleUrl = news.url ?: return@setOnClickListener
+                it.context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(articleUrl)))
             }
 
             binding.buttonSendToChat.setOnClickListener { onSendToChat(news) }
@@ -68,8 +68,8 @@ class ModernNewsAdapter(
         }
     }
 
-    class DiffCallback : DiffUtil.ItemCallback<NewsArticleEntity>() {
-        override fun areItemsTheSame(oldItem: NewsArticleEntity, newItem: NewsArticleEntity) = oldItem.url == newItem.url
-        override fun areContentsTheSame(oldItem: NewsArticleEntity, newItem: NewsArticleEntity) = oldItem == newItem
+    class DiffCallback : DiffUtil.ItemCallback<Article>() {
+        override fun areItemsTheSame(oldItem: Article, newItem: Article) = oldItem.stableId == newItem.stableId
+        override fun areContentsTheSame(oldItem: Article, newItem: Article) = oldItem == newItem
     }
 }

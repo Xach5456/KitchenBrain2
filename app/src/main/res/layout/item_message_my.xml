@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="12dp"
-    android:paddingVertical="1dp"
+    android:paddingVertical="3dp"
     android:gravity="end">
 
     <LinearLayout
@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:text="Message content"
             android:textSize="15sp"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnPrimary"
             android:lineSpacingExtra="2dp" />
 
         <LinearLayout
@@ -39,7 +39,8 @@
                 android:layout_height="wrap_content"
                 android:text="edited"
                 android:textSize="10sp"
-                android:textColor="#CCFFFFFF"
+                android:textColor="?attr/colorOnPrimary"
+                android:alpha="0.72"
                 android:layout_marginEnd="6dp"
                 android:visibility="gone" />
 
@@ -49,7 +50,8 @@
                 android:layout_height="wrap_content"
                 android:text="12:30"
                 android:textSize="10sp"
-                android:textColor="#CCFFFFFF"
+                android:textColor="?attr/colorOnPrimary"
+                android:alpha="0.72"
                 android:layout_marginEnd="4dp"
                 android:visibility="gone" />
 
@@ -59,7 +61,8 @@
                 android:layout_height="wrap_content"
                 android:text="✔"
                 android:textSize="10sp"
-                android:textColor="#CCFFFFFF" />
+                android:textColor="?attr/colorOnPrimary"
+                android:alpha="0.72" />
 
         </LinearLayout>
 

@@ -23,14 +23,14 @@
         android:text="Username"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black" />
+        android:textColor="?attr/colorOnSurface" />
 
     <Button
         android:id="@+id/buttonFollow"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Follow"
-        android:textColor="@android:color/white"
+        android:textColor="?attr/colorOnPrimary"
         android:background="@drawable/button_style" />
 
 </LinearLayout>

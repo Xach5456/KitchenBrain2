@@ -27,13 +27,22 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 /**
- * Updated NewsRepository to use Room database (shared with NewsSyncWorker)
- * Uses synchronous DAO methods for Java compatibility.
+ * Updated NewsRepository to use Room database.
+ * 🔥 STRICT FILTERING: Now uses targeted keywords and culinary-only domains.
  */
 public class NewsRepository {
     private static final String TAG = "NewsRepository";
-    // 🔥 ENHANCED: More specific culinary query to filter out non-food news
-    private static final String SEARCH_QUERY = "culinary OR gastronomy OR \"food recipes\" OR \"cooking tips\"";
+    
+    // 🎯 Keywords for strict food/cooking filtering
+    private static final String SEARCH_QUERY = "food OR recipe OR cooking OR restaurant OR kitchen OR chef OR meal OR dish OR baking OR culinary";
+    
+    // 🌐 Trusted culinary domains only
+    private static final String DOMAINS = "allrecipes.com,seriouseats.com,bonappetit.com,foodnetwork.com,simplyrecipes.com,epicurious.com,thekitchn.com,food52.com,delish.com,cookinglight.com,bettycrocker.com,tasteofhome.com,bbcgoodfood.com";
+    private static final String[] FOOD_KEYWORDS = {
+            "food", "recipe", "cooking", "kitchen", "restaurant", "meal", "dish",
+            "chef", "breakfast", "lunch", "dinner", "baking", "culinary", "cuisine",
+            "ingredient", "grocery", "dining", "nutrition"
+    };
     
     private final NewsApiService apiService;
     private final NewsDao newsDao;
@@ -55,19 +64,17 @@ public class NewsRepository {
     public void getNews(int page, boolean forceRefresh, final NewsCallback callback) {
         if (page == 1) callback.onLoading();
 
-        // Always try to load from Room cache first
         executor.execute(() -> {
             try {
-                // Use Sync version for Java
                 List<NewsArticleEntity> cachedEntities = newsDao.getAllNewsSync();
                 if (!cachedEntities.isEmpty()) {
                     List<Article> cachedArticles = mapEntitiesToArticles(cachedEntities);
-                    mainHandler.post(() -> callback.onSuccess(cachedArticles));
+                    if (!cachedArticles.isEmpty()) {
+                        mainHandler.post(() -> callback.onSuccess(cachedArticles));
+                    }
                     
                     if (!forceRefresh) return; 
                 }
-                
-                // If cache empty or force refresh, hit the network
                 executeApiCall(page, callback);
             } catch (Exception e) {
                 Log.e(TAG, "Cache load failed", e);
@@ -83,16 +90,17 @@ public class NewsRepository {
             return;
         }
 
-        // 🎯 Improved sorting to 'relevancy' to ensure culinary focus
-        apiService.getFoodNews(SEARCH_QUERY, "en", "relevancy", 40, page, apiKey)
+        // qInTitle ensures the focus is on the article topic
+        apiService.getFoodNews(SEARCH_QUERY, SEARCH_QUERY, DOMAINS, "en", "publishedAt", 40, page, apiKey)
                 .enqueue(new Callback<NewsResponse>() {
             @Override
             public void onResponse(@NonNull Call<NewsResponse> call, @NonNull Response<NewsResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Article> articles = response.body().getArticles();
                     if (articles != null && !articles.isEmpty()) {
-                        saveToRoom(articles);
-                        mainHandler.post(() -> callback.onSuccess(articles));
+                        List<Article> filteredArticles = filterFoodArticles(articles);
+                        saveToRoom(filteredArticles);
+                        mainHandler.post(() -> callback.onSuccess(filteredArticles));
                     } else if (page == 1) {
                         mainHandler.post(callback::onEmpty);
                     }
@@ -113,6 +121,7 @@ public class NewsRepository {
             List<NewsArticleEntity> entities = new ArrayList<>();
             long now = System.currentTimeMillis();
             for (Article a : articles) {
+                if (a.getUrl() == null || a.getUrl().isEmpty() || a.getTitle() == null || a.getTitle().isEmpty()) continue;
                 entities.add(new NewsArticleEntity(
                     a.getUrl(), a.getTitle(), a.getAuthor(), a.getDescription(),
                     a.getUrlToImage(), a.getPublishedAt(), a.getContent(),
@@ -120,7 +129,6 @@ public class NewsRepository {
                 ));
             }
             try {
-                // Use Sync version for Java
                 newsDao.insertNewsSync(entities);
             } catch (Exception e) {
                 Log.e(TAG, "Failed to save news to Room", e);
@@ -144,6 +152,34 @@ public class NewsRepository {
             a.setSource(s);
             articles.add(a);
         }
-        return articles;
+        return filterFoodArticles(articles);
+    }
+
+    private List<Article> filterFoodArticles(List<Article> articles) {
+        List<Article> filtered = new ArrayList<>();
+        for (Article article : articles) {
+            if (article == null || article.getUrl() == null || article.getUrl().isEmpty()) continue;
+            if (article.getTitle() == null || article.getTitle().isEmpty()) continue;
+            if (isFoodNews(article)) filtered.add(article);
+        }
+        return filtered;
+    }
+
+    private boolean isFoodNews(Article article) {
+        String text = (
+                safe(article.getTitle()) + " " +
+                safe(article.getDescription()) + " " +
+                safe(article.getContent()) + " " +
+                (article.getSource() != null ? safe(article.getSource().getName()) : "")
+        ).toLowerCase();
+
+        for (String keyword : FOOD_KEYWORDS) {
+            if (text.contains(keyword)) return true;
+        }
+        return false;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }

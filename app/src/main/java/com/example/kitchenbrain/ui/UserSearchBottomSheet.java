@@ -3,7 +3,6 @@ package com.example.kitchenbrain.ui;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +11,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,16 +21,17 @@ import com.example.kitchenbrain.R;
 import com.example.kitchenbrain.User;
 import com.example.kitchenbrain.adapter.UserSearchAdapter;
 import com.example.kitchenbrain.viewmodel.SearchViewModel;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fragment for searching users.
+ * BottomSheet for searching users.
  * Supports "Selection Mode" for sharing content.
  */
-public class UserSearchBottomSheet extends Fragment {
+public class UserSearchBottomSheet extends BottomSheetDialogFragment {
 
     private SearchViewModel viewModel;
     private UserSearchAdapter adapter;
@@ -76,11 +75,34 @@ public class UserSearchBottomSheet extends Fragment {
     private void initViews(View view) {
         editTextSearch = view.findViewById(R.id.editTextUserSearch);
         recyclerView = view.findViewById(R.id.recyclerViewUserResults);
-        textTitle = view.findViewById(R.id.textTitle); // Assuming this ID exists
-        ImageButton buttonBack = view.findViewById(R.id.buttonBack);
+        textTitle = view.findViewById(R.id.textTitle);
         
+        // Handle Back button in Toolbar
+        androidx.appcompat.widget.Toolbar toolbar = view.findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> {
+                if (isAdded()) {
+                    if (getShowsDialog()) {
+                        dismiss();
+                    } else {
+                        getParentFragmentManager().popBackStack();
+                    }
+                }
+            });
+        }
+
+        // Support for old/legacy back button ID if present
+        View buttonBack = view.findViewById(R.id.buttonBack);
         if (buttonBack != null) {
-            buttonBack.setOnClickListener(v -> requireActivity().onBackPressed());
+            buttonBack.setOnClickListener(v -> {
+                if (isAdded()) {
+                    if (getShowsDialog()) {
+                        dismiss();
+                    } else {
+                        getParentFragmentManager().popBackStack();
+                    }
+                }
+            });
         }
     }
 
@@ -90,10 +112,11 @@ public class UserSearchBottomSheet extends Fragment {
             public void onUserClick(User user) {
                 if (isSelectionMode && selectionListener != null) {
                     selectionListener.onUserSelected(user);
-                    requireActivity().onBackPressed();
+                    dismiss();
                 } else if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).navigateToFragment(
                             OtherUserProfileFragment.newInstance(user.getUserId()), true);
+                    if (getShowsDialog()) dismiss();
                 }
             }
 
@@ -104,6 +127,7 @@ public class UserSearchBottomSheet extends Fragment {
             public void onMessageClick(User user) {
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).openChat(user.getUserId(), user.getUsername());
+                    if (getShowsDialog()) dismiss();
                 }
             }
         });
@@ -113,13 +137,15 @@ public class UserSearchBottomSheet extends Fragment {
     }
 
     private void setupListeners() {
-        editTextSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                viewModel.searchUsers(s.toString().trim());
-            }
-            @Override public void afterTextChanged(Editable s) {}
-        });
+        if (editTextSearch != null) {
+            editTextSearch.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    viewModel.searchUsers(s.toString().trim());
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+        }
     }
 
     private void observeViewModel() {

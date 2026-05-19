@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="12dp"
-    android:paddingVertical="1dp"
+    android:paddingVertical="3dp"
     android:gravity="start">
 
     <!-- Sender Name (Hidden if consecutive) -->
@@ -16,7 +16,7 @@
         android:layout_marginStart="14dp"
         android:text="User Name"
         android:textSize="11sp"
-        android:textColor="#8E8E8E"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
 
     <!-- Message Bubble Container -->
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:text="Message content"
             android:textSize="15sp"
-            android:textColor="#262626"
+            android:textColor="?attr/colorOnSurface"
             android:lineSpacingExtra="2dp" />
 
         <LinearLayout
@@ -54,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:text="12:30"
                 android:textSize="10sp"
-                android:textColor="#8E8E8E"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone" />
 
             <TextView
@@ -64,7 +64,7 @@
                 android:layout_marginStart="6dp"
                 android:text="edited"
                 android:textSize="10sp"
-                android:textColor="#8E8E8E"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone" />
 
         </LinearLayout>

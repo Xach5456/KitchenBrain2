@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="?attr/colorSurfaceContainerLow">
 
     <!-- Professional Instagram Header -->
     <LinearLayout
@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:orientation="horizontal"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:gravity="center_vertical"
         android:paddingHorizontal="8dp">
 
@@ -24,7 +24,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imageUserProfile"
@@ -49,7 +49,7 @@
                 android:text="User Name"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#262626"
+                android:textColor="?attr/colorOnSurface"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -59,8 +59,8 @@
                 android:layout_height="wrap_content"
                 android:text="Active now"
                 android:textSize="11sp"
-                android:textColor="#8E8E8E"
-                android:visibility="gone" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="visible" />
         </LinearLayout>
 
         <ImageButton
@@ -70,7 +70,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_more_vert"
             android:visibility="gone"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
 
         <ImageButton
             android:id="@+id/buttonVideo"
@@ -79,7 +79,7 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_video"
             android:visibility="gone"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
 
         <ImageButton
             android:id="@+id/buttonMore"
@@ -88,14 +88,14 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_more_vert"
             android:contentDescription="More options"
-            app:tint="#262626" />
+            app:tint="?attr/colorOnSurface" />
 
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="#DBDBDB" />
+        android:background="?attr/colorOutlineVariant" />
 
     <!-- Messages List -->
     <androidx.recyclerview.widget.RecyclerView
@@ -104,8 +104,9 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp" />
+        android:paddingTop="10dp"
+        android:paddingBottom="6dp"
+        android:paddingHorizontal="2dp" />
 
     <!-- Typing Indicator -->
     <TextView
@@ -116,7 +117,7 @@
         android:layout_marginBottom="8dp"
         android:text="Typing..."
         android:textSize="12sp"
-        android:textColor="#8E8E8E"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
 
     <!-- Edit Mode Indicator (Kept for functionality) -->
@@ -125,7 +126,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#F0F9FF"
+        android:background="?attr/colorPrimaryContainer"
         android:padding="8dp"
         android:gravity="center_vertical"
         android:visibility="gone">
@@ -134,7 +135,7 @@
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:src="@drawable/ic_edit"
-            app:tint="#3797EF" />
+            app:tint="?attr/colorPrimary" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -148,14 +149,14 @@
                 android:text="Editing message"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="#3797EF" />
+                android:textColor="?attr/colorPrimary" />
             <TextView
                 android:id="@+id/textEditingOriginal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Original message content"
                 android:textSize="11sp"
-                android:textColor="#8E8E8E"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:maxLines="1"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -166,7 +167,7 @@
             android:layout_height="32dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_close"
-            app:tint="#8E8E8E" />
+            app:tint="?attr/colorOnSurfaceVariant" />
     </LinearLayout>
 
     <!-- Input Area -->
@@ -175,9 +176,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:background="?attr/colorSurface"
         android:paddingHorizontal="12dp"
         android:paddingBottom="12dp"
-        android:paddingTop="4dp">
+        android:paddingTop="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -193,12 +195,12 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_marginStart="4dp"
-                android:background="@drawable/bg_circle_blue"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_add_photo"
-                app:tint="#FFFFFF"
+                app:tint="?attr/colorPrimary"
                 android:padding="9dp"
                 android:scaleType="centerInside"
-                android:contentDescription="Camera" />
+                android:contentDescription="Attach image" />
 
             <EditText
                 android:id="@+id/editTextMessage"
@@ -212,8 +214,8 @@
                 android:maxLines="5"
                 android:inputType="textMultiLine|textCapSentences"
                 android:textSize="15sp"
-                android:textColor="#262626"
-                android:textColorHint="#8E8E8E" />
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant" />
 
             <!-- Using FrameLayout to keep FloatingActionButtons for functionality compatibility -->
             <FrameLayout
@@ -228,24 +230,12 @@
                     android:layout_height="wrap_content"
                     app:fabCustomSize="40dp"
                     app:srcCompat="@drawable/ic_send"
-                    app:tint="#3797EF"
-                    app:backgroundTint="#FFFFFF"
+                    app:tint="?attr/colorOnPrimary"
+                    app:backgroundTint="?attr/colorPrimary"
                     app:elevation="0dp"
                     app:borderWidth="0dp"
-                    android:visibility="gone"
-                    android:contentDescription="Send" />
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/buttonMic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:fabCustomSize="40dp"
-                    app:srcCompat="@drawable/ic_mic"
-                    app:tint="#262626"
-                    app:backgroundTint="#FFFFFF"
-                    app:elevation="0dp"
-                    app:borderWidth="0dp"
-                    android:contentDescription="Record Voice" />
+                    android:contentDescription="Send"
+                    android:visibility="gone" />
 
             </FrameLayout>
         </LinearLayout>

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_primary">
+    android:background="?android:attr/colorBackground">
 
     <!-- Collapsing Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:fitsSystemWindows="true"
-            app:contentScrim="@color/surface_variant"
+            app:contentScrim="?attr/colorSurface"
             app:expandedTitleMarginBottom="32dp"
             app:expandedTitleTextAppearance="@style/ExpandedTitleStyle"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
@@ -94,7 +94,7 @@
                 android:layout_marginBottom="8dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="by John Doe"
-                android:textColor="@color/text_secondary"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="14sp" />
 
             <!-- Recipe Name (hidden, for compatibility) -->
@@ -112,7 +112,7 @@
                 android:layout_marginBottom="16dp"
                 android:fontFamily="sans-serif"
                 android:text="Creamy Italian pasta dish with eggs, cheese, pancetta, and black pepper. Authentic Roman recipe that's rich and satisfying."
-                android:textColor="@color/text_secondary"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="16sp" />
 
             <!-- Video Tutorial Card -->
@@ -122,10 +122,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/surface_variant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/primary_blue"
+                app:strokeColor="?attr/colorPrimary"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -139,7 +139,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:text="Video Tutorial"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp" />
@@ -148,7 +148,7 @@
                         android:id="@+id/textVideoUrl"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/primary_blue"
+                        android:textColor="?attr/colorPrimary"
                         android:textSize="14sp"
                         android:lineSpacingExtra="4dp"
                         android:maxLines="2"
@@ -181,10 +181,10 @@
                     android:layout_height="80dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    app:cardBackgroundColor="@color/surface_variant"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/primary_blue"
+                    app:strokeColor="?attr/colorPrimary"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -199,7 +199,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-black"
                             android:text="30"
-                            android:textColor="@color/primary_blue"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
@@ -208,7 +208,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
                             android:text="Minutes"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
 
                     </LinearLayout>
@@ -221,10 +221,10 @@
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    app:cardBackgroundColor="@color/surface_variant"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/primary_blue"
+                    app:strokeColor="?attr/colorPrimary"
                     app:strokeWidth="1dp">
 
                     <LinearLayout
@@ -238,7 +238,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-black"
                             android:text="4"
-                            android:textColor="@color/primary_blue"
+                            android:textColor="?attr/colorPrimary"
                             android:textSize="20sp"
                             android:textStyle="bold" />
 
@@ -247,7 +247,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
                             android:text="Servings"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
 
                     </LinearLayout>
@@ -259,7 +259,7 @@
                     android:layout_height="80dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    app:cardBackgroundColor="@color/surface_variant"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeColor="@color/primary_green"
@@ -285,7 +285,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
                             android:text="Rating"
-                            android:textColor="@color/text_secondary"
+                            android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
 
                     </LinearLayout>
@@ -299,10 +299,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/surface_variant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/primary_blue"
+                app:strokeColor="?attr/colorPrimary"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -328,7 +328,7 @@
                             android:layout_weight="1"
                             android:fontFamily="sans-serif-medium"
                             android:text="Ingredients"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?attr/colorOnSurface"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -338,7 +338,7 @@
                             android:layout_height="24dp"
                             android:rotation="0"
                             android:src="@drawable/ic_arrow_down"
-                            android:tint="@color/primary_blue" />
+                            app:tint="?attr/colorPrimary" />
 
                     </LinearLayout>
 
@@ -371,10 +371,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/surface_variant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/primary_blue"
+                app:strokeColor="?attr/colorPrimary"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -400,7 +400,7 @@
                             android:layout_weight="1"
                             android:fontFamily="sans-serif-medium"
                             android:text="Cooking Instructions"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?attr/colorOnSurface"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -410,7 +410,7 @@
                             android:layout_height="24dp"
                             android:rotation="0"
                             android:src="@drawable/ic_arrow_down"
-                            android:tint="@color/primary_blue" />
+                            app:tint="?attr/colorPrimary" />
 
                     </LinearLayout>
 
@@ -443,7 +443,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/surface_variant"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/primary_green"
@@ -461,7 +461,7 @@
                         android:layout_marginBottom="12dp"
                         android:fontFamily="sans-serif-medium"
                         android:text="Additional Tips"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -473,7 +473,7 @@
                         android:drawablePadding="12dp"
                         android:fontFamily="sans-serif"
                         android:text="Don't add cream - authentic carbonara gets its creaminess from the eggs and pasta water."
-                        android:textColor="@color/text_secondary"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp" />
 
                     <TextView
@@ -484,7 +484,7 @@
                         android:drawablePadding="12dp"
                         android:fontFamily="sans-serif"
                         android:text="Use high-quality cheese for the best flavor - authentic Pecorino Romano makes all the difference."
-                        android:textColor="@color/text_secondary"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="14sp" />
 
                 </LinearLayout>
@@ -511,13 +511,13 @@
             android:layout_height="56dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/surface_variant"
+            android:backgroundTint="?attr/colorSurfaceContainerLow"
             android:fontFamily="sans-serif-medium"
             android:text="Save Recipe"
             android:textAllCaps="false"
-            android:textColor="@color/primary_blue"
+            android:textColor="?attr/colorPrimary"
             app:cornerRadius="28dp"
-            app:strokeColor="@color/primary_blue"
+            app:strokeColor="?attr/colorPrimary"
             app:strokeWidth="1dp" />
 
         <com.google.android.material.button.MaterialButton
@@ -525,11 +525,11 @@
             android:layout_height="56dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/primary_blue"
+            android:backgroundTint="?attr/colorPrimary"
             android:fontFamily="sans-serif-medium"
             android:text="Start Cooking"
             android:textAllCaps="false"
-            android:textColor="@color/white"
+            android:textColor="?attr/colorOnPrimary"
             app:cornerRadius="28dp" />
 
     </LinearLayout>
