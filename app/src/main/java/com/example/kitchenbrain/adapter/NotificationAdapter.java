@@ -77,7 +77,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         private final LinearLayout layoutActions;
         private final MaterialButton followBackButton;
         private final MaterialButton rejectButton;
-        private final ImageView unreadDot;
+        private final View unreadDot;
 
         public NotificationViewHolder(@NonNull View itemView) {
             super(itemView);

@@ -552,12 +552,12 @@ public class ProfileFragment extends Fragment {
     private void updateMessagePermissionText(String permission) {
         if (textMessagePermission == null || !isAdded()) return;
         switch (permission) {
-            case "friends": textMessagePermission.setText("Friends only"); break;
-            case "nobody": textMessagePermission.setText("Nobody"); break;
-            default: textMessagePermission.setText("Everyone");
+            case "friends": textMessagePermission.setText(R.string.profile_message_friends_only); break;
+            case "nobody": textMessagePermission.setText(R.string.profile_message_nobody); break;
+            default: textMessagePermission.setText(R.string.profile_message_everyone);
         }
     }
-    
+
     private void showEditUsernameDialog() {
         if (!isAdded() || getContext() == null) return;
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_edit_profile, null);
@@ -636,7 +636,11 @@ public class ProfileFragment extends Fragment {
     
     private void showMessagePermissionsDialog() {
         if (!isAdded()) return;
-        String[] options = {"Everyone", "Friends only", "Nobody"};
+        String[] options = {
+                getString(R.string.profile_message_everyone),
+                getString(R.string.profile_message_friends_only),
+                getString(R.string.profile_message_nobody)
+        };
         String current = prefs.getString("message_permission", "everyone");
         int index = current.equals("friends") ? 1 : current.equals("nobody") ? 2 : 0;
         

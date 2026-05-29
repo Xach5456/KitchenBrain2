@@ -123,7 +123,7 @@
                             style="@style/Premium.TextAppearance.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Followers"
+                            android:text="@string/profile_followers"
                             android:textAllCaps="true"
                             android:letterSpacing="0.05" />
                     </LinearLayout>
@@ -154,7 +154,7 @@
                             style="@style/Premium.TextAppearance.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Following"
+                            android:text="@string/profile_following"
                             android:textAllCaps="true"
                             android:letterSpacing="0.05" />
                     </LinearLayout>
@@ -185,7 +185,7 @@
                             style="@style/Premium.TextAppearance.Caption"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Mutual"
+                            android:text="@string/profile_mutual"
                             android:textAllCaps="true"
                             android:letterSpacing="0.05" />
                     </LinearLayout>
@@ -205,7 +205,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:minWidth="132dp"
-                        android:text="Edit Profile"
+                        android:text="@string/profile_edit_profile"
                         app:icon="@drawable/ic_edit"
                         app:iconSize="18dp" />
 
@@ -215,7 +215,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="Share"
+                        android:text="@string/profile_share"
                         app:icon="@drawable/ic_share"
                         app:iconSize="18dp" />
 
@@ -225,7 +225,7 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:layout_marginStart="8dp"
-                        android:contentDescription="Settings"
+                        android:contentDescription="@string/profile_settings"
                         app:icon="@drawable/ic_settings"
                         app:iconSize="20dp" />
 
@@ -256,7 +256,7 @@
                 style="@style/Premium.TextAppearance.Subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Account &amp; Security"
+                android:text="@string/profile_account_security"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="12dp"
                 android:layout_marginStart="8dp" />
@@ -297,7 +297,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Username" />
+                            android:text="@string/profile_username" />
 
                         <TextView
                             android:id="@+id/textCurrentUsername"
@@ -350,14 +350,14 @@
                                 style="@style/Premium.TextAppearance.Body"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Message Permissions" />
+                                android:text="@string/profile_message_permissions" />
 
                             <TextView
                                 android:id="@+id/textMessagePermission"
                                 style="@style/Premium.TextAppearance.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Everyone" />
+                                android:text="@string/profile_message_everyone" />
                         </LinearLayout>
 
                         <ImageView
@@ -403,13 +403,13 @@
                                 style="@style/Premium.TextAppearance.Body"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Sign Out" />
+                                android:text="@string/profile_sign_out" />
 
                             <TextView
                                 style="@style/Premium.TextAppearance.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="End current session" />
+                                android:text="@string/profile_end_current_session" />
                         </LinearLayout>
 
                         <ImageView
@@ -450,7 +450,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Delete Account"
+                            android:text="@string/profile_delete_account"
                             android:textColor="?attr/colorError" />
 
                         <ImageView
@@ -468,7 +468,7 @@
                 style="@style/Premium.TextAppearance.Subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Preferences"
+                android:text="@string/profile_preferences"
                 android:layout_marginBottom="12dp"
                 android:layout_marginStart="8dp" />
 
@@ -509,13 +509,13 @@
                                 style="@style/Premium.TextAppearance.Body"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Dark Appearance" />
+                                android:text="@string/profile_dark_appearance" />
 
                             <TextView
                                 style="@style/Premium.TextAppearance.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Adjust app theme" />
+                                android:text="@string/profile_adjust_theme" />
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -556,13 +556,13 @@
                                 style="@style/Premium.TextAppearance.Body"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Push Notifications" />
+                                android:text="@string/profile_push_notifications" />
 
                             <TextView
                                 style="@style/Premium.TextAppearance.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Get real-time updates" />
+                                android:text="@string/profile_realtime_updates" />
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -603,13 +603,13 @@
                                 style="@style/Premium.TextAppearance.Body"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Direct Messaging" />
+                                android:text="@string/profile_direct_messaging" />
 
                             <TextView
                                 style="@style/Premium.TextAppearance.Caption"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Toggle chat availability" />
+                                android:text="@string/profile_toggle_chat" />
                         </LinearLayout>
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -617,6 +617,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
                     </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -625,7 +626,7 @@
                 style="@style/Premium.TextAppearance.Subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="My Recipes"
+                android:text="@string/profile_my_recipes"
                 android:layout_marginBottom="12dp"
                 android:layout_marginStart="8dp" />
 
@@ -637,7 +638,7 @@
                 android:background="@drawable/search_bg"
                 android:drawableStart="@drawable/ic_search"
                 android:drawablePadding="8dp"
-                android:hint="Search recipes..."
+                android:hint="@string/profile_search_recipes_hint"
                 android:inputType="text"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
@@ -652,7 +653,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:text="Add Recipe"
+                android:text="@string/nav_add_recipe"
                 app:icon="@drawable/ic_add"
                 app:iconSize="18dp" />
 

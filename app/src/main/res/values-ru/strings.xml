@@ -1,0 +1,258 @@
+<resources>
+    <string name="app_name">Kitchen Brain</string>
+
+    <!-- Login Activity -->
+    <string name="login_title">Вход в Kitchen</string>
+    <string name="email_hint">Введите email</string>
+    <string name="password_hint">Введите пароль</string>
+    <string name="login_button">Войти</string>
+    <string name="no_account_text">Нет аккаунта? Зарегистрироваться</string>
+    <string name="guest_mode_text">Гостевой режим</string>
+
+    <!-- Register Activity -->
+    <string name="register_title">Регистрация в Kitchen</string>
+    <string name="confirm_password_hint">Подтвердите пароль</string>
+    <string name="register_button">Зарегистрироваться</string>
+    <string name="have_account_text">Уже есть аккаунт? Войти</string>
+
+    <!-- Profile Fragment -->
+    <string name="logout_button">Выйти</string>
+    <string name="profile_title">Профиль пользователя</string>
+
+    <!-- Social Graph - Follow System -->
+    <string name="follow">Подписаться</string>
+    <string name="following">Вы подписаны</string>
+    <string name="unfollowing">Отписка...</string>
+    <string name="requested">Запрошено</string>
+    <string name="follow_back">Подписаться в ответ</string>
+    <string name="mutual">Взаимно</string>
+    <string name="message">Сообщение</string>
+    <string name="chat_not_available">Чат недоступен</string>
+    <string name="chat_mutual_required">Вы можете общаться только с взаимными друзьями. Оба пользователя должны быть подписаны друг на друга.</string>
+    <string name="go_back">Назад</string>
+    <string name="close_chat">Закрыть чат</string>
+    <string name="chat_no_longer_available">Чат больше недоступен</string>
+    <string name="mutual_relationship_broken">Вы больше не можете общаться с этим пользователем, потому что взаимная подписка была прервана.</string>
+    <string name="failed_to_unfollow">Не удалось отписаться</string>
+    <string name="failed_to_follow">Не удалось подписаться: %1$s</string>
+    <string name="unfollow">Отписаться</string>
+
+    <!-- Home Fragment -->
+    <string name="home_welcome">Добро пожаловать в Kitchen Brain!</string>
+    <string name="home_subtitle">Находите и делитесь вкусными рецептами</string>
+    <string name="loading_recipes">Загружаем свежие рецепты...</string>
+    <string name="no_recipes_found">Рецепты не найдены</string>
+    <string name="pull_to_discover">Потяните вниз, чтобы открыть новые кулинарные идеи</string>
+    <string name="failed_to_load_recipes">Не удалось загрузить рецепты</string>
+    <string name="retry">Повторить</string>
+
+    <!-- Search Fragment -->
+    <string name="recipes_found_format">Найдено рецептов: %d</string>
+    <string name="ingredients_selected_format">Выбрано ингредиентов: %d</string>
+    <string name="recipes_count_format">Рецептов: %d</string>
+    <string name="recipes_matching_format">Подходящих рецептов: %d</string>
+    <string name="selection_cleared">Выбор очищен</string>
+
+    <!-- Create Recipe Fragment -->
+    <string name="create_recipe_title">Создать новый рецепт</string>
+    <string name="recipe_name_hint">Название рецепта</string>
+    <string name="recipe_description_hint">Описание рецепта</string>
+    <string name="cooking_time_hint">Время приготовления (в минутах)</string>
+    <string name="instructions_hint">Инструкции</string>
+    <string name="choose_ingredients_button">Выбрать ингредиенты</string>
+    <string name="add_image_text">Добавить фото рецепта</string>
+    <string name="add_video_text">Добавить видео рецепта</string>
+    <string name="save_recipe_button">Сохранить рецепт</string>
+    <string name="step_format">%1$d. %2$s</string>
+    <string name="no_video_selected">Видео не выбрано</string>
+
+    <!-- Main Activity -->
+    <string name="nav_home">Главная</string>
+    <string name="nav_search">Поиск</string>
+    <string name="nav_profile">Профиль</string>
+    <string name="nav_add_recipe">Добавить рецепт</string>
+    <string name="nav_favorites">Избранное</string>
+    <string name="nav_friends">Друзья</string>
+    <string name="nav_video">Видео</string>
+    <string name="nav_chat">Чат</string>
+
+    <!-- Search Fragment -->
+    <string name="search_recipes_button">Найти рецепт</string>
+    <string name="main_category">Основное</string>
+    <string name="vegetables_category">Овощи</string>
+    <string name="fruits_category">Фрукты</string>
+    <string name="dairy_category">Молочные продукты</string>
+
+    <!-- Ingredients -->
+    <string name="flour">Мука</string>
+    <string name="eggs">Яйца</string>
+    <string name="sugar">Сахар</string>
+    <string name="oil">Масло</string>
+    <string name="potato">Картофель</string>
+    <string name="onion">Лук</string>
+    <string name="carrot">Морковь</string>
+    <string name="pepper">Перец</string>
+    <string name="apple">Яблоко</string>
+    <string name="banana">Банан</string>
+    <string name="orange_fruit">Апельсин</string>
+    <string name="pear">Груша</string>
+    <string name="milk">Молоко</string>
+    <string name="sour_cream">Сметана</string>
+    <string name="cottage_cheese">Творог</string>
+    <string name="cheese">Сыр</string>
+
+    <!-- Buttons and Actions -->
+    <string name="confirm_button">Подтвердить</string>
+    <string name="edit_recipe_button">Редактировать рецепт</string>
+    <string name="delete_recipe_button">Удалить рецепт</string>
+    <string name="edit">Редактировать</string>
+    <string name="recipe_image">Изображение рецепта</string>
+    <string name="yes_button">Да</string>
+    <string name="cancel_button">Отмена</string>
+    <string name="confirm_delete_message">Вы уверены, что хотите удалить этот рецепт?</string>
+
+    <!-- Messages -->
+    <string name="please_fill_fields">Пожалуйста, заполните все поля</string>
+    <string name="valid_gmail_error">Введите корректный адрес Gmail</string>
+    <string name="valid_email_error">Введите корректный email</string>
+    <string name="password_length_error">Пароль должен содержать минимум 6 символов</string>
+    <string name="password_match_error">Пароли не совпадают</string>
+    <string name="login_success">Вход выполнен успешно</string>
+    <string name="verification_sent">Письмо для подтверждения отправлено</string>
+    <string name="recipe_deleted">Рецепт удален</string>
+    <string name="error_deleting">Ошибка при удалении рецепта</string>
+    <string name="error_loading_user">Не удалось загрузить данные пользователя</string>
+    <string name="error_saving_profile">Ошибка при сохранении профиля</string>
+    <string name="enter_username">Введите имя пользователя</string>
+    <string name="username_updated">Имя пользователя успешно обновлено!</string>
+
+    <!-- Profile Setup -->
+    <string name="setup_profile_title">Настройте профиль</string>
+    <string name="username_hint">Введите имя пользователя</string>
+    <string name="confirm_username_button">Подтвердить</string>
+
+    <!-- Waiting for Confirmation -->
+    <string name="confirmation_title">Подтвердите email</string>
+    <string name="confirmation_message">Мы отправили письмо для подтверждения на вашу почту.\nПроверьте email и перейдите по ссылке подтверждения.</string>
+    <string name="resend_email_button">Отправить письмо еще раз</string>
+    <string name="back_to_register_button">Вернуться к регистрации</string>
+    <string name="verification_resend_success">Письмо подтверждения отправлено повторно</string>
+    <string name="verification_resend_error">Ошибка при повторной отправке письма</string>
+    <string name="account_delete_error">Не удалось удалить аккаунт</string>
+
+    <!-- Additional error messages for improved authentication -->
+    <string name="error_sending_verification">Ошибка при отправке письма подтверждения</string>
+    <string name="weak_password_error">Пароль слишком слабый. Используйте минимум 6 символов с буквами и цифрами.</string>
+    <string name="invalid_credentials_error">Неверный email или пароль. Проверьте данные.</string>
+    <string name="user_exists_error">Аккаунт с этим email уже существует.</string>
+    <string name="user_not_found_error">Аккаунт с этим email не найден. Сначала зарегистрируйтесь.</string>
+    <string name="verify_email_before_login">Подтвердите email перед входом.</string>
+    <string name="guest_mode_activated">Гостевой режим включен</string>
+
+    <!-- Recipe detail (RecipeDetailActivity) -->
+    <string name="recipe_detail_title">Рецепт</string>
+    <string name="recipe_detail_missing">Данные рецепта отсутствуют. Закрываем экран.</string>
+    <string name="recipe_image_content_description">Фото рецепта</string>
+    <string name="recipe_section_description">Описание</string>
+    <string name="recipe_section_ingredients">Ингредиенты</string>
+    <string name="recipe_section_instructions">Инструкции</string>
+    <string name="recipe_add_favorite">Добавить в избранное</string>
+    <string name="recipe_start_cooking">Начать готовить</string>
+    <string name="recipe_time_minutes">%1$d мин</string>
+    <string name="recipe_time_unknown">Время не указано</string>
+    <string name="recipe_servings">Порций: %1$d</string>
+    <string name="recipe_no_ingredients">Ингредиенты не указаны.</string>
+    <string name="recipe_ingredient_bullet">- %1$s</string>
+    <string name="recipe_favorite_stub">Избранное будет доступно в будущем обновлении.</string>
+    <string name="recipe_start_cooking_stub">Режим готовки будет доступен в будущем обновлении.</string>
+    <string name="home_featured_recipes">Рекомендуемые рецепты</string>
+    <string name="recipe_article_instructions">Откройте полную статью в браузере:\n%1$s\n\nСовет: используйте системную кнопку Назад, чтобы вернуться в приложение.</string>
+    <string name="recipe_article_no_link">Прямая ссылка для этого материала отсутствует. Проверьте название источника выше или попробуйте веб-поиск.</string>
+
+    <string name="recipe_by_author">от %1$s</string>
+    <string name="recipe_author_unknown">от сообщества</string>
+    <string name="recipe_likes_count">Лайков: %1$d</string>
+    <string name="recipe_comments_count">Комментариев: %1$d</string>
+    <string name="recipe_no_steps">Шаги приготовления пока не добавлены.</string>
+    <string name="recipe_section_steps">Пошагово</string>
+    <string name="recipe_section_similar">Вам также может понравиться</string>
+    <string name="recipe_section_nutrition">Пищевая ценность</string>
+    <string name="recipe_section_chef_tips">Советы шефа</string>
+    <string name="recipe_action_save">Сохранить</string>
+    <string name="recipe_action_share">Поделиться</string>
+    <string name="recipe_action_cook">Готовить</string>
+    <string name="recipe_difficulty_article">Статья</string>
+    <string name="recipe_news_chef_tip">Просмотрите начало, затем переходите к способу приготовления - авторы часто прячут время в основном тексте.</string>
+    <string name="recipe_news_nutrition_placeholder">Данные о пищевой ценности недоступны для новостных статей. Откройте оригинальный источник для подробностей.</string>
+
+    <!-- Privacy & Access -->
+    <string name="recipe_privacy_title">Рецепт недоступен</string>
+    <string name="recipe_privacy_message">Этот рецепт доступен только взаимным подписчикам. Подпишитесь друг на друга, чтобы открыть доступ.</string>
+    <string name="recipe_privacy_ok">OK</string>
+
+    <!-- Video -->
+    <string name="recipe_section_video">Видео</string>
+    <string name="recipe_watch_video">Смотреть видео</string>
+
+    <!-- Rating -->
+    <string name="recipe_rate_this">Оцените этот рецепт</string>
+    <string name="recipe_rating_submitted">Оценка отправлена! Спасибо.</string>
+    <string name="recipe_rating_error">Не удалось отправить оценку.</string>
+
+    <!-- Save / Unsave -->
+    <string name="recipe_saved">Рецепт сохранен</string>
+    <string name="recipe_unsaved">Рецепт удален из сохраненных</string>
+    <string name="recipe_save_error">Не удалось сохранить рецепт.</string>
+
+    <!-- Cooking Timer -->
+    <string name="recipe_cooking_timer">Таймер готовки</string>
+    <string name="recipe_timer_started">Таймер запущен на %1$d мин.</string>
+    <string name="recipe_timer_complete">Время готовки вышло!</string>
+
+    <!-- Similar recipes -->
+    <string name="recipe_no_similar">Похожие рецепты не найдены</string>
+
+    <!-- Chat Screen -->
+    <string name="user_status_online">онлайн</string>
+    <string name="more_options_desc">Дополнительные параметры</string>
+    <string name="attach_desc">Прикрепить</string>
+    <string name="message_hint">Сообщение</string>
+    <string name="emoji_desc">Эмодзи</string>
+    <string name="send_desc">Отправить</string>
+    <string name="back_desc">Назад</string>
+    <string name="typing_indicator_format">%1$s печатает...</string>
+    <string name="user_placeholder">Пользователь</string>
+    <string name="user_id_format">%1$s_%2$s</string>
+    <string name="edited">изменено</string>
+    <string name="editing_message">Редактирование сообщения</string>
+    <string name="delete_message_title">Удалить сообщение?</string>
+    <string name="delete_message_confirm">Вы уверены, что хотите удалить это сообщение?</string>
+    <string name="delete">Удалить</string>
+    <string name="edit_failed">Не удалось изменить</string>
+    <string name="message_deleted">Сообщение удалено</string>
+    <string name="failed_to_delete">Не удалось удалить</string>
+    <string name="profile_followers">Подписчики</string>
+    <string name="profile_following">Подписки</string>
+    <string name="profile_mutual">Взаимно</string>
+    <string name="profile_edit_profile">Редактировать профиль</string>
+    <string name="profile_share">Поделиться</string>
+    <string name="profile_settings">Настройки</string>
+    <string name="profile_account_security">Аккаунт и безопасность</string>
+    <string name="profile_username">Имя пользователя</string>
+    <string name="profile_message_permissions">Разрешения сообщений</string>
+    <string name="profile_message_everyone">Все</string>
+    <string name="profile_message_friends_only">Только друзья</string>
+    <string name="profile_message_nobody">Никто</string>
+    <string name="profile_sign_out">Выйти</string>
+    <string name="profile_end_current_session">Завершить текущую сессию</string>
+    <string name="profile_delete_account">Удалить аккаунт</string>
+    <string name="profile_preferences">Предпочтения</string>
+    <string name="profile_dark_appearance">Темная тема</string>
+    <string name="profile_adjust_theme">Настроить тему приложения</string>
+    <string name="profile_push_notifications">Push-уведомления</string>
+    <string name="profile_realtime_updates">Получать обновления в реальном времени</string>
+    <string name="profile_direct_messaging">Личные сообщения</string>
+    <string name="profile_toggle_chat">Включить или выключить чат</string>
+    <string name="profile_my_recipes">Мои рецепты</string>
+    <string name="profile_search_recipes_hint">Поиск рецептов...</string>
+</resources>

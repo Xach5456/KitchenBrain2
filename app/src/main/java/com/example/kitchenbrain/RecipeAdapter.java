@@ -22,6 +22,10 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
 
@@ -36,6 +40,9 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     private List<String> myFollowingList;
     private List<String> myFollowersList;
     private final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(2.2f);
+    private final android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final ExecutorService diffExecutor = Executors.newSingleThreadExecutor();
+    private int filterGeneration = 0;
 
     public interface OnRecipeClickListener {
         void onDeleteRecipe(Recipe recipe);
@@ -115,28 +122,42 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     }
 
     private void updateFilteredRecipes() {
+        int generation = ++filterGeneration;
         List<Recipe> oldList = new ArrayList<>(filteredRecipeList);
+        List<Recipe> sourceList = new ArrayList<>(recipeList);
         List<Recipe> newFilteredList = new ArrayList<>();
-        filteredRecipeList.clear();
-        for (Recipe recipe : recipeList) {
-            if (shouldIncludeRecipe(recipe)) {
-                newFilteredList.add(recipe);
+        boolean showOtherUsers = showOtherUsersRecipes;
+        boolean mutualRequired = requireMutualFollow;
+        String userId = currentUserId;
+        Set<String> followingSet = new HashSet<>(myFollowingList);
+        Set<String> followerSet = new HashSet<>(myFollowersList);
+
+        diffExecutor.execute(() -> {
+            for (Recipe recipe : sourceList) {
+                if (shouldIncludeRecipe(recipe, showOtherUsers, mutualRequired, userId, followingSet, followerSet)) {
+                    newFilteredList.add(recipe);
+                }
             }
-        }
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new RecipeDiffCallback(oldList, newFilteredList));
-        filteredRecipeList.addAll(newFilteredList);
-        diffResult.dispatchUpdatesTo(this);
+            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new RecipeDiffCallback(oldList, newFilteredList));
+            mainHandler.post(() -> {
+                if (generation != filterGeneration) return;
+                filteredRecipeList.clear();
+                filteredRecipeList.addAll(newFilteredList);
+                diffResult.dispatchUpdatesTo(this);
+            });
+        });
     }
 
-    private boolean shouldIncludeRecipe(Recipe recipe) {
+    private boolean shouldIncludeRecipe(Recipe recipe, boolean showOtherUsers, boolean mutualRequired,
+                                        String userId, Set<String> followingSet, Set<String> followerSet) {
         if (recipe == null) return false;
-        if (!showOtherUsersRecipes && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
+        if (!showOtherUsers && userId != null && !userId.equals(recipe.getAuthorId())) {
             return false;
         }
-        if (requireMutualFollow && currentUserId != null && !currentUserId.equals(recipe.getAuthorId())) {
+        if (mutualRequired && userId != null && !userId.equals(recipe.getAuthorId())) {
             String recipeAuthorId = recipe.getAuthorId();
-            boolean iFollowAuthor = myFollowingList != null && myFollowingList.contains(recipeAuthorId);
-            boolean authorFollowsMe = myFollowersList != null && myFollowersList.contains(recipeAuthorId);
+            boolean iFollowAuthor = followingSet.contains(recipeAuthorId);
+            boolean authorFollowsMe = followerSet.contains(recipeAuthorId);
             if (!iFollowAuthor || !authorFollowsMe) {
                 return false;
             }
