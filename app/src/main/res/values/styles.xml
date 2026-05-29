@@ -82,8 +82,8 @@
     
     <!-- Modern Alert Dialog Theme - FIXED: Inheriting from Material3 MaterialAlertDialog to resolve colorSurface correctly -->
     <style name="AlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="colorSurface">?attr/colorSurface</item>
-        <item name="colorOnSurface">?attr/colorOnSurface</item>
+        <item name="colorSurface">@color/md_surface_light</item>
+        <item name="colorOnSurface">@color/md_on_surface_light</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">true</item>
         <item name="buttonBarPositiveButtonStyle">@style/Widget.Material3.Button.TextButton</item>

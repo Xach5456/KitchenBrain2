@@ -32,7 +32,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.example.kitchenbrain.manager.FollowGraphRepository;
 import com.example.kitchenbrain.repository.RecipeRepository;
 import com.example.kitchenbrain.utils.CloudinaryHelper;
 import com.google.android.material.button.MaterialButton;
@@ -47,8 +46,10 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.Timestamp;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Modern Material 3 Profile & Settings Fragment
@@ -73,6 +74,10 @@ public class ProfileFragment extends Fragment {
     
     private ListenerRegistration userDataListener;
     private ListenerRegistration userRecipesListener;
+    private ListenerRegistration followersCountListener;
+    private ListenerRegistration followingCountListener;
+    private final Set<String> profileFollowerIds = new HashSet<>();
+    private final Set<String> profileFollowingIds = new HashSet<>();
     
     private ShapeableImageView imageViewProfile;
     private TextView textViewUsername;
@@ -310,7 +315,7 @@ public class ProfileFragment extends Fragment {
     private void showEditProfileOptionsDialog() {
         if (!isOwnProfile() || !isAdded()) return;
         String[] options = {"Edit Username", "Change Photo"};
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Edit Profile")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
@@ -414,23 +419,55 @@ public class ProfileFragment extends Fragment {
         if (followStatsObserved || currentUserId == null || !isAdded()) return;
         followStatsObserved = true;
 
-        FollowGraphRepository graph = FollowGraphRepository.getInstance();
-        graph.initialize(currentUserId);
-        graph.getFollowersLiveData().observe(getViewLifecycleOwner(), users -> {
-            if (textFollowersCount != null && users != null) {
-                textFollowersCount.setText(String.valueOf(users.size()));
-            }
-        });
-        graph.getFollowingLiveData().observe(getViewLifecycleOwner(), users -> {
-            if (textFollowingCount != null && users != null) {
-                textFollowingCount.setText(String.valueOf(users.size()));
-            }
-        });
-        graph.getMutualLiveData().observe(getViewLifecycleOwner(), users -> {
-            if (textMutualCount != null && users != null) {
-                textMutualCount.setText(String.valueOf(users.size()));
-            }
-        });
+        followersCountListener = db.collection("followers")
+                .document(currentUserId)
+                .collection("userFollowers")
+                .addSnapshotListener((snapshot, error) -> {
+                    if (!isAdded()) return;
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to profile followers", error);
+                        return;
+                    }
+
+                    profileFollowerIds.clear();
+                    if (snapshot != null) {
+                        snapshot.forEach(doc -> profileFollowerIds.add(doc.getId()));
+                    }
+
+                    if (textFollowersCount != null) {
+                        textFollowersCount.setText(String.valueOf(profileFollowerIds.size()));
+                    }
+                    updateMutualCount();
+                });
+
+        followingCountListener = db.collection("following")
+                .document(currentUserId)
+                .collection("userFollowing")
+                .addSnapshotListener((snapshot, error) -> {
+                    if (!isAdded()) return;
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to profile following", error);
+                        return;
+                    }
+
+                    profileFollowingIds.clear();
+                    if (snapshot != null) {
+                        snapshot.forEach(doc -> profileFollowingIds.add(doc.getId()));
+                    }
+
+                    if (textFollowingCount != null) {
+                        textFollowingCount.setText(String.valueOf(profileFollowingIds.size()));
+                    }
+                    updateMutualCount();
+                });
+    }
+
+    private void updateMutualCount() {
+        if (textMutualCount == null) return;
+        Set<String> mutualIds = new HashSet<>(profileFollowingIds);
+        mutualIds.retainAll(profileFollowerIds);
+        mutualIds.remove(currentUserId);
+        textMutualCount.setText(String.valueOf(mutualIds.size()));
     }
     
     private void updateUIWithUserData(User user) {
@@ -442,12 +479,6 @@ public class ProfileFragment extends Fragment {
         if (textViewEmail != null && mAuth.getCurrentUser() != null)
             textViewEmail.setText(mAuth.getCurrentUser().getEmail());
 
-        if (textFollowersCount != null)
-            textFollowersCount.setText(String.valueOf(user.getFollowersCount()));
-        
-        if (textFollowingCount != null)
-            textFollowingCount.setText(String.valueOf(user.getFollowingCount()));
-        
         if (imageViewProfile != null) {
             String avatarUrl = user.getAvatarUrl();
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
@@ -534,7 +565,7 @@ public class ProfileFragment extends Fragment {
         if (currentUser != null) editText.setText(currentUser.getUsername());
         
         // Material dialog colors follow the active light/dark theme.
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Edit Username")
                 .setView(dialogView)
                 .setPositiveButton("Save", (d, w) -> {
@@ -553,7 +584,7 @@ public class ProfileFragment extends Fragment {
     
     private void showLogoutConfirmation() {
         if (!isAdded()) return;
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Logout")
                 .setMessage("Are you sure?")
                 .setPositiveButton("Logout", (d, w) -> logout())
@@ -583,7 +614,7 @@ public class ProfileFragment extends Fragment {
     
     private void showDeleteAccountConfirmation() {
         if (!isAdded()) return;
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Delete Account")
                 .setMessage("This action cannot be undone.")
                 .setPositiveButton("Delete", (d, w) -> deleteAccount())
@@ -609,7 +640,7 @@ public class ProfileFragment extends Fragment {
         String current = prefs.getString("message_permission", "everyone");
         int index = current.equals("friends") ? 1 : current.equals("nobody") ? 2 : 0;
         
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Who Can Message Me")
                 .setSingleChoiceItems(options, index, (d, which) -> {
                     String perm = which == 1 ? "friends" : which == 2 ? "nobody" : "everyone";
@@ -708,7 +739,7 @@ public class ProfileFragment extends Fragment {
             showSnackbar("Recipe is missing an ID.");
             return;
         }
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Delete Recipe")
                 .setMessage("Are you sure you want to delete this recipe?")
                 .setPositiveButton("Delete", (dialog, which) -> deleteRecipe(recipeId))
@@ -735,6 +766,11 @@ public class ProfileFragment extends Fragment {
         super.onDestroyView();
         if (userDataListener != null) userDataListener.remove();
         if (userRecipesListener != null) userRecipesListener.remove();
+        if (followersCountListener != null) followersCountListener.remove();
+        if (followingCountListener != null) followingCountListener.remove();
+        profileFollowerIds.clear();
+        profileFollowingIds.clear();
+        followStatsObserved = false;
     }
     
     private void showSnackbar(String message) {

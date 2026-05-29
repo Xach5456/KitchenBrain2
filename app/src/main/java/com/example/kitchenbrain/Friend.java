@@ -2,6 +2,7 @@ package com.example.kitchenbrain;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentId;
+import com.google.firebase.firestore.PropertyName;
 
 /**
  * Represents a friend relationship in the system
@@ -71,6 +72,11 @@ public class Friend {
         this.friendAvatarUrl = friendAvatarUrl;
     }
 
+    @PropertyName("isOnline")
+    public boolean getIsOnline() {
+        return isOnline;
+    }
+
     public boolean isOnline() {
         return isOnline;
     }
@@ -79,7 +85,7 @@ public class Friend {
         isOnline = online;
     }
     
-    // Add compatibility setter for Firestore mapping
+    @PropertyName("isOnline")
     public void setIsOnline(boolean online) {
         this.isOnline = online;
     }

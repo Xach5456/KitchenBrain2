@@ -371,7 +371,7 @@ public class ReelsAdapter extends RecyclerView.Adapter<ReelsAdapter.ReelViewHold
      * Show comment dialog
      */
     public void showCommentDialog(YouTubeReel reel, int position) {
-        new MaterialAlertDialogBuilder(context)
+        new MaterialAlertDialogBuilder(context, R.style.AlertDialogTheme)
                 .setTitle("Add Comment")
                 .setMessage("Comment feature coming soon!\n\nVideo: " + reel.getTitle())
                 .setPositiveButton("OK", null)

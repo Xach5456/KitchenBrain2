@@ -342,7 +342,7 @@ public class ChatFragment extends Fragment implements SwipeChatCallback.SwipeLis
     }
 
     private void showDeleteConfirmation(ChatMessage message) {
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Delete message?")
                 .setMessage("Are you sure you want to delete this message?")
                 .setPositiveButton("Delete", (dialog, which) -> {

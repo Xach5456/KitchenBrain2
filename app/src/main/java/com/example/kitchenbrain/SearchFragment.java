@@ -397,7 +397,7 @@ public class SearchFragment extends Fragment implements ProductChipAdapter.OnPro
             Toast.makeText(getContext(), "You can only delete recipes you created", Toast.LENGTH_SHORT).show();
             return;
         }
-        new MaterialAlertDialogBuilder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle("Delete Recipe")
                 .setMessage("Are you sure you want to delete this recipe?")
                 .setPositiveButton("Delete", (dialog, which) -> {

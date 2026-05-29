@@ -18,8 +18,15 @@ public class MyApplication extends Application {
         super.onCreate();
         
         // 1. Crash Handler
+        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
             Log.e("CRASH_HANDLER", "UNCAUGHT EXCEPTION: " + throwable.getMessage(), throwable);
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
+            } else {
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(10);
+            }
         });
         
         // 2. Firebase Early Init
